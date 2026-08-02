@@ -56,6 +56,17 @@ Clase de prueba · Formulario · Footer.
 - `Assets/` es la carpeta de trabajo (material crudo, no se sirve).
 - `public/` es lo que se publica. Solo versiones comprimidas.
 - `Assets/Videos/originales/` está en `.gitignore`.
+- `fuentes/` guarda el .ttf de Bebas que usa `app/opengraph-image.tsx`.
+  next/font no sirve ahí: satori necesita el archivo, no una hoja de estilos.
+- El logo de `Assets/` trae el fondo negro incrustado. Las versiones con
+  transparencia de `public/` se generaron desde ese original.
+
+## Pendientes de Carla
+- Video del hero y videos/fotos de las cinco profesoras.
+- Bios reales (hoy dicen `Acá la bio de "Nombre"`).
+- Precios, horarios y cupos en `lib/cursos.ts`.
+- Credenciales de Supabase en `.env.local` y correr
+  `supabase/migrations/20260801000000_leads.sql`.
 
 ## Comandos
 - `npm run dev`

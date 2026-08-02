@@ -26,6 +26,9 @@ export function Cursos() {
               <Tarjeta curso={curso} />
             </li>
           ))}
+          {/* Son cinco cursos en dos columnas: sin esta celda, el hueco final
+              deja ver el color de los divisores. */}
+          <li aria-hidden="true" className="hidden bg-xo-negro-alt sm:block" />
         </ul>
       </Reveal>
     </section>

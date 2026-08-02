@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, Cormorant_Garamond, Montserrat } from "next/font/google";
 import "./globals.css";
 
@@ -26,10 +26,34 @@ const montserrat = Montserrat({
   display: "swap",
 });
 
+const SITIO = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+const TITULO = "XO Dance Studio — Baile urbano femenino en Las Condes";
+const DESCRIPCION =
+  "Academia de baile urbano femenino en Las Condes. Kids, Teens, Girly y K-Pop, con cinco profes y grupos chicos. Las clases parten en septiembre y la primera es gratis.";
+
 export const metadata: Metadata = {
-  title: "XO Dance Studio — Baile urbano femenino en Las Condes",
-  description:
-    "Academia de baile urbano femenino en Las Condes. Kids, Teens, Girly y K-Pop. Las clases parten en septiembre y tu primera clase es gratis.",
+  metadataBase: new URL(SITIO),
+  title: TITULO,
+  description: DESCRIPCION,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "es_CL",
+    siteName: "XO Dance Studio",
+    title: TITULO,
+    description: DESCRIPCION,
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITULO,
+    description: DESCRIPCION,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1A1A1A",
 };
 
 export default function RootLayout({

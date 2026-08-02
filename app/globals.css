@@ -20,6 +20,9 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* La página es oscura: sin esto, el desplegable nativo del <select> y las
+       barras de scroll salen claros y quedan ilegibles. */
+    color-scheme: dark;
   }
 
   body {

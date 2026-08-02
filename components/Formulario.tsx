@@ -155,8 +155,10 @@ export function Formulario() {
           etiqueta="Tu WhatsApp"
           error={errores.whatsapp}
         >
+          {/* El anillo de foco va en la caja completa: el input interno lleva
+              outline-none para no dibujar un segundo anillo adentro. */}
           <div
-            className={`flex items-stretch overflow-hidden ${claseInput(
+            className={`flex items-stretch overflow-hidden focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-xo-rosa ${claseInput(
               Boolean(errores.whatsapp),
               true,
             )}`}
