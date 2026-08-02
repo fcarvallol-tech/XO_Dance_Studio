@@ -42,3 +42,8 @@ alter table public.leads enable row level security;
 -- Defensa en profundidad: sin los grants por defecto de Supabase, un error de
 -- políticas a futuro tampoco expone la tabla.
 revoke all on public.leads from anon, authenticated;
+
+-- En los proyectos nuevos los privilegios por defecto ya no alcanzan a los
+-- roles del Data API, así que el del servidor va explícito. Solo INSERT: la
+-- landing escribe leads y nunca los lee.
+grant insert on public.leads to service_role;
