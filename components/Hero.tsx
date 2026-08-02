@@ -6,14 +6,16 @@ export function Hero() {
     // Alto de la ventana menos la barra fija, para que el hero entre justo.
     <section
       id="inicio"
-      className="xo-grain relative flex min-h-[calc(100svh-4.5rem)] flex-col justify-between overflow-hidden px-6 pt-16 pb-12 sm:px-10 sm:pt-24 sm:pb-16"
+      className="xo-grain relative flex min-h-[calc(100svh-4.5rem)] flex-col items-center overflow-hidden px-6 pt-16 pb-12 text-center sm:px-10 sm:pt-24 sm:pb-16"
     >
       {/*
         Fase 4: acá va el video en loop con overlay negro al 55%, y un frame
         fijo en móvil. Mientras no exista el material, el hero es negro plano.
       */}
 
-      <div className="relative max-w-5xl">
+      {/* my-auto centra el bloque en el espacio libre y empuja la línea de
+          apoyo al borde inferior, sin posicionamiento absoluto. */}
+      <div className="relative my-auto max-w-5xl">
         <p className="xo-eyebrow text-xo-rosa-claro">
           Academia de baile urbano femenino
         </p>
@@ -24,7 +26,7 @@ export function Hero() {
           baila sola
         </h1>
 
-        <p className="mt-7 max-w-xl font-serif-xo text-xl italic leading-snug text-xo-rosa-claro sm:text-2xl">
+        <p className="mx-auto mt-7 max-w-xl font-serif-xo text-xl italic leading-snug text-xo-rosa-claro sm:text-2xl">
           Un lugar donde bailar también significa sentirte parte.
         </p>
 
