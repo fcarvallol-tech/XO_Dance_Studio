@@ -1,3 +1,4 @@
+import { Barra } from "@/components/Barra";
 import { ClaseDePrueba } from "@/components/ClaseDePrueba";
 import { Cursos } from "@/components/Cursos";
 import { Footer } from "@/components/Footer";
@@ -10,8 +11,9 @@ import { SeleccionProvider } from "@/components/Seleccion";
 export default function Home() {
   return (
     <SeleccionProvider>
-      <Hero />
-      <main>
+      <Barra />
+      <main id="contenido">
+        <Hero />
         <QueEsXo />
         <Lineup />
         <Cursos />

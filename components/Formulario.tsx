@@ -300,7 +300,7 @@ function SeccionFormulario({ children }: { children: React.ReactNode }) {
   return (
     <section
       id="inscripcion"
-      className="xo-grain relative scroll-mt-4 border-t border-xo-blanco/10 px-6 py-24 sm:px-10 sm:py-32"
+      className="xo-grain relative scroll-mt-20 border-t border-xo-blanco/10 px-6 py-24 sm:px-10 sm:py-32"
     >
       <Reveal className="relative mx-auto max-w-xl">{children}</Reveal>
     </section>

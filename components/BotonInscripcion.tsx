@@ -13,6 +13,7 @@ export function BotonInscripcion({
   cursoId = null,
   profesoraId = null,
   variante = "solido",
+  tamano = "normal",
   className = "",
 }: {
   children: React.ReactNode;
@@ -20,6 +21,8 @@ export function BotonInscripcion({
   cursoId?: CursoId | null;
   profesoraId?: ProfesoraId | null;
   variante?: "solido" | "borde";
+  /** "compacto" es para la barra fija, donde no cabe el botón normal. */
+  tamano?: "normal" | "compacto";
   className?: string;
 }) {
   const { inscribirse } = useSeleccion();
@@ -29,11 +32,14 @@ export function BotonInscripcion({
       ? "bg-xo-rosa text-xo-negro hover:bg-xo-rosa-claro"
       : "border border-xo-rosa/60 text-xo-rosa hover:border-xo-rosa hover:bg-xo-rosa hover:text-xo-negro";
 
+  const medidas =
+    tamano === "compacto" ? "px-4 py-2.5 sm:px-5" : "px-6 py-3.5";
+
   return (
     <button
       type="button"
       onClick={() => inscribirse({ origen, cursoId, profesoraId })}
-      className={`xo-eyebrow inline-flex items-center justify-center rounded-full px-6 py-3.5 transition-colors ${estilos} ${className}`}
+      className={`xo-eyebrow inline-flex items-center justify-center rounded-full whitespace-nowrap transition-colors ${medidas} ${estilos} ${className}`}
     >
       {children}
     </button>

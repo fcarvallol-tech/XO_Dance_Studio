@@ -12,6 +12,7 @@ export const POR_CONFIRMAR = "Por confirmar";
 
 /** De dónde salió el click que abrió el formulario. Se guarda en el lead. */
 export type Origen =
+  | "barra"
   | "hero"
   | "tarjeta-curso"
   | "ficha-profesora"

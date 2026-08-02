@@ -8,7 +8,7 @@ export function Cursos() {
   return (
     <section
       id="cursos"
-      className="xo-grain relative border-t border-xo-blanco/10 px-6 py-24 sm:px-10 sm:py-32"
+      className="xo-grain relative scroll-mt-20 border-t border-xo-blanco/10 px-6 py-24 sm:px-10 sm:py-32"
     >
       <Reveal className="relative mx-auto max-w-6xl">
         <p className="xo-eyebrow text-xo-rosa">Los cursos</p>

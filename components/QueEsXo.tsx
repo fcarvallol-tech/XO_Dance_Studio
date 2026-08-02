@@ -4,7 +4,7 @@ export function QueEsXo() {
   return (
     <section
       id="que-es-xo"
-      className="xo-grain relative border-t border-xo-blanco/10 px-6 py-24 sm:px-10 sm:py-36"
+      className="xo-grain relative scroll-mt-20 border-t border-xo-blanco/10 px-6 py-24 sm:px-10 sm:py-36"
     >
       <Reveal className="relative mx-auto max-w-2xl text-center">
         <p aria-hidden="true" className="text-xo-rosa">

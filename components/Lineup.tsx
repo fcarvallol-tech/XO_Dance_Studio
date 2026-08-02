@@ -48,7 +48,7 @@ export function Lineup() {
   return (
     <section
       id="profesoras"
-      className="xo-grain relative overflow-hidden border-t border-xo-blanco/10 py-24 sm:py-32"
+      className="xo-grain relative scroll-mt-20 overflow-hidden border-t border-xo-blanco/10 py-24 sm:py-32"
     >
       {/* Fondo que cambia con la profesora activa. Sin material todavía. */}
       {conMedia ? (

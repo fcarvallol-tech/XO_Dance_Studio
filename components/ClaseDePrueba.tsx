@@ -8,7 +8,10 @@ import { Reveal } from "./Reveal";
  */
 export function ClaseDePrueba() {
   return (
-    <section id="clase-de-prueba" className="bg-xo-blanco px-6 py-24 sm:px-10 sm:py-32">
+    <section
+      id="clase-de-prueba"
+      className="scroll-mt-20 bg-xo-blanco px-6 py-24 sm:px-10 sm:py-32"
+    >
       <Reveal className="mx-auto max-w-3xl text-center">
         <Image
           src="/corazon-xo.png"

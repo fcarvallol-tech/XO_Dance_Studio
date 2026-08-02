@@ -1,23 +1,17 @@
-import Image from "next/image";
 import { BotonInscripcion } from "./BotonInscripcion";
 import { INICIO_CLASES, UBICACION } from "@/lib/contacto";
 
 export function Hero() {
   return (
-    <header className="xo-grain relative flex min-h-[100svh] flex-col justify-between overflow-hidden px-6 pt-10 pb-12 sm:px-10 sm:pb-16">
+    // Alto de la ventana menos la barra fija, para que el hero entre justo.
+    <section
+      id="inicio"
+      className="xo-grain relative flex min-h-[calc(100svh-4.5rem)] flex-col justify-between overflow-hidden px-6 pt-16 pb-12 sm:px-10 sm:pt-24 sm:pb-16"
+    >
       {/*
         Fase 4: acá va el video en loop con overlay negro al 55%, y un frame
         fijo en móvil. Mientras no exista el material, el hero es negro plano.
       */}
-
-      <Image
-        src="/logo-xo.png"
-        alt="XO Dance Studio"
-        width={1192}
-        height={789}
-        priority
-        className="relative h-14 w-auto sm:h-16"
-      />
 
       <div className="relative max-w-5xl">
         <p className="xo-eyebrow text-xo-rosa-claro">
@@ -48,6 +42,6 @@ export function Hero() {
         </span>
         {UBICACION}
       </p>
-    </header>
+    </section>
   );
 }
