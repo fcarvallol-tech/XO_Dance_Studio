@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------
+   Tokens XO — única fuente de color y tipografía del proyecto.
+   Nunca escribir un hex suelto en un componente.
+   ------------------------------------------------------------------ */
+@theme {
+  --color-xo-negro: #1a1a1a;
+  --color-xo-negro-alt: #232323;
+  --color-xo-rosa: #f7adbf;
+  --color-xo-rosa-claro: #f2d0dc;
+  --color-xo-blanco: #f7f7f7;
+  --color-xo-gris: #6b6b6b;
+
+  --font-display: var(--font-bebas), ui-sans-serif, system-ui, sans-serif;
+  --font-serif-xo: var(--font-cormorant), ui-serif, Georgia, serif;
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-xo-negro);
+    color: var(--color-xo-blanco);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Bebas es todo mayúsculas por diseño: el tracking suelto la hace legible
+     a tamaños grandes sin que pierda el peso urbano. */
+  .font-display {
+    letter-spacing: 0.02em;
+  }
+
+  /* Foco visible en todo lo interactivo. Nunca quitarlo sin reemplazo. */
+  :focus-visible {
+    outline: 2px solid var(--color-xo-rosa);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+}
+
+@layer components {
+  /* Eyebrow: la etiqueta chica en mayúsculas que precede a los titulares. */
+  .xo-eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+}
+
+@layer utilities {
+  /* Grano: se intuye, no se ve. Va sobre los fondos negros. */
+  .xo-grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+/* Movimiento reducido: sin transiciones, sin scroll suave, sin reveals. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
