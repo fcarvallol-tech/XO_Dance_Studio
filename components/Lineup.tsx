@@ -64,12 +64,12 @@ export function Lineup() {
         </div>
       ) : null}
 
-      <Reveal className="relative px-6 text-center sm:px-10">
+      <Reveal className="relative px-6 sm:px-10">
         <p className="xo-eyebrow text-xo-rosa">Las profes</p>
-        <h2 className="mx-auto mt-4 max-w-2xl font-display text-[clamp(2.25rem,6vw,3.5rem)] leading-[0.95] text-xo-blanco">
+        <h2 className="mt-4 max-w-2xl font-display text-[clamp(2.25rem,6vw,3.5rem)] leading-[0.95] text-xo-blanco">
           Cinco profes, cinco formas de bailar
         </h2>
-        <p className="mx-auto mt-5 max-w-md text-xo-blanco/70">
+        <p className="mt-5 max-w-md text-xo-blanco/70">
           Toca un nombre para ver quién es, qué enseña y dónde encontrarla.
         </p>
       </Reveal>
@@ -179,7 +179,7 @@ function Fila({
           onClick={onAbrir}
           onMouseEnter={onActivar}
           onFocus={onActivar}
-          className="block w-full py-6 text-center"
+          className="block w-full py-6 text-left"
         >
           <span
             className={`xo-eyebrow block transition-colors duration-300 ${
