@@ -1,74 +1,147 @@
-# XO Dance Studio — Landing de lanzamiento
+# CLAUDE.md — XO Dance Studio
+
+> Este archivo lo lee Claude Code automáticamente. Va en la **raíz del repo**.
+> Es una evolución del `CLAUDE.md` que ya existe: mantiene todas sus reglas y le agrega
+> el sistema de contexto y la parte de ERP. Reemplázalo entero.
+
+Plataforma de una academia de baile en Las Condes, Santiago de Chile: sitio público de
+captación + cuentas de alumnas, venta de paquetes de clases, reserva por horario y portales
+para alumna, profesora, administración y owner.
 
 @AGENTS.md
 
-## Contexto
-@docs/marca.md
+## Contexto — leer antes de escribir código
 
-Objetivo único de la página: que la visitante deje sus datos para tomar una
-clase de prueba gratis en el curso que le interese. Todo lo que no sirva a ese
-objetivo, sobra.
+| Archivo | Cuándo |
+|---|---|
+| `@context/CONTEXT.md` | Siempre. Es el negocio, el estado real y lo que está sin definir |
+| `@context/ARCHITECTURE.md` | Siempre que toques datos, esquema o estructura |
+| `@context/BRAND.md` | Siempre que toques UI o copy |
+| `@context/ROADMAP.md` | Cuando haya duda de prioridad o alcance |
+| `context/prds/` | El PRD de la feature en curso. Obligatorio |
+| `context/decisions/` | Antes de proponer cambiar algo ya decidido |
 
-Esto NO es el sitio final. Más adelante se construirá una plataforma con roles,
-membresías y dashboards sobre la misma base. Las decisiones de acá deben ser
-compatibles con ese futuro, pero no implementes nada de eso ahora.
+Las reglas visuales de implementación viven en `@.claude/rules/estilo.md` y se cargan solas al
+editar `.tsx`.
+
+## Objetivo del sitio público
+
+Que la visitante deje sus datos para una clase de prueba gratis en el curso que le interese.
+Todo lo que no sirva a ese objetivo, sobra.
+
+El ERP se construye sobre la misma base, por fases, según `context/ROADMAP.md`. Las decisiones
+del sitio deben ser compatibles con ese futuro, pero **no implementes ERP mientras no haya PRD
+aprobado**.
 
 ## Stack
-Next.js 16 (App Router) + TypeScript + Tailwind v4 + Supabase + Vercel.
+
+Next.js 16 (App Router) · React 19 · TypeScript · **Tailwind v4** · Supabase · Vercel.
 Fuentes vía `next/font/google`.
 
+⚠️ Tailwind v4 **no usa `tailwind.config.ts`**. Los tokens viven con `@theme` en
+`app/globals.css`.
+⚠️ Next 16 rompe convenciones anteriores: lee `node_modules/next/dist/docs/` antes de asumir.
+
 ## Reglas no negociables
+
 - Nunca commitear `.env.local`.
-- Colores SOLO desde los tokens `xo-*` definidos con `@theme` en
-  `app/globals.css`. Nunca hex sueltos en componentes.
-  (Tailwind v4 no usa `tailwind.config.ts`; los tokens viven en CSS.)
-- Rosa XO (#F7ADBF) sobre fondo claro es decorativo. Nunca texto.
+- Colores SOLO desde los tokens `xo-*` de `app/globals.css`. Nunca hex sueltos en componentes.
+- Rosa XO (#F7ADBF) sobre fondo claro es decorativo. **Nunca texto.**
 - Gris (#6B6B6B) sobre fondo oscuro nunca para párrafos.
 - Todo el copy en español de Chile. Nunca traducir desde inglés.
 - Mobile-first: el diseño se piensa desde 375px hacia arriba.
 - Correr `npm run build` antes de dar por terminada una fase.
-- No inventar datos. Precios, horarios y cupos van en `lib/cursos.ts` marcados
-  `TODO` y se muestran como "Por confirmar".
-- No mostrar la dirección exacta ni la fecha de lanzamiento. Solo
-  "Las Condes, Santiago" y "Las clases parten en septiembre".
+- **No inventar datos.** Precios, horarios y cupos van en `lib/cursos.ts` marcados `TODO` y se
+  muestran como "Por confirmar". Lo mismo aplica a cualquier dato de negocio que no esté en
+  `context/CONTEXT.md`: si no está, se pregunta.
+- No mostrar la dirección exacta ni la fecha de lanzamiento. Solo "Las Condes, Santiago" y
+  "Las clases parten en septiembre".
 - Sin `localStorage` ni `sessionStorage`.
 - Sin librerías de animación. CSS y transiciones nativas alcanzan.
 - Sin stock photos. Si falta una imagen, placeholder evidente.
-- Menores de edad identificables: no usarlas sin confirmación explícita de que
-  hay autorización firmada de los apoderados.
+- Menores identificables: no usarlas sin confirmación explícita de que hay autorización firmada.
 
-## Reglas visuales
-@.claude/rules/estilo.md
+## Proceso — ninguna feature sin PRD
+
+Si te piden construir algo que no tiene PRD en `context/prds/`, tu primera respuesta es
+**proponer el PRD** usando `context/prds/0000-TEMPLATE.md`, numerado en orden. No escribas
+código hasta que esté aprobado.
+
+Al terminar: actualiza el estado del PRD y agrega una línea al changelog de `ROADMAP.md`.
+No edites `CONTEXT.md` sin confirmarlo con Felipe.
+
+Si crees que una decisión de `context/decisions/` está mal, escribe un ADR nuevo que la
+reemplace. No la cambies en silencio.
 
 ## Estructura
-Una sola página con scroll (`app/page.tsx`). Sin rutas adicionales salvo
-`app/api/lead/route.ts`.
 
-Secciones, en orden: Hero · Qué es XO · Profesoras (elemento firma) · Cursos ·
-Clase de prueba · Formulario · Footer.
+Sitio público: una sola página con scroll (`app/page.tsx`). Secciones en orden: Hero · Qué es
+XO · Profesoras · Cursos · Clase de prueba · Formulario · Footer.
+
+ERP: rutas bajo `app/(erp)/`, todas autenticadas. No existe todavía.
 
 ## Datos
+
 - `lib/cursos.ts` — los 5 cursos. Fuente única de precios, horarios y cupos.
-- `lib/profesoras.ts` — las 5 profesoras. Relación curso ↔ profesora es
-  muchos a muchos.
+- `lib/profesoras.ts` — las 5 profesoras. Relación curso ↔ profesora es muchos a muchos.
+- `lib/lead.ts` — validación compartida cliente/servidor. El servidor es el que manda.
+- La inserción de leads pasa **siempre** por `app/api/lead/route.ts`. La service role key salta
+  RLS y no puede salir del servidor.
+
+## Reglas críticas del modelo de créditos y reservas
+
+- **Ninguna operación que toque créditos o cupos se ejecuta desde el cliente.** Todo pasa por
+  Route Handler o función de base de datos.
+- **Reservar y descontar el crédito ocurren en una sola transacción.** Nunca por separado.
+- **El cupo se valida en la base de datos**, no leyendo un conteo y escribiendo después. Con 45
+  cupos y campañas de Instagram, la condición de carrera es real.
+- **El saldo de créditos no es un `int` en el perfil.** Son lotes con vencimiento, y todo cambio
+  queda registrado en `movimientos_credito`. Ese libro nunca se edita, solo se agrega.
+- La lógica de créditos, cupos y cancelación vive en `lib/dominio` como funciones puras, **con
+  tests**. Es la única parte del sistema donde un bug le cuesta plata a alguien.
+- Los cuatro roles son `alumna`, `profesora`, `admin`, `owner`. `owner` es superconjunto de
+  `admin`: implementar como jerarquía, no como listas paralelas.
+
+## Convenciones del ERP
+
+- Dominio en español (`alumna`, `apoderado`, `inscripcion`, `seccion`), infraestructura en
+  inglés. Sin tildes ni ñ en identificadores ni nombres de tabla.
+- Base de datos `snake_case`, tablas en plural. Toda tabla con `id uuid`, `created_at`,
+  `updated_at`, `deleted_at`. Borrado lógico, nunca `DELETE` sobre alumnas, pagos o asistencia.
+- RLS activo en todas las tablas, con políticas explícitas. Nunca dar grants a `anon` por
+  comodidad.
+- Dinero: enteros CLP. Sin decimales, sin floats.
+- Fechas: `timestamptz` en UTC, se renderizan en `America/Santiago`.
+- RUT normalizado `12345678-9`, DV en minúscula, validado en servidor.
+- Migraciones versionadas en `supabase/migrations/`. Nunca cambios manuales en producción.
+
+## Datos sensibles
+
+Las alumnas son mayoritariamente **menores de edad**. Aplica Ley 19.628 / Ley 21.719.
+
+- Nunca exponer nombre, RUT, foto, dirección, teléfono ni observaciones médicas de una alumna en
+  rutas públicas, logs, mensajes de error o URLs.
+- `autoriza_uso_imagen` es `false` por defecto. Ningún flujo de marketing asume consentimiento.
+- No usar datos reales de alumnas en seeds ni fixtures.
 
 ## Assets
-- `Assets/` es la carpeta de trabajo (material crudo, no se sirve).
-- `public/` es lo que se publica. Solo versiones comprimidas.
+
+- `Assets/` es material crudo, no se sirve. `public/` es lo publicado, solo comprimido.
 - `Assets/Videos/originales/` está en `.gitignore`.
-- `fuentes/` guarda el .ttf de Bebas que usa `app/opengraph-image.tsx`.
-  next/font no sirve ahí: satori necesita el archivo, no una hoja de estilos.
-- El logo de `Assets/` trae el fondo negro incrustado. Las versiones con
-  transparencia de `public/` se generaron desde ese original.
+- `fuentes/` guarda el .ttf de Bebas que usa `app/opengraph-image.tsx`: satori necesita el
+  archivo, no una hoja de estilos.
+
+## Comandos
+
+```bash
+npm run dev
+npm run build
+npm run lint
+```
 
 ## Pendientes de Carla
+
 - Video del hero y videos/fotos de las cinco profesoras.
 - Bios reales (hoy dicen `Acá la bio de "Nombre"`).
 - Precios, horarios y cupos en `lib/cursos.ts`.
-- Credenciales de Supabase en `.env.local` y correr
-  `supabase/migrations/20260801000000_leads.sql`.
-
-## Comandos
-- `npm run dev`
-- `npm run build`
-- `npm run lint`
+- Confirmar la nueva ubicación.

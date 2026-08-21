@@ -1,0 +1,433 @@
+# CONTEXT.md — XO Dance Studio
+
+> Fuente de verdad del negocio. Actualizar cuando cambien equipo, cursos, precios o estrategia.
+> Última actualización: 21 de agosto de 2026 · Verificado contra el repo
+> (`github.com/fcarvallol-tech/XO_Dance_Studio`) y el sitio en producción
+> (`xo-dance-studio.vercel.app`).
+
+---
+
+## 1. Qué es XO Dance Studio
+
+**Academia de baile** en Las Condes, Santiago de Chile.
+
+> **Cambio de descriptor (21/08/2026):** antes se describía como "academia de baile urbano
+> femenino". Ahora simplemente **"academia de baile"**. Es un descriptor más amplio y menos
+> encasillado. ⚠️ Verificar si el cambio implica también abrir el público más allá de mujeres,
+> porque hoy toda la comunicación, el nombre de los cursos y el tono asumen audiencia femenina.
+
+Nació como proyecto personal de Carla —estudiante de medicina y profesora de baile— que tras
+trabajar en otra academia decidió independizarse. En **agosto de 2026 escala de un curso
+personal a academia real**: cinco profesoras, cinco cursos, clases que parten en septiembre.
+
+**Tagline:** *"Un lugar donde bailar también significa sentirte parte."*
+
+Lo que diferencia a XO no es el estilo de baile, es el ambiente: comunidad, amistad entre
+alumnas y cercanía real con las profesoras. Eso no es un extra, es el producto.
+
+**Visión de largo plazo:** dejar de ser una academia y volverse una **plataforma de talentos**
+de danza urbana, donde las profesoras son el cliente y construyen carrera y marca personal bajo
+el paraguas XO. Referencia estratégica: Gymshark, que no vende ropa sino identidades a través
+de sus atletas.
+
+---
+
+## 2. Equipo
+
+| Persona | Rol |
+|---|---|
+| **Felipe Carvalho** | Co-fundador · estrategia, finanzas, administración, marketing, diseño y producto. Ingeniero Comercial (UAI), Magíster en Innovación y Emprendimiento |
+| **Carla** | Co-fundadora y fundadora original · área académica y docente. 24 años, estudiante de medicina, pareja de Felipe. Cara visible de la marca |
+
+**Profesoras (5):**
+
+| Profesora | Cursos | Instagram |
+|---|---|---|
+| Carli | Girly Básico · Teens | @carlataty.20 |
+| Pau | Girly Básico · Girly Intermedio | @pau_balbontinc |
+| Drimy | Kids · Teens | @ladrimy |
+| Lina | Kids · Teens | @linaapop |
+| Maida | K-Pop | @maidaquirozc |
+
+Las cinco tienen Instagram propio con seguidores y son parte activa de la campaña de lanzamiento.
+
+---
+
+## 3. Estado actual
+
+| Variable | Detalle |
+|---|---|
+| **Etapa** | Fase 1 — Validación & Caja. Campaña de lanzamiento en curso |
+| **Modelo** | Academia de baile urbano B2C |
+| **Sedes** | **Dos:** Los Leones y Los Dominicos. La dirección exacta **no se publica en la web**: se entrega por WhatsApp |
+| **Razón social** | Academia de Baile XO SpA (en constitución vía Tu Empresa en un Día) |
+| **Nombre de fantasía** | XO Dance Studio |
+| **Alumnas hoy** | 7–8 (⚠️ confirmar el número exacto). Migran de Kids a Teens |
+| **Precio** | Tarifa de packs para todos los cursos. Teens deja los $45.000/mes |
+| **Costo de sala** | Los Leones: **$17.000/hora** · Los Dominicos: **$0** |
+| **Sueldo base profesoras** | **$18.000/hora**. Clases de 1 hora. Variable por definir |
+| **Sitio** | xo-dance-studio.vercel.app — **desplegado y en línea** |
+| **Instagram** | @XO.dancestudioo — se abre al público en agosto 2026 |
+| **WhatsApp** | +56 9 8436 2290 |
+| **Herramientas** | Notion · Google Drive · Canva · GitHub · Supabase · Vercel |
+
+### Finanzas — modelo nuevo (21/08/2026)
+
+Dos sedes con costos radicalmente distintos:
+
+| Sede | Costo de sala | Nota |
+|---|---|---|
+| **Los Leones** | $17.000 | ⚠️ confirmar si es por hora o por clase |
+| **Los Dominicos** | $0 | ⚠️ confirmar por qué es gratis y si es estable en el tiempo |
+
+**Punto de equilibrio por clase, con el pricing de packs** (pack de 4 = $7.500 por clase):
+
+| Sede | Alumnas para cubrir la sala | Con 8 alumnas | Con 15 alumnas |
+|---|---|---|---|
+| Los Leones | 3 (2,3 exacto) | $60.000 − $17.000 = **$43.000** | $112.500 − $17.000 = **$95.500** |
+| Los Dominicos | 0 | **$60.000** | **$112.500** |
+
+Comparación: en la sala anterior ($60.000) hacían falta **8 alumnas solo para cubrir el
+arriendo**. En Los Leones hacen falta **3**. Es una mejora estructural, no un ahorro marginal:
+cambia el riesgo de abrir un horario nuevo, que era la principal traba para programar más clases.
+
+⚠️ **Falta el otro lado de la ecuación:** cuánto se le paga a cada profesora por clase. Ese
+número sale del saldo de la tabla de arriba y define si el modelo deja margen o solo cubre.
+
+---|---|
+| Ingresos (8 × $45.000) | $360.000 |
+| Arriendo sala (4 clases × $60.000) | –$240.000 |
+| Remuneración Carla | $0 (por definir) |
+| **Caja neta** | **$120.000** |
+
+| Escenario | Alumnas | Ingreso | Arriendo | Rem. Carla (est.) | Saldo |
+|---|---|---|---|---|---|
+| Actual | 8 | $360.000 | –$240.000 | $0 | $120.000 |
+| Mínimo viable | 10 | $450.000 | –$240.000 | –$150.000 | $60.000 |
+| Gate 1 objetivo | 12 | $540.000 | –$240.000 | –$200.000 | $100.000 |
+| Holgado | 15 | $675.000 | –$240.000 | –$250.000 | $185.000 |
+
+Estos números son de **un solo curso con una profesora**. Con cinco cursos y cinco profesoras
+el modelo cambia por completo y hay que rehacerlo. ⚠️ Pendiente.
+
+---
+
+## 4. Los cursos
+
+**Cambio del 21/08/2026: XO Kids (7–10) sale del catálogo.** La franja de 7 a 10 años deja de
+ofrecerse. Las alumnas actuales no se pierden: la mayoría ya tiene 11 años, así que **pasan a XO
+Teens**, que queda como curso de entrada de la academia.
+
+Quedan cuatro cursos. En código siguen los cinco (`lib/cursos.ts`): `kids` debe desactivarse, no
+borrarse, para no romper los leads históricos que apuntan a ese `curso_id`. Precios, horarios y
+cupos están en `null` y se muestran como **"Por confirmar"**. No inventarlos.
+
+| Curso | Público | Estilo | Profesoras |
+|---|---|---|---|
+| **XO Teens** | Niñas 11–15 · **curso de entrada** | Urbano | Carli · Drimy · Lina |
+| **XO Girly Básico** | Mujeres 16+ sin experiencia | Reggaetón femenino | Carli · Pau |
+| **XO Girly Intermedio** | Mujeres con experiencia | Reggaetón femenino | Pau |
+| **K-Pop** | Todas las edades | K-Pop | Maida |
+
+### ⚠️ Formato Girly vs. modelo de créditos
+
+Lo que sigue describe cómo funcionan hoy los cursos Girly. Con el cambio a paquetes de clases
+hay que decidir si este formato sobrevive tal cual, se adapta o desaparece.
+
+### Formato de los cursos Girly
+
+Los dos cursos Girly no son mensualidad continua: son **intensivos mensuales por artista**.
+Un artista al mes (Omar Cruz, De la Rose, Standly…), cuatro clases, una coreografía nueva por
+semana. La alumna se inscribe *a un mes concreto*, no a un curso indefinido.
+
+Kids, Teens y K-Pop sí funcionan como inscripción continua con mensualidad.
+
+⚠️ **Esto significa que el ERP necesita dos modelos de cobro distintos**, no uno.
+Ver `ARCHITECTURE.md` §2 y la pregunta abierta correspondiente en §9.
+
+---
+
+## 5. Audiencias
+
+| | Kids y Teens | Girly | K-Pop |
+|---|---|---|---|
+| **Decide** | La mamá | La alumna (16+) | La alumna / la mamá según edad |
+| **Busca** | Lugar seguro, buena profe, que su hija gane confianza y haga amigas | Bailar reggaetón femenino con actitud, sentirse poderosa y parte de un grupo | Aprender coreografías de sus artistas y conectar con otras fans |
+| **Emoción objetivo** | Confianza + entusiasmo | Aspiración + pertenencia | Fandom + comunidad |
+
+**Consecuencia de producto:** en Kids y Teens, quien paga y quien asiste son personas
+distintas. En Girly suelen ser la misma. El ERP tiene que modelar apoderado y alumna como
+entidades separadas, permitiendo que coincidan.
+
+---
+
+## 5.b Modelo de venta — cambio de agosto 2026
+
+El negocio pasa de **mensualidad por curso** a **paquetes de clases con reserva por horario**:
+
+1. La persona se crea una cuenta en la web (login con Google).
+2. Compra un paquete de clases. Quedan como créditos en su cartera.
+3. Cuando quiere ir a una clase, abre el calendario, elige horario y reserva. Se descuenta un
+   crédito y le llega un comprobante por email.
+4. Puede gestionar y cancelar sus reservas desde su portal.
+
+**Por qué importa:** cambia qué se vende (un paquete, no un mes), cómo entra la plata (por
+adelantado, en bloque), qué significa retención (recompra, no permanencia) y qué hay que
+construir (cuentas, pagos online y reservas, todo en la primera versión).
+
+### ✅ Decisión resuelta: modelo híbrido (21/08/2026)
+
+| Curso | Modelo de venta |
+|---|---|
+| **XO Teens** (11–15) | **Suscripción mensual.** Horario fijo, la mamá paga, no se reserva clase a clase. **Precio: el mismo de los packs** ($30.000 por 4 clases al mes) |
+| **XO Girly Básico / Intermedio** | Packs de clases con reserva libre |
+| **K-Pop** | Packs de clases con reserva libre |
+
+El sistema debe soportar **las dos ramas desde el principio**. Ver `decisions/0002-modelo-creditos.md`.
+
+### Pricing (definido el 21/08/2026)
+
+| Plan | General | Unitario | Universitario | Unitario |
+|---|---|---|---|---|
+| Clase suelta | $9.000 | $9.000 | $8.000 | $8.000 |
+| 2 clases | $16.000 | $8.000 | $14.000 | $7.000 |
+| 4 clases | $30.000 | $7.500 | $26.000 | $6.500 |
+| 8 clases | $52.000 | $6.500 | $48.000 | $6.000 |
+
+Planilla corregida el 21/08/2026. Estos valores son los definitivos.
+
+**Tarifa universitaria:** se acredita con el **certificado de alumno regular**, que la alumna
+sube y un admin aprueba. Hasta que esté aprobado, no ve los precios universitarios.
+
+**Vigencia de los créditos: 2 meses** desde la compra.
+**Ventana de cancelación: hasta 30 minutos antes** de la clase, devolviendo el crédito.
+
+### Economía unitaria por clase (definitiva)
+
+Todas las clases duran **1 hora**.
+
+| Concepto | Los Leones | Los Dominicos |
+|---|---|---|
+| Arriendo de sala (por hora) | $17.000 | $0 |
+| Sueldo base de la profesora (por hora) | $18.000 | $18.000 |
+| **Costo total por clase** | **$35.000** | **$18.000** |
+
+**Alumnas necesarias para cubrir el costo de una clase:**
+
+| Tarifa | Los Leones | Los Dominicos |
+|---|---|---|
+| Clase suelta ($9.000) | 4 | 2 |
+| Pack de 4 ($7.500) | 5 | 3 |
+| Pack de 8 ($6.500) | 6 | 3 |
+| Universitario pack 8 ($6.000) | 6 | 3 |
+
+Con capacidad 45, una clase llena en Los Leones deja $302.500. El techo es altísimo; el piso son
+5 alumnas.
+
+⚠️ Hay un **variable** para las profesoras además del sueldo base, todavía sin definir. Cuando
+exista, se resta de estos márgenes.
+
+### El cambio de precio de Teens, con los números reales
+
+Teens pasa de $45.000 al mes a la tarifa de packs ($30.000 por 4 clases). Es un 33% menos por
+alumna, pero con las salas nuevas el resultado neto **no empeora, y además la profesora empieza
+a cobrar**:
+
+| | Antes | Ahora (Los Leones) | Ahora (Los Dominicos) |
+|---|---|---|---|
+| Ingreso mensual (8 alumnas) | $360.000 | $240.000 | $240.000 |
+| Arriendo (4 clases) | –$240.000 | –$68.000 | $0 |
+| Profesora (4 clases) | $0 | –$72.000 | –$72.000 |
+| **Neto** | **$120.000** | **$100.000** | **$168.000** |
+
+Antes quedaban $120.000 pero **nadie le pagaba a Carla**. Ahora la profesora cobra $72.000 al mes
+por ese curso y el negocio queda igual o mejor. El precio bajó y la estructura mejoró: es
+consecuencia directa de la mudanza de sedes.
+
+Detalle técnico en `ARCHITECTURE.md` §5. Fundamento en `decisions/0002-modelo-creditos.md`.
+
+⚠️ **Sin resolver:** si este modelo aplica también a Kids y Teens. Son niñas con horario fijo
+semanal y sus mamás no van a reservar clase a clase. Lo más probable es un modelo híbrido.
+
+---
+
+## 6. Lanzamiento (agosto–septiembre 2026)
+
+**Punto de partida:** nadie conoce la academia. Agosto es campaña de expectativa y presentación;
+las clases parten en septiembre.
+
+**Orden de comunicación:**
+1. Abrir Instagram al público con post misterioso
+2. Presentación oficial de la academia
+3. Presentación de cada profesora (una por semana)
+4. Presentación de cada curso con horarios y precios
+5. Concursos para ganar clases gratis
+6. Countdown al evento
+7. **Open Day XO** — primer sábado de septiembre
+
+**Open Day XO:** 2–3 horas para conocer a las cinco profesoras, tomar una mini clase de cada
+estilo, inscribirse con descuento ese día y ser parte de la primera comunidad XO.
+
+**Objetivo de conversión único del sitio:** dejar los datos para una clase de prueba gratis.
+
+---
+
+## 7. Modelo de negocio y fases
+
+### El insight central: el profesor como cliente
+
+Los profesores de danza urbana son el segmento peor atendido de la industria. Quieren producir
+contenido audiovisual profesional, bailar con artistas, construir marca personal y tener
+espacios de calidad. XO les facilita ese mundo: trabajan bajo la marca y ceden un porcentaje
+mayoritario de sus ingresos a cambio de gestión administrativa, espacios, producción
+audiovisual, marca personal y red de contactos.
+
+### Flywheel
+
+```
+Mejores profesoras → Mejor contenido → Más visibilidad → Más alumnas
+→ Más caja → Mejores beneficios para profesoras → Mejores profesoras
+```
+
+### Fases
+
+**Fase 1 — Validación & Caja (0–12 meses).** Academia B2C. *Salida (Gate 1): 2 cursos activos
+con ~12 alumnas c/u + caja neta positiva + identidad visual completa.*
+
+**Fase 2 — MVP profesor-cliente (12–24 meses).** B2B2C. Carla como prueba de concepto.
+
+**Fase 3 — Plataforma y escala (24–48 meses).** Red de profesoras-socias en varios puntos de
+Santiago y regiones, contenido digital como canal de adquisición, cursos online, merch, eventos.
+
+### Gates
+
+| Gate | Condición | Desbloquea |
+|---|---|---|
+| **Gate 1** | 2 cursos activos, caja neta ≥ 0 | Invertir en producción audiovisual |
+| **Gate 2** | Instagram +1K seguidores, 1 Reel viral | Conversaciones con profesora externa |
+| **Gate 3** | Modelo documentado, caso Carla validado | Propuesta formal a profesoras externas |
+| **Gate 4** | 2+ profesoras en el modelo | Evaluar segunda sede o región |
+
+---
+
+## 8. Situación legal y administrativa
+
+- **Estructura:** SpA, elegida por flexibilidad y por ser amigable a inversionistas. Holding
+  evaluado y descartado por ahora: agrega costo antes que valor. Se revisa si aparece
+  multi-sede o inversión externa.
+- **Constitución:** en curso vía Tu Empresa en un Día.
+- **SII:** pendiente Inicio de Actividades, régimen Pro Pyme, F29 mensual.
+- **Marca:** ⚠️ pendiente. El nombre de fantasía ante el SII **no** es protección marcaria:
+  requiere presentación en **INAPI**.
+- **Dominio:** ⚠️ pendiente. `xodancestudio.cl` primario, `xodance.cl` respaldo (verificar
+  nic.cl). Hoy el sitio corre en el subdominio de Vercel.
+- **Datos personales:** trabajamos con menores. Ley 19.628 / Ley 21.719. La autorización de uso
+  de imagen es explícita, nunca implícita. Regla vigente en el repo: no usar imágenes de menores
+  identificables sin confirmación de autorización firmada.
+
+---
+
+## 9. Qué está construido (verificado en el repo)
+
+| Track | Estado |
+|---|---|
+| **Landing** | ✅ Construida y **desplegada en Vercel**. One-page: Hero · Qué es XO · Profesoras · Cursos · Clase de prueba · Formulario · Footer |
+| **Captura de leads** | ✅ Funciona. `POST /api/lead` valida en servidor, inserta en Supabase con service role key, y luego abre WhatsApp con mensaje precargado |
+| **Migración de BD** | ✅ `supabase/migrations/20260801000000_leads.sql`. Tabla `leads` con RLS activo, grants revocados a `anon`/`authenticated` y solo `INSERT` a `service_role` |
+| **Sistema de contexto en repo** | ✅ Ya existía: `CLAUDE.md`, `AGENTS.md`, `.claude/rules/estilo.md`, `docs/marca.md` |
+| **Contenido** | ⚠️ Bios en placeholder (`Acá la bio de "X"`), sin fotos ni videos de profesoras, sin video de hero. Precios, horarios y cupos en `null` |
+| **Variables de producción** | ✅ Configuradas el 21/08/2026: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (Sensitive) y `NEXT_PUBLIC_SITE_URL`, las tres en Production |
+| **Flujo verificado de punta a punta** | ✅ 21/08/2026: envío real desde producción → fila en `leads` con `para_quien`, `curso_id` y `edad_alumna` en NULL según el check de la BD |
+| **Constitución legal** | En curso. **Bloquea el cobro online**: sin Inicio de Actividades no hay cuenta de comercio |
+| **Arquetipo de marca** | Material preparado; selección pendiente de Carla |
+
+**Bugs previamente registrados, ya resueltos:** el mapeo K-Pop → Maida es correcto en
+`lib/cursos.ts`, y el prefijo `+56 9` del formulario se renderiza bien en producción.
+
+---
+
+## 10. Incidente resuelto y lecciones (21 de agosto de 2026)
+
+**Qué pasaba:** el sitio estaba desplegado pero el formulario no guardaba ningún lead, y el
+`metadataBase` caía al fallback `http://localhost:3000`, rompiendo canonical y Open Graph.
+
+**Causas, que eran tres apiladas:**
+
+1. El proyecto de Supabase estaba **pausado por inactividad** (plan gratuito).
+2. Las variables de entorno de producción en Vercel estaban incompletas.
+3. El último deploy tenía 18 días: aunque una variable existiera, su valor no estaba en el
+   bundle, porque las `NEXT_PUBLIC_*` se incrustan **durante el build**.
+
+**Cómo se resolvió:** reanudar Supabase · cargar las tres variables en Production · redeploy
+sin caché de build · verificación real enviando el formulario desde producción.
+
+### Lecciones que aplican a todo lo que venga
+
+- **Una variable `NEXT_PUBLIC_*` agregada no hace nada hasta el siguiente build.** Guardar no
+  basta: siempre redeploy, y sin caché de build.
+- **Supabase en plan gratuito pausa el proyecto tras ~1 semana sin actividad**, y cuando eso
+  ocurre el formulario deja de funcionar sin avisar. Ver §11.
+- **`NEXT_PUBLIC_SUPABASE_URL` va sin `/rest/v1/`.** El panel de Supabase muestra el endpoint
+  REST completo; el cliente arma la ruta solo y una URL con el sufijo produce 404.
+- El proyecto usa el **formato nuevo de llaves** de Supabase (`sb_secret_...`,
+  `sb_publishable_...`), no el legacy `eyJ...`. La variable se sigue llamando
+  `SUPABASE_SERVICE_ROLE_KEY` porque es el nombre que busca el código.
+- Solo `SUPABASE_SERVICE_ROLE_KEY` va marcada **Sensitive**. Las `NEXT_PUBLIC_*` terminan
+  visibles en el navegador de todos modos; marcarlas solo impide releerlas después.
+- El botón de WhatsApp **no falla en escritorio sin sesión iniciada**: `wa.me` manda a
+  `web.whatsapp.com` y pide QR. Probar siempre desde el teléfono, que es el escenario real.
+
+### Pendiente de verificar
+
+- [ ] Vista previa al compartir el link por WhatsApp/Instagram (cierra el bug de Open Graph).
+- [ ] Warning que quedó en los Build Logs del deploy del 21/08.
+- [ ] Borrar la fila de prueba de la tabla `leads`.
+
+---
+
+## 11. Riesgos críticos
+
+- **🔴 Carla entra a internado el próximo año.** Este es su último año con tiempo libre para el
+  baile. El negocio no puede quedar amarrado a su disponibilidad docente. Es la razón de fondo
+  por la que incorporar cinco profesoras y construir marca XO por sobre marca personal no es
+  opcional, es urgente.
+- **🔴 Supabase se pausa solo.** En plan gratuito, ~1 semana sin actividad basta para que el
+  proyecto se suspenda y el formulario deje de guardar leads, sin alerta y sin error visible
+  para quien administra. Ya ocurrió una vez. Durante la campaña habrá tráfico, pero un hueco de
+  días antes del Open Day puede repetirlo. Mitigación: revisarlo periódicamente o subir a Pro
+  durante el lanzamiento.
+- **Nueva ubicación sin confirmar** a semanas del lanzamiento.
+- **Sin contenido visual propio.** Sin fotos ni videos reales, el sitio compite en desventaja.
+  Bloquea además toda la campaña de Instagram.
+- **Pivot prematuro al modelo B2B2C.**
+- **Sobre-ingeniería del ERP antes de tener volumen.** Mitigación: fases estrictas en
+  `ROADMAP.md`, nada sin PRD aprobado.
+
+---
+
+## 12. ⚠️ Decisiones pendientes
+
+| Tema | Estado |
+|---|---|
+| Precios, horarios y cupos de los 5 cursos | Sin definir. Bloquea el lanzamiento |
+| Nueva ubicación / sala | Sin confirmar |
+| Modelo económico con 5 profesoras (cómo se les paga) | Sin definir |
+| Remuneración de Carla | Sin definir |
+| % de revenue share de Fase 2 | Sin cuantificar |
+| Arquetipo de marca | Pendiente decisión de Carla |
+| Dominio propio | Sin registrar. Al registrarlo hay que **actualizar `NEXT_PUBLIC_SITE_URL`** en Vercel |
+| Registro INAPI | Sin presentar |
+| Cómo se cobran los intensivos mensuales Girly vs las mensualidades continuas | Sin definir. Afecta el diseño del sistema |
+| ¿Un mes con 5 clases se cobra distinto que uno con 4? | Sin definir |
+| ¿Los créditos vencen? ¿En cuánto tiempo? | Sin definir. Sin vencimiento, la caja cobrada es pasivo eterno |
+| Ventana de cancelación: ¿hasta cuántas horas antes se devuelve el crédito? | Sin definir |
+| ¿Sobrevive la clase de prueba gratis? | Sin definir. El CTA nuevo sugiere que no |
+| Pasarela de pago y si se puede cobrar antes del Inicio de Actividades | Sin definir. Ver ADR-0003 |
+
+| Componente **variable** del pago a profesoras | Sin definir. El base son $18.000/hora |
+| ¿Por qué Los Dominicos es gratis y por cuánto tiempo? | Sin confirmar. Si es un favor, es un riesgo de concentración |
+| ¿Una alumna de Teens puede además comprar packs de Girly? | Sin definir |
+| ¿El precio de los packs es igual en ambas sedes? | Sin definir. El costo de sala no lo es |
+| Sala con capacidad 45: ¿confirmada? | El tope de 45 asume una sala mucho mayor que la actual, y ahora además más barata |
+| Qué significa "afiliado" en el perfil de la alumna | Sin definir |
+| ¿Cómo se maneja la cuenta de una menor de 7 años? | Sin definir. La abre la mamá; falta modelar |
