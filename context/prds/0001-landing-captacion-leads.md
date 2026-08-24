@@ -79,7 +79,7 @@ queda y cómo probar sin comprometerse.
 ## 7. Modelo de datos implementado
 
 Tabla `public.leads` (ver `supabase/migrations/20260801000000_leads.sql` y
-`ARCHITECTURE.md` §3). Decisión de seguridad: **RLS activo sin políticas**, `revoke all` a
+`ARCHITECTURE.md` §6). Decisión de seguridad: **RLS activo sin políticas**, `revoke all` a
 `anon` y `authenticated`, y solo `grant insert to service_role`. La landing escribe leads y
 nunca los lee.
 

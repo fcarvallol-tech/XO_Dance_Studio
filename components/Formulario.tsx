@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Reveal } from "./Reveal";
 import { useSeleccion } from "./Seleccion";
 import { linkWhatsApp } from "@/lib/contacto";
-import { getCurso } from "@/lib/cursos";
+import { getCursoActivo } from "@/lib/cursos";
 import { PROFESORAS_ACTIVAS, getProfesora } from "@/lib/profesoras";
 import {
   EDAD_MAXIMA,
@@ -35,7 +35,12 @@ export function Formulario() {
   const cursoId = seleccion.cursoId;
 
   const profesora = profesoraId ? getProfesora(profesoraId) : undefined;
-  const curso = cursoId ? getCurso(cursoId) : undefined;
+  // getCursoActivo y no getCurso: este curso se le muestra a la visitante
+  // ("Viniste desde X") y viaja en el mensaje de WhatsApp, mientras el
+  // servidor descarta con esCursoActivo cualquier curso fuera de catálogo.
+  // Con getCurso, la pantalla podría nombrar un curso que el lead guardado no
+  // contiene. Los dos lados usan el mismo predicado.
+  const curso = cursoId ? getCursoActivo(cursoId) : undefined;
 
   // Volver al formulario desde otra tarjeta lo reabre en blanco, no en la
   // confirmación de la inscripción anterior. Ajustar el estado durante el

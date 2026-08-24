@@ -308,7 +308,7 @@ devolver grants a `anon`.
 
 ## 7. ⚠️ Decisiones abiertas que bloquean el esquema
 
-Estas no se resuelven programando. Ver `CONTEXT.md` §13.
+Estas no se resuelven programando. Ver `CONTEXT.md` §12.
 
 1. ✅ **Resuelto: modelo híbrido.** Teens con suscripción mensual; Girly y K-Pop con packs. El
    esquema tiene las dos ramas (§5.3.b y §5.4).

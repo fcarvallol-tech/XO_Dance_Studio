@@ -151,7 +151,7 @@ que Girly. Formato y forma de cobro son dos ejes distintos y acá no coinciden. 
 híbrido en §5.b y `decisions/0002-modelo-creditos.md`.
 
 ⚠️ **Esto significa que el ERP necesita dos modelos de cobro distintos**, no uno.
-Ver `ARCHITECTURE.md` §2 y la pregunta abierta correspondiente en §9.
+Ver `ARCHITECTURE.md` §5 (modelo de dominio) y §7 (decisiones abiertas).
 
 ---
 
