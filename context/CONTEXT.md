@@ -145,7 +145,10 @@ Los dos cursos Girly no son mensualidad continua: son **intensivos mensuales por
 Un artista al mes (Omar Cruz, De la Rose, Standly…), cuatro clases, una coreografía nueva por
 semana. La alumna se inscribe *a un mes concreto*, no a un curso indefinido.
 
-Kids, Teens y K-Pop sí funcionan como inscripción continua con mensualidad.
+**XO Teens** sí funciona como inscripción continua: horario fijo y suscripción mensual.
+**K-Pop no.** Su contenido es continuo, pero se vende con packs de clases y reserva libre, igual
+que Girly. Formato y forma de cobro son dos ejes distintos y acá no coinciden. Ver el modelo
+híbrido en §5.b y `decisions/0002-modelo-creditos.md`.
 
 ⚠️ **Esto significa que el ERP necesita dos modelos de cobro distintos**, no uno.
 Ver `ARCHITECTURE.md` §2 y la pregunta abierta correspondiente en §9.
@@ -154,13 +157,13 @@ Ver `ARCHITECTURE.md` §2 y la pregunta abierta correspondiente en §9.
 
 ## 5. Audiencias
 
-| | Kids y Teens | Girly | K-Pop |
+| | Teens | Girly | K-Pop |
 |---|---|---|---|
 | **Decide** | La mamá | La alumna (16+) | La alumna / la mamá según edad |
 | **Busca** | Lugar seguro, buena profe, que su hija gane confianza y haga amigas | Bailar reggaetón femenino con actitud, sentirse poderosa y parte de un grupo | Aprender coreografías de sus artistas y conectar con otras fans |
 | **Emoción objetivo** | Confianza + entusiasmo | Aspiración + pertenencia | Fandom + comunidad |
 
-**Consecuencia de producto:** en Kids y Teens, quien paga y quien asiste son personas
+**Consecuencia de producto:** en Teens, quien paga y quien asiste son personas
 distintas. En Girly suelen ser la misma. El ERP tiene que modelar apoderado y alumna como
 entidades separadas, permitiendo que coincidan.
 
@@ -250,9 +253,6 @@ por ese curso y el negocio queda igual o mejor. El precio bajó y la estructura 
 consecuencia directa de la mudanza de sedes.
 
 Detalle técnico en `ARCHITECTURE.md` §5. Fundamento en `decisions/0002-modelo-creditos.md`.
-
-⚠️ **Sin resolver:** si este modelo aplica también a Kids y Teens. Son niñas con horario fijo
-semanal y sus mamás no van a reservar clase a clase. Lo más probable es un modelo híbrido.
 
 ---
 
