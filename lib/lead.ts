@@ -32,7 +32,9 @@ export type Lead = {
 
 export type ErroresLead = Partial<Record<keyof Lead, string>>;
 
-export const EDAD_MINIMA = 4;
+// XO Teens (11 a 15) es el curso más chico del catálogo desde que Kids salió.
+// Una edad menor no tiene dónde entrar, así que no se capta como lead.
+export const EDAD_MINIMA = 11;
 export const EDAD_MAXIMA = 17;
 
 /**
@@ -69,7 +71,7 @@ export function validarLead(
   if (paraQuien === "hija") {
     const edad = Number(bruto.edadAlumna);
     if (!Number.isInteger(edad) || edad < EDAD_MINIMA || edad > EDAD_MAXIMA) {
-      errores.edadAlumna = `Pon la edad de tu hija, entre ${EDAD_MINIMA} y ${EDAD_MAXIMA}.`;
+      errores.edadAlumna = `Nuestros cursos parten a los ${EDAD_MINIMA} años. Pon la edad de tu hija, entre ${EDAD_MINIMA} y ${EDAD_MAXIMA}.`;
     } else {
       edadAlumna = edad;
     }

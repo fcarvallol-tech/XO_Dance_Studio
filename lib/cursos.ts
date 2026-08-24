@@ -7,7 +7,7 @@ export type Curso = {
   publico: string;
   /** El estilo que se baila. Va como tag. */
   estilo: string;
-  /** Copy de venta. Kids y Teens le hablan a la mamá; el resto, a la alumna. */
+  /** Copy de venta. Teens le habla a la mamá; el resto, a la alumna. */
   descripcion: string;
   /** Solo Girly: el formato intensivo mensual por artista. */
   formato: string | null;
@@ -49,7 +49,7 @@ export const CURSOS: Curso[] = [
     publico: "Niñas de 11 a 15 años",
     estilo: "Urbano",
     descripcion:
-      "La misma cercanía que en Kids, con más técnica y más actitud. Es la edad en que quieren pertenecer a algo: acá tienen dónde.",
+      "A los 11 ya no quieren una clase de niñas: quieren bailar en serio y sentirse parte de algo. Grupos chicos, profes que se aprenden su nombre la primera clase, y una hija que espera el día de la clase toda la semana.",
     formato: null,
     profesoras: ["carli", "drimy", "lina"],
     activa: true,
@@ -90,7 +90,7 @@ export const CURSOS: Curso[] = [
   {
     id: "kpop",
     nombre: "K-Pop",
-    publico: "Todas las edades",
+    publico: "Desde los 11 años",
     estilo: "K-Pop",
     descripcion:
       "Las coreografías que te aprendiste sola en tu pieza, ahora con el grupo completo y frente al espejo. Se baila y se conversa de lo mismo.",
@@ -112,6 +112,15 @@ export const CURSOS_ACTIVOS: Curso[] = CURSOS.filter((curso) => curso.activa);
  */
 export function getCurso(id: CursoId): Curso | undefined {
   return CURSOS.find((curso) => curso.id === id);
+}
+
+/**
+ * Solo para lo que mira al público: catálogo y los cursos que se le atribuyen
+ * a una profesora. Un curso fuera del catálogo no se nombra en la landing,
+ * aunque la profesora lo siga teniendo en su lista.
+ */
+export function getCursoActivo(id: CursoId): Curso | undefined {
+  return CURSOS_ACTIVOS.find((curso) => curso.id === id);
 }
 
 /**

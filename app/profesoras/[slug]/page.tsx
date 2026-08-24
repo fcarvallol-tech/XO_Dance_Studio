@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/Footer";
 import { Placeholder } from "@/components/Placeholder";
-import { getCurso } from "@/lib/cursos";
+import { getCursoActivo } from "@/lib/cursos";
 import { UBICACION } from "@/lib/contacto";
 import { PROFESORAS_ACTIVAS, getProfesoraActiva } from "@/lib/profesoras";
 
@@ -53,8 +53,10 @@ export default async function PerfilProfesora({ params }: Props) {
   const profesora = getProfesoraActiva(slug);
   if (!profesora) notFound();
 
+  // Solo los cursos vigentes: una profesora puede seguir listando uno que ya
+  // salió del catálogo, y en la landing no se nombra.
   const cursos = profesora.cursos
-    .map((id) => getCurso(id)?.nombre)
+    .map((id) => getCursoActivo(id)?.nombre)
     .filter((nombre): nombre is string => Boolean(nombre));
 
   // El formulario vive en la landing. El perfil manda para allá con la profe

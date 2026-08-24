@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { BotonInscripcion } from "./BotonInscripcion";
 import { Placeholder } from "./Placeholder";
 import { Reveal } from "./Reveal";
-import { getCurso } from "@/lib/cursos";
+import { getCursoActivo } from "@/lib/cursos";
 import { PROFESORAS_ACTIVAS, type Profesora } from "@/lib/profesoras";
 import type { ProfesoraId } from "@/lib/tipos";
 
@@ -166,8 +166,10 @@ function Fila({
   registrar: (elemento: HTMLElement | null) => void;
 }) {
   const fichaId = `ficha-${profesora.id}`;
+  // Solo los cursos vigentes: una profesora puede seguir listando uno que ya
+  // salió del catálogo, y en la landing no se nombra.
   const cursos = profesora.cursos
-    .map((id) => getCurso(id)?.nombre)
+    .map((id) => getCursoActivo(id)?.nombre)
     .filter((nombre): nombre is string => Boolean(nombre));
 
   return (
