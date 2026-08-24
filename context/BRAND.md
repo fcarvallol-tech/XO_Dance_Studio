@@ -38,8 +38,14 @@ danza contemporánea.
 XO Dance Studio          ← marca paraguas
 ├── XO Teens    (11–15)  ← curso de entrada
 ├── XO Girly    (16+) ── Básico · Intermedio
-└── K-Pop       (todas las edades)
+└── K-Pop       (11+)
 ```
+
+**XO Kids (7–10) salió del catálogo el 21/08/2026** y ya no es una submarca: la franja deja de
+ofrecerse y las alumnas migran a Teens, que pasa a ser el curso de entrada. En código el id `kids`
+sobrevive desactivado para que los leads históricos sigan siendo legibles, pero no se nombra en
+ninguna pieza de comunicación. Desde el 24/08/2026 **K-Pop también parte en los 11**, así que hoy
+la academia entera es de 11 años para arriba.
 
 Las submarcas **no son marcas distintas**: son la misma marca hablando con tonos distintos
 según a quién le habla. Mismo logo, misma tipografía, misma estructura. Cambia la voz.

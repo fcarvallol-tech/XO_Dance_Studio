@@ -45,8 +45,8 @@ de sus atletas.
 |---|---|---|
 | Carli | Girly Básico · Teens | @carlataty.20 |
 | Pau | Girly Básico · Girly Intermedio | @pau_balbontinc |
-| Drimy | Kids · Teens | @ladrimy |
-| Lina | Kids · Teens | @linaapop |
+| Drimy | Teens | @ladrimy |
+| Lina | Teens | @linaapop |
 | Maida | K-Pop | @maidaquirozc |
 
 Las cinco tienen Instagram propio con seguidores y son parte activa de la campaña de lanzamiento.
@@ -118,8 +118,8 @@ el modelo cambia por completo y hay que rehacerlo. ⚠️ Pendiente.
 ofrecerse. Las alumnas actuales no se pierden: la mayoría ya tiene 11 años, así que **pasan a XO
 Teens**, que queda como curso de entrada de la academia.
 
-Quedan cuatro cursos. En código siguen los cinco (`lib/cursos.ts`): `kids` debe desactivarse, no
-borrarse, para no romper los leads históricos que apuntan a ese `curso_id`. Precios, horarios y
+Quedan cuatro cursos. En código siguen los cinco (`lib/cursos.ts`): `kids` quedó `activa: false`
+el 22/08/2026, no borrado, para no romper los leads históricos que apuntan a ese `curso_id`. Precios, horarios y
 cupos están en `null` y se muestran como **"Por confirmar"**. No inventarlos.
 
 | Curso | Público | Estilo | Profesoras |
@@ -127,7 +127,12 @@ cupos están en `null` y se muestran como **"Por confirmar"**. No inventarlos.
 | **XO Teens** | Niñas 11–15 · **curso de entrada** | Urbano | Carli · Drimy · Lina |
 | **XO Girly Básico** | Mujeres 16+ sin experiencia | Reggaetón femenino | Carli · Pau |
 | **XO Girly Intermedio** | Mujeres con experiencia | Reggaetón femenino | Pau |
-| **K-Pop** | Todas las edades | K-Pop | Maida |
+| **K-Pop** | Desde los 11 años | K-Pop | Maida |
+
+> **Cambio del 24/08/2026:** K-Pop deja de ser "todas las edades" y pasa a ser **de 11 años para
+> arriba**, igual que el resto del catálogo. Con Kids fuera, ningún curso recibe a alguien menor,
+> así que la edad mínima es una sola para toda la academia y vive como constante en `lib/lead.ts`.
+> La voz de K-Pop **no cambia**: le sigue hablando a la alumna, no a la mamá. Ver `BRAND.md` §7.
 
 ### ⚠️ Formato Girly vs. modelo de créditos
 

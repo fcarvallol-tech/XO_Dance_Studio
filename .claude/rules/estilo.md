@@ -16,7 +16,7 @@ hex suelto, nunca un color de la paleta por defecto de Tailwind.
 | `xo-negro` | `#1A1A1A` | Fondo base de casi toda la página |
 | `xo-negro-alt` | `#232323` | Superficies elevadas sobre negro (tarjetas, fichas) |
 | `xo-rosa` | `#F7ADBF` | Acentos, botones, títulos sobre negro, estrellas |
-| `xo-rosa-claro` | `#F2D0DC` | Acento secundario, texto sobre negro, sección Kids |
+| `xo-rosa-claro` | `#F2D0DC` | Acento secundario, texto sobre negro, territorio Teens |
 | `xo-blanco` | `#F7F7F7` | Texto sobre negro, fondo de las pocas secciones claras |
 | `xo-gris` | `#6B6B6B` | Texto secundario sobre fondos claros |
 
@@ -90,8 +90,11 @@ Español de Chile, escrito desde el lado de la alumna. Los botones dicen
 exactamente qué pasa al apretarlos. Específico antes que ingenioso. Sin cadenas
 de signos de exclamación, sin emojis regados.
 
-Kids y Teens le hablan a la mamá: confianza y entusiasmo.
-Girly y K-Pop le hablan a la alumna: aspiración y pertenencia.
+Teens le habla a la mamá: confianza y entusiasmo. Es la única submarca donde
+quien lee y quien baila son personas distintas.
+Girly y K-Pop le hablan a la alumna: aspiración y pertenencia. K-Pop mantiene la
+voz de alumna aunque tenga menores, porque el curso se elige por fandom: la niña
+llega sabiéndose las coreografías, no la trae la mamá.
 
 Si una frase podría estar en la landing de cualquier academia de baile,
 reescríbela.
