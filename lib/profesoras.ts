@@ -12,6 +12,12 @@ export type Profesora = {
   /** TODO — material pendiente. Ruta dentro de /public, o null. */
   video: string | null;
   foto: string | null;
+  /**
+   * Una profesora que se va no se borra: se desactiva. Los leads históricos
+   * apuntan a su id y tienen que seguir siendo legibles. Inactiva significa
+   * que no aparece en el selector del formulario ni tiene perfil público.
+   */
+  activa: boolean;
 };
 
 export const PROFESORAS: Profesora[] = [
@@ -24,6 +30,7 @@ export const PROFESORAS: Profesora[] = [
     instagram: "https://www.instagram.com/carlataty.20/",
     video: null,
     foto: null,
+    activa: true,
   },
   {
     id: "pau",
@@ -34,26 +41,29 @@ export const PROFESORAS: Profesora[] = [
     instagram: "https://www.instagram.com/pau_balbontinc/",
     video: null,
     foto: null,
+    activa: true,
   },
   {
     id: "drimy",
     nombre: "Drimy",
-    estilo: "urbano kids & teens",
+    estilo: "urbano teens",
     bio: 'Acá la bio de "Drimy"',
-    cursos: ["kids", "teens"],
+    cursos: ["teens"],
     instagram: "https://www.instagram.com/ladrimy/",
     video: null,
     foto: null,
+    activa: true,
   },
   {
     id: "lina",
     nombre: "Lina",
-    estilo: "urbano kids & teens",
+    estilo: "urbano teens",
     bio: 'Acá la bio de "Lina"',
-    cursos: ["kids", "teens"],
+    cursos: ["teens"],
     instagram: "https://www.instagram.com/linaapop/",
     video: null,
     foto: null,
+    activa: true,
   },
   {
     id: "maida",
@@ -64,11 +74,22 @@ export const PROFESORAS: Profesora[] = [
     instagram: "https://www.instagram.com/maidaquirozc/",
     video: null,
     foto: null,
+    activa: true,
   },
 ];
 
+/** Las que se ofrecen hoy. Es lo que ve la visitante, en el orden del lineup. */
+export const PROFESORAS_ACTIVAS: Profesora[] = PROFESORAS.filter(
+  (profesora) => profesora.activa,
+);
+
 export function getProfesora(id: ProfesoraId): Profesora | undefined {
   return PROFESORAS.find((profesora) => profesora.id === id);
+}
+
+/** Solo para lo que mira al público: perfiles y selector del formulario. */
+export function getProfesoraActiva(id: string): Profesora | undefined {
+  return PROFESORAS_ACTIVAS.find((profesora) => profesora.id === id);
 }
 
 export function nombresDe(ids: ProfesoraId[]): string[] {
@@ -77,6 +98,10 @@ export function nombresDe(ids: ProfesoraId[]): string[] {
     .filter((nombre): nombre is string => Boolean(nombre));
 }
 
-export function esProfesoraValida(id: string): id is ProfesoraId {
-  return PROFESORAS.some((profesora) => profesora.id === id);
+/**
+ * La que vale para captar un lead. Una profesora inactiva no está en el
+ * selector, así que tampoco se acepta en el servidor.
+ */
+export function esProfesoraActiva(id: string): id is ProfesoraId {
+  return PROFESORAS_ACTIVAS.some((profesora) => profesora.id === id);
 }

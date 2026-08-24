@@ -1,5 +1,5 @@
-import { esCursoValido } from "./cursos";
-import { esProfesoraValida } from "./profesoras";
+import { esCursoActivo } from "./cursos";
+import { esProfesoraActiva } from "./profesoras";
 import type { CursoId, ProfesoraId } from "./tipos";
 
 export type ParaQuien = "propio" | "hija";
@@ -20,8 +20,13 @@ export type Lead = {
   whatsapp: string;
   paraQuien: ParaQuien;
   edadAlumna: number | null;
-  cursoId: CursoId;
-  profesoraId: ProfesoraId | null;
+  /**
+   * Opcional desde PRD-0003. Solo viene cuando el lead entró desde una
+   * tarjeta de curso: es contexto, no la pregunta.
+   */
+  cursoId: CursoId | null;
+  /** El eje de la captación: con quién quiere tomar clases. */
+  profesoraId: ProfesoraId;
   origen: string;
 };
 
@@ -70,23 +75,26 @@ export function validarLead(
     }
   }
 
+  // El curso ya no se pregunta: llega solo si la visitante entró desde una
+  // tarjeta de curso. Si viene basura, se descarta en silencio en vez de
+  // frenar el envío por un dato que la visitante nunca eligió.
   const cursoId =
-    typeof bruto.cursoId === "string" && esCursoValido(bruto.cursoId)
+    typeof bruto.cursoId === "string" && esCursoActivo(bruto.cursoId)
       ? bruto.cursoId
       : null;
-  if (!cursoId) {
-    errores.cursoId = "Elige el curso que te interesa.";
-  }
 
   const profesoraId =
-    typeof bruto.profesoraId === "string" && esProfesoraValida(bruto.profesoraId)
+    typeof bruto.profesoraId === "string" && esProfesoraActiva(bruto.profesoraId)
       ? bruto.profesoraId
       : null;
+  if (!profesoraId) {
+    errores.profesoraId = "Elige con quién quieres tomar clases.";
+  }
 
   const origen =
     typeof bruto.origen === "string" ? bruto.origen.slice(0, 40) : "formulario";
 
-  if (Object.keys(errores).length > 0 || !paraQuien || !cursoId) {
+  if (Object.keys(errores).length > 0 || !paraQuien || !profesoraId) {
     return { ok: false, errores };
   }
 

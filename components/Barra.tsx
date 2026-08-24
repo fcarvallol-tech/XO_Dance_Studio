@@ -50,7 +50,7 @@ export function Barra() {
         </nav>
 
         <BotonInscripcion origen="barra" tamano="compacto">
-          Reservar clase gratis
+          Reservar clase
         </BotonInscripcion>
       </div>
     </header>

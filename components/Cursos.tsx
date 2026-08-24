@@ -1,6 +1,6 @@
 import { BotonInscripcion } from "./BotonInscripcion";
 import { Reveal } from "./Reveal";
-import { CURSOS, type Curso } from "@/lib/cursos";
+import { CURSOS_ACTIVOS, type Curso } from "@/lib/cursos";
 import { nombresDe } from "@/lib/profesoras";
 import { POR_CONFIRMAR } from "@/lib/tipos";
 
@@ -16,19 +16,22 @@ export function Cursos() {
           Elige dónde quieres partir
         </h2>
         <p className="mt-5 max-w-md text-xo-blanco/70">
-          Todos parten en septiembre y todos incluyen una clase de prueba
-          gratis.
+          Todos parten en septiembre. Los horarios y los valores te los
+          contamos por WhatsApp.
         </p>
 
         <ul className="mt-14 grid gap-px overflow-hidden rounded-lg bg-xo-blanco/15 sm:grid-cols-2">
-          {CURSOS.map((curso) => (
+          {CURSOS_ACTIVOS.map((curso) => (
             <li key={curso.id} className="bg-xo-negro-alt">
               <Tarjeta curso={curso} />
             </li>
           ))}
-          {/* Son cinco cursos en dos columnas: sin esta celda, el hueco final
-              deja ver el color de los divisores. */}
-          <li aria-hidden="true" className="hidden bg-xo-negro-alt sm:block" />
+          {/* Con un número impar de cursos en dos columnas, el hueco final
+              deja ver el color de los divisores. La celda lo tapa. El
+              catálogo ya cambió una vez, así que se calcula, no se asume. */}
+          {CURSOS_ACTIVOS.length % 2 === 1 ? (
+            <li aria-hidden="true" className="hidden bg-xo-negro-alt sm:block" />
+          ) : null}
         </ul>
       </Reveal>
     </section>
@@ -73,7 +76,7 @@ function Tarjeta({ curso }: { curso: Curso }) {
           cursoId={curso.id}
           variante="borde"
         >
-          Quiero esta clase
+          Reservar clase
         </BotonInscripcion>
       </div>
     </article>

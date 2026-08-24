@@ -5,6 +5,11 @@ import { Reveal } from "./Reveal";
 /**
  * Único bloque claro de la página. El corte de fondo es a propósito: marca
  * que acá cambia el tono y baja la fricción antes del formulario.
+ *
+ * PRD-0003 le sacó la promesa de clase gratis. El id de la sección y el
+ * `origen` del lead siguen diciendo "clase-de-prueba" a propósito: son la
+ * llave con que se miden los leads históricos, y renombrarlos partiría la
+ * serie justo cuando hay que comparar la conversión antes y después.
  */
 export function ClaseDePrueba() {
   return (
@@ -22,22 +27,22 @@ export function ClaseDePrueba() {
         />
 
         <h2 className="mt-8 font-display text-[clamp(2.25rem,6vw,3.5rem)] leading-[0.95] text-xo-negro">
-          La primera clase va por nuestra cuenta
+          Primero vienes, después decides
         </h2>
 
         <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-xo-gris">
-          Vienes, bailas una hora completa y decides después. No pagas nada, no
-          firmas nada y no hace falta que sepas bailar. Si no era lo tuyo, no
-          pasa nada.
+          Reservas una clase, bailas una hora completa y recién ahí ves si es lo
+          tuyo. No hace falta que sepas bailar ni que vengas con alguien.
         </p>
 
         <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-xo-gris">
-          Nos dejas tus datos, te escribimos por WhatsApp y coordinamos el día.
+          Nos dejas tus datos, te escribimos por WhatsApp y coordinamos el día,
+          el horario y los valores.
         </p>
 
         <div className="mt-10">
           <BotonInscripcion origen="clase-de-prueba">
-            Reservar mi clase de prueba
+            Reservar clase
           </BotonInscripcion>
         </div>
       </Reveal>

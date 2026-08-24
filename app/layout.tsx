@@ -28,9 +28,9 @@ const montserrat = Montserrat({
 
 const SITIO = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
-const TITULO = "XO Dance Studio — Baile urbano femenino en Las Condes";
+const TITULO = "XO Dance Studio — Academia de baile en Las Condes";
 const DESCRIPCION =
-  "Academia de baile urbano femenino en Las Condes. Kids, Teens, Girly y K-Pop, con cinco profes y grupos chicos. Las clases parten en septiembre y la primera es gratis.";
+  "Academia de baile en Las Condes. Cinco profes, grupos chicos y un lugar donde bailar también significa sentirte parte. Las clases parten en septiembre.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITIO),

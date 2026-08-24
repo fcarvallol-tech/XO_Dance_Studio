@@ -14,9 +14,7 @@ export function Hero() {
       */}
 
       <div className="relative max-w-5xl">
-        <p className="xo-eyebrow text-xo-rosa-claro">
-          Academia de baile urbano femenino
-        </p>
+        <p className="xo-eyebrow text-xo-rosa-claro">Academia de baile</p>
 
         <h1 className="mt-5 font-display text-[clamp(3.5rem,13vw,8.75rem)] leading-[0.85] text-xo-rosa">
           Acá nadie
@@ -29,9 +27,7 @@ export function Hero() {
         </p>
 
         <div className="mt-10">
-          <BotonInscripcion origen="hero">
-            Quiero mi clase de prueba gratis
-          </BotonInscripcion>
+          <BotonInscripcion origen="hero">Reservar clase</BotonInscripcion>
         </div>
       </div>
 

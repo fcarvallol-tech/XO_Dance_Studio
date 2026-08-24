@@ -32,7 +32,7 @@ Nada se implementa sin PRD aprobado.
 | 0.4 | Variables de entorno en Production | ✅ Hecho 21/08 |
 | 0.5 | Verificación de punta a punta del formulario | ✅ Hecho 21/08 |
 | 0.6 | Confirmar vista previa Open Graph al compartir | ⚪ Pendiente |
-| 0.7 | Ajustes de copy y captación por profesora (PRD-0003) | ⚪ Pendiente |
+| 0.7 | Ajustes de copy y captación por profesora (PRD-0003) | ✅ Código hecho 21/08 — 🔴 falta aplicar la migración |
 | 0.8 | Precios, horarios y cupos reales | 🔴 Bloqueado — falta decisión |
 | 0.9 | Bios, fotos y videos reales | 🔴 Bloqueado — falta contenido |
 | 0.10 | Confirmar la nueva ubicación (sala de 45) | 🔴 Bloqueado — decisión |
@@ -49,7 +49,7 @@ Nada se implementa sin PRD aprobado.
 | 1.1 | Autenticación con Google, perfiles y roles | PRD-0004 |
 | 1.2 | Catálogo en base de datos: sedes, salas, cursos, profesoras | — |
 | 1.3 | Clases y horarios recurrentes | PRD-0006 |
-| 1.4 | Perfiles públicos de profesoras con CTA a inscribirse | PRD-0003 |
+| 1.4 | Perfiles públicos de profesoras con CTA a inscribirse | ✅ Adelantado en PRD-0003 |
 
 Sin esto no existe nada más: no hay a quién cobrarle ni quién reserve.
 
@@ -122,6 +122,8 @@ Modelo profesor-cliente: comisiones, rentabilidad por profesora, marca personal.
 
 | Fecha | Cambio |
 |---|---|
+| 22 ago 2026 | Se aplica en código la salida de XO Kids que ya estaba decidida en `CONTEXT.md` §4: `kids` queda `activa: false` en `lib/cursos.ts` y sale de los cursos de Drimy y Lina. No se borra: los leads históricos apuntan a ese id y `getCurso` los sigue resolviendo |
+| 21 ago 2026 | **PRD-0003 implementado.** El descriptor pasa a "academia de baile", el CTA a "Reservar clase" y la captación se organiza por profesora en vez de por curso. Se retira entera la promesa de clase gratis. Cada profesora tiene perfil público en `/profesoras/[slug]`. La migración de `leads` queda escrita y **sin aplicar**, a la espera de revisión |
 | 21 ago 2026 | Se cierran los parámetros del modelo: precios definitivos, créditos con vigencia de 60 días, cancelación hasta 30 min antes, verificación universitaria por certificado de alumno regular, créditos otorgables por admin/owner, y costos reales de sala ($17.000/$0) y profesora ($18.000/hora) |
 | 21 ago 2026 | Sale XO Kids del catálogo (las alumnas migran a Teens). Se confirman **dos sedes**: Los Leones ($17.000) y Los Dominicos ($0), lo que baja el punto de equilibrio por clase de 8 alumnas a 3. Se resuelve el **modelo híbrido**: Teens con suscripción, Girly y K-Pop con packs. Se crea PRD-0011 |
 | 21 ago 2026 | **Cambio de modelo de negocio:** de mensualidad a paquetes de clases con reserva por horario. Se replanifica el roadmap completo, se crean PRD-0003 a 0010 y ADR-0002 a 0004. PRD-0002 queda reemplazado |

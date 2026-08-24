@@ -4,8 +4,8 @@ import { useState } from "react";
 import { Reveal } from "./Reveal";
 import { useSeleccion } from "./Seleccion";
 import { linkWhatsApp } from "@/lib/contacto";
-import { CURSOS, getCurso } from "@/lib/cursos";
-import { getProfesora } from "@/lib/profesoras";
+import { getCurso } from "@/lib/cursos";
+import { PROFESORAS_ACTIVAS, getProfesora } from "@/lib/profesoras";
 import {
   EDAD_MAXIMA,
   EDAD_MINIMA,
@@ -17,7 +17,7 @@ import {
 type Estado = "reposo" | "enviando" | "listo";
 
 export function Formulario() {
-  const { seleccion, setCursoId } = useSeleccion();
+  const { seleccion, setProfesoraId } = useSeleccion();
 
   const [nombre, setNombre] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -28,13 +28,14 @@ export function Formulario() {
   const [estado, setEstado] = useState<Estado>("reposo");
   const [linkWa, setLinkWa] = useState<string | null>(null);
 
-  // El curso viene preseleccionado si entró desde una tarjeta o una ficha.
+  // La profe viene preseleccionada si entró desde una ficha del lineup, desde
+  // un perfil público o con ?profesora= en la URL. El curso solo viene cuando
+  // el click salió de una tarjeta de curso: es contexto, no la pregunta.
+  const profesoraId = seleccion.profesoraId;
   const cursoId = seleccion.cursoId;
 
+  const profesora = profesoraId ? getProfesora(profesoraId) : undefined;
   const curso = cursoId ? getCurso(cursoId) : undefined;
-  const profesora = seleccion.profesoraId
-    ? getProfesora(seleccion.profesoraId)
-    : undefined;
 
   // Volver al formulario desde otra tarjeta lo reabre en blanco, no en la
   // confirmación de la inscripción anterior. Ajustar el estado durante el
@@ -55,7 +56,7 @@ export function Formulario() {
       paraQuien,
       edadAlumna: paraQuien === "hija" ? Number(edadAlumna) : null,
       cursoId,
-      profesoraId: seleccion.profesoraId,
+      profesoraId,
       origen: seleccion.origen,
     };
 
@@ -90,10 +91,7 @@ export function Formulario() {
         return;
       }
 
-      const mensaje = armarMensaje(
-        curso?.nombre ?? "una clase",
-        profesora?.nombre,
-      );
+      const mensaje = armarMensaje(profesora?.nombre, curso?.nombre);
       const url = linkWhatsApp(mensaje);
       setLinkWa(url);
       setEstado("listo");
@@ -113,7 +111,7 @@ export function Formulario() {
       <SeccionFormulario>
         <Confirmacion
           nombre={nombre}
-          curso={curso?.nombre}
+          profesora={profesora?.nombre}
           linkWa={linkWa}
           onVolver={() => setEstado("reposo")}
         />
@@ -123,12 +121,13 @@ export function Formulario() {
 
   return (
     <SeccionFormulario>
-      <p className="xo-eyebrow text-xo-rosa">Clase de prueba</p>
+      <p className="xo-eyebrow text-xo-rosa">Reservar clase</p>
       <h2 className="mt-4 font-display text-[clamp(2.25rem,6vw,3.5rem)] leading-[0.95] text-xo-blanco">
-        Reserva la tuya
+        Elige con quién quieres bailar
       </h2>
       <p className="mt-5 text-xo-blanco/70">
-        Cuatro datos y listo. Te escribimos por WhatsApp para coordinar el día.
+        Cuatro datos y listo. Te escribimos por WhatsApp para coordinar el día,
+        el horario y los valores.
       </p>
 
       <form onSubmit={enviar} noValidate className="mt-10 space-y-7">
@@ -236,35 +235,42 @@ export function Formulario() {
           </Campo>
         ) : null}
 
-        <Campo id="cursoId" etiqueta="¿Qué curso te interesa?" error={errores.cursoId}>
+        <Campo
+          id="profesoraId"
+          etiqueta="¿Con quién quieres tomar clases?"
+          error={errores.profesoraId}
+        >
           <select
-            id="cursoId"
-            name="cursoId"
-            value={cursoId ?? ""}
+            id="profesoraId"
+            name="profesoraId"
+            value={profesoraId ?? ""}
             onChange={(evento) =>
-              setCursoId(
+              setProfesoraId(
                 evento.target.value
-                  ? (evento.target.value as typeof cursoId)
+                  ? (evento.target.value as typeof profesoraId)
                   : null,
               )
             }
-            aria-invalid={Boolean(errores.cursoId)}
-            aria-describedby={errores.cursoId ? "error-cursoId" : undefined}
-            className={claseInput(Boolean(errores.cursoId))}
+            aria-invalid={Boolean(errores.profesoraId)}
+            aria-describedby={
+              errores.profesoraId ? "error-profesoraId" : undefined
+            }
+            className={claseInput(Boolean(errores.profesoraId))}
           >
-            <option value="">Elige un curso</option>
-            {CURSOS.map((opcion) => (
+            <option value="">Elige una profe</option>
+            {PROFESORAS_ACTIVAS.map((opcion) => (
               <option key={opcion.id} value={opcion.id}>
-                {opcion.nombre}
+                {opcion.nombre} — {opcion.estilo}
               </option>
             ))}
           </select>
         </Campo>
 
-        {profesora ? (
+        {curso ? (
           <p className="text-sm text-xo-rosa-claro">
             <span aria-hidden="true">✦ </span>
-            Le vamos a avisar a {profesora.nombre} que preguntaste por ella.
+            Viniste desde {curso.nombre}. Se lo contamos a la profe cuando te
+            escribamos.
           </p>
         ) : null}
 
@@ -291,9 +297,10 @@ export function Formulario() {
   );
 }
 
-function armarMensaje(curso: string, profesora?: string): string {
+function armarMensaje(profesora?: string, curso?: string): string {
   const con = profesora ? ` con ${profesora}` : "";
-  return `Hola! Vengo de la web, me interesa la clase de ${curso}${con} 🌸`;
+  const por = curso ? `, sobre todo ${curso}` : "";
+  return `Hola! Vengo de la web, quiero tomar clases${con}${por} 🌸`;
 }
 
 function SeccionFormulario({ children }: { children: React.ReactNode }) {
@@ -309,12 +316,12 @@ function SeccionFormulario({ children }: { children: React.ReactNode }) {
 
 function Confirmacion({
   nombre,
-  curso,
+  profesora,
   linkWa,
   onVolver,
 }: {
   nombre: string;
-  curso?: string;
+  profesora?: string;
   linkWa: string | null;
   onVolver: () => void;
 }) {
@@ -327,12 +334,13 @@ function Confirmacion({
         Quedaste anotada, {nombre.split(" ")[0]}
       </h2>
       <p className="mt-5 leading-relaxed text-xo-blanco/80">
-        Guardamos tu interés en {curso ?? "la clase"} y te abrimos WhatsApp con
-        el mensaje escrito. Si la pestaña no se abrió, entra desde acá.
+        Le vamos a contar a {profesora ?? "la profe"} que preguntaste por ella,
+        y te abrimos WhatsApp con el mensaje escrito. Si la pestaña no se abrió,
+        entra desde acá.
       </p>
       <p className="mt-3 leading-relaxed text-xo-blanco/60">
-        Te respondemos con el horario y la dirección exacta. Si prefieres
-        esperar, te escribimos nosotras.
+        Te respondemos con el horario, los valores y la dirección exacta. Si
+        prefieres esperar, te escribimos nosotras.
       </p>
 
       <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">

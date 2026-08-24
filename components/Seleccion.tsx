@@ -9,11 +9,19 @@ export type Seleccion = {
   origen: Origen;
 };
 
+type Parcial = Partial<Seleccion> & { origen: Origen };
+
 type Contexto = {
   seleccion: Seleccion;
-  /** Preselecciona curso y profesora, y lleva el foco al formulario. */
-  inscribirse: (parcial: Partial<Seleccion> & { origen: Origen }) => void;
-  setCursoId: (id: CursoId | null) => void;
+  /** Preselecciona profesora y curso, y lleva el foco al formulario. */
+  inscribirse: (parcial: Parcial) => void;
+  /**
+   * Solo preselecciona. Es para cuando la visitante llega desde otra ruta con
+   * el ancla puesta: el navegador ya hizo el scroll y robarle el foco sería
+   * moverla dos veces.
+   */
+  preseleccionar: (parcial: Parcial) => void;
+  setProfesoraId: (id: ProfesoraId | null) => void;
 };
 
 const SeleccionContext = createContext<Contexto | null>(null);
@@ -27,34 +35,41 @@ const INICIAL: Seleccion = {
 export function SeleccionProvider({ children }: { children: React.ReactNode }) {
   const [seleccion, setSeleccion] = useState<Seleccion>(INICIAL);
 
-  const inscribirse = useCallback<Contexto["inscribirse"]>((parcial) => {
+  const preseleccionar = useCallback<Contexto["preseleccionar"]>((parcial) => {
     setSeleccion({
       cursoId: parcial.cursoId ?? null,
       profesoraId: parcial.profesoraId ?? null,
       origen: parcial.origen,
     });
-
-    const destino = document.getElementById("inscripcion");
-    if (!destino) return;
-
-    const sinMovimiento = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    destino.scrollIntoView({
-      behavior: sinMovimiento ? "auto" : "smooth",
-      block: "start",
-    });
-    // El foco sigue al scroll: si no, quien navega con teclado queda arriba.
-    document.getElementById("nombre")?.focus({ preventScroll: true });
   }, []);
 
-  const setCursoId = useCallback((id: CursoId | null) => {
-    setSeleccion((previa) => ({ ...previa, cursoId: id }));
+  const inscribirse = useCallback<Contexto["inscribirse"]>(
+    (parcial) => {
+      preseleccionar(parcial);
+
+      const destino = document.getElementById("inscripcion");
+      if (!destino) return;
+
+      const sinMovimiento = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      destino.scrollIntoView({
+        behavior: sinMovimiento ? "auto" : "smooth",
+        block: "start",
+      });
+      // El foco sigue al scroll: si no, quien navega con teclado queda arriba.
+      document.getElementById("nombre")?.focus({ preventScroll: true });
+    },
+    [preseleccionar],
+  );
+
+  const setProfesoraId = useCallback((id: ProfesoraId | null) => {
+    setSeleccion((previa) => ({ ...previa, profesoraId: id }));
   }, []);
 
   const valor = useMemo(
-    () => ({ seleccion, inscribirse, setCursoId }),
-    [seleccion, inscribirse, setCursoId],
+    () => ({ seleccion, inscribirse, preseleccionar, setProfesoraId }),
+    [seleccion, inscribirse, preseleccionar, setProfesoraId],
   );
 
   return (

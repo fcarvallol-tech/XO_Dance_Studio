@@ -1,12 +1,13 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BotonInscripcion } from "./BotonInscripcion";
 import { Placeholder } from "./Placeholder";
 import { Reveal } from "./Reveal";
 import { getCurso } from "@/lib/cursos";
-import { PROFESORAS, type Profesora } from "@/lib/profesoras";
+import { PROFESORAS_ACTIVAS, type Profesora } from "@/lib/profesoras";
 import type { ProfesoraId } from "@/lib/tipos";
 
 /**
@@ -15,7 +16,7 @@ import type { ProfesoraId } from "@/lib/tipos";
  * pantalla al hacer scroll. Click abre la ficha.
  */
 export function Lineup() {
-  const [activa, setActiva] = useState<ProfesoraId>(PROFESORAS[0].id);
+  const [activa, setActiva] = useState<ProfesoraId>(PROFESORAS_ACTIVAS[0].id);
   const [abierta, setAbierta] = useState<ProfesoraId | null>(null);
   const filas = useRef(new Map<ProfesoraId, HTMLElement>());
 
@@ -43,7 +44,7 @@ export function Lineup() {
     return () => observer.disconnect();
   }, []);
 
-  const conMedia = PROFESORAS.some((p) => p.video ?? p.foto);
+  const conMedia = PROFESORAS_ACTIVAS.some((p) => p.video ?? p.foto);
 
   return (
     <section
@@ -53,7 +54,7 @@ export function Lineup() {
       {/* Fondo que cambia con la profesora activa. Sin material todavía. */}
       {conMedia ? (
         <div aria-hidden="true" className="absolute inset-0">
-          {PROFESORAS.map((profesora) => (
+          {PROFESORAS_ACTIVAS.map((profesora) => (
             <FondoProfesora
               key={profesora.id}
               profesora={profesora}
@@ -75,7 +76,7 @@ export function Lineup() {
       </Reveal>
 
       <ul className="relative mt-14 px-6 sm:px-10">
-        {PROFESORAS.map((profesora, indice) => (
+        {PROFESORAS_ACTIVAS.map((profesora, indice) => (
           <li key={profesora.id}>
             {indice > 0 ? <Separador /> : null}
             <Fila
@@ -258,13 +259,16 @@ function Ficha({
         </ul>
 
         <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
-          <BotonInscripcion
-            origen="ficha-profesora"
-            profesoraId={profesora.id}
-            cursoId={profesora.cursos[0] ?? null}
-          >
-            Quiero clase con {profesora.nombre}
+          <BotonInscripcion origen="ficha-profesora" profesoraId={profesora.id}>
+            Reservar clase con {profesora.nombre}
           </BotonInscripcion>
+
+          <Link
+            href={`/profesoras/${profesora.id}`}
+            className="xo-eyebrow text-xo-rosa underline-offset-4 hover:underline"
+          >
+            Ver el perfil de {profesora.nombre}
+          </Link>
 
           <a
             href={profesora.instagram}
