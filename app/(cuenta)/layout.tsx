@@ -7,6 +7,9 @@ import { requiereSesion } from "@/lib/sesion";
  * Acá está la autorización de verdad. El proxy solo hizo un chequeo optimista
  * leyendo la cookie; esto verifica contra el servidor con getClaims y lee el
  * perfil pasando por RLS.
+ *
+ * El `"cuenta"` no es decorativo: le dice al guard qué rutas cubre este layout,
+ * para que no pueda redirigir hacia adentro de sí mismo. Ver PRD-0004 §12.
  */
 /**
  * Nada de esto se prerenderiza: depende de quién pide la página. Explícito y
@@ -20,6 +23,6 @@ export default async function LayoutCuenta({
 }: {
   children: React.ReactNode;
 }) {
-  const perfil = await requiereSesion();
+  const perfil = await requiereSesion("cuenta");
   return <Portal perfil={perfil}>{children}</Portal>;
 }

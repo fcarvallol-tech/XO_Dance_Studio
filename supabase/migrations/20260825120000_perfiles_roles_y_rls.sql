@@ -333,6 +333,16 @@ grant select on public.perfiles to authenticated;
 grant update (nombre, telefono, avatar_url, autoriza_uso_imagen, fecha_nacimiento, perfil_completo_at)
   on public.perfiles to authenticated;
 
+-- El servidor necesita poder leer perfiles con la service role key. En los
+-- proyectos nuevos de Supabase los privilegios por defecto ya no alcanzan a los
+-- roles del Data API, así que va explícito: sin esto, cualquier lectura con el
+-- cliente admin responde 42501 "permission denied for table perfiles".
+--
+-- Solo select. Las escrituras sobre perfiles pasan por funciones security
+-- definer (el trigger de alta y cambiar_rol), que corren como su dueño y no
+-- necesitan grants para service_role.
+grant select on public.perfiles to service_role;
+
 -- El libro se lee desde admin, y se escribe solo desde cambiar_rol.
 grant select on public.cambios_rol to authenticated;
 grant select, insert on public.cambios_rol to service_role;

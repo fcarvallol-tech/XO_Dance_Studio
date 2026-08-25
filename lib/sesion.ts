@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { clienteServidor } from "./supabase/servidor";
-import { esRol, tieneNivel, type Rol } from "./roles";
+import { esRol, inicioSegunRol, tieneNivel, type Rol } from "./roles";
+import { RUTA_NEUTRAL, cubiertaPor, type Grupo } from "./rutas";
 
 export type Perfil = {
   id: string;
@@ -59,20 +60,48 @@ export async function perfilActual(): Promise<Perfil | null> {
 }
 
 /**
- * Exige sesión. Manda a entrar si no la hay, y a completar el perfil si falta,
- * salvo que ya se esté en esa página.
+ * Un guard **nunca** puede mandar a una ruta cubierta por el layout que lo está
+ * ejecutando: ese layout vuelve a correr, vuelve a redirigir, y el navegador
+ * corta con ERR_TOO_MANY_REDIRECTS. Es lo que pasó con `/completar-perfil`.
+ *
+ * Hoy ninguna combinación cae acá, porque `/completar-perfil` vive fuera de los
+ * grupos. Esto es la red: si alguien vuelve a mover una ruta adentro, se rompe
+ * ruidoso y en un solo salto, en vez de colgar el navegador.
  */
-export async function requiereSesion(rutaActual?: string): Promise<Perfil> {
-  const perfil = await perfilActual();
-  if (!perfil) {
-    const destino = rutaActual
-      ? `/entrar?volver=${encodeURIComponent(rutaActual)}`
-      : "/entrar";
-    redirect(destino);
-  }
+function destinoSeguro(destino: string, grupo?: Grupo): string {
+  if (!grupo || !cubiertaPor(destino, grupo)) return destino;
 
-  if (!perfil.perfilCompleto && rutaActual !== "/completar-perfil") {
-    redirect("/completar-perfil");
+  console.error(
+    `[rutas] El layout de (${grupo}) intentó redirigir a ${destino}, que ese mismo ` +
+      `layout cubre. Eso es un bucle: se manda a ${RUTA_NEUTRAL}. Mueve la ruta ` +
+      `fuera del grupo o cambia el destino. Ver PRD-0004 §12.`,
+  );
+  return RUTA_NEUTRAL;
+}
+
+/**
+ * Exige sesión, sin exigir que el perfil esté completo.
+ *
+ * Es lo que necesita `/completar-perfil`, que por definición se ve con el
+ * perfil todavía incompleto. Ninguna otra página debería usar esto.
+ */
+export async function requiereSesionSinCompletar(): Promise<Perfil> {
+  const perfil = await perfilActual();
+  // Sin `volver`: el caso normal lo resuelve proxy.ts, que sí conoce la ruta
+  // pedida. Acá se llega solo si el proxy no corrió.
+  if (!perfil) redirect("/entrar");
+  return perfil;
+}
+
+/**
+ * Exige sesión y perfil completo. `grupo` es el del layout que llama, y sirve
+ * para garantizar que el redirect no apunte de vuelta a sí mismo.
+ */
+export async function requiereSesion(grupo?: Grupo): Promise<Perfil> {
+  const perfil = await requiereSesionSinCompletar();
+
+  if (!perfil.perfilCompleto) {
+    redirect(destinoSeguro("/completar-perfil", grupo));
   }
 
   return perfil;
@@ -87,9 +116,13 @@ export async function requiereSesion(rutaActual?: string): Promise<Perfil> {
  */
 export async function requiereNivel(
   minimo: Rol,
-  rutaActual?: string,
+  grupo?: Grupo,
 ): Promise<Perfil> {
-  const perfil = await requiereSesion(rutaActual);
-  if (!tieneNivel(perfil.rol, minimo)) redirect("/mi-perfil");
+  const perfil = await requiereSesion(grupo);
+
+  if (!tieneNivel(perfil.rol, minimo)) {
+    redirect(destinoSeguro(inicioSegunRol(perfil.rol), grupo));
+  }
+
   return perfil;
 }

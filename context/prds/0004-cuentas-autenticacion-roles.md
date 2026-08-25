@@ -246,7 +246,8 @@ Decisiones tomadas al implementar:
   lo contemple: es un refactor de rutas que ya funcionan y no tiene por qué viajar en el mismo
   diff que la autenticación.
 
-⚠️ **La migración está escrita pero no aplicada.** Queda en `supabase/migrations/` para revisión.
+⚠️ **La migración ya está aplicada en Supabase** (verificado el 25/08/2026). El `grant select` para
+`service_role` que se agregó ese día **no toma efecto hasta volver a aplicarla**. Ver §12.
 
 ⚠️ **Falta configuración que no está en el código.** Sin esto compila pero no entra nadie:
 
@@ -255,3 +256,98 @@ Decisiones tomadas al implementar:
 2. Habilitar Google como proveedor en el panel de Supabase.
 3. Agregar las URLs de redirect: `https://xo-dance-studio.vercel.app/auth/callback` y
    `http://localhost:3000/auth/callback`.
+
+## 12. Nota de implementación — el bucle de redirección del 25/08/2026
+
+**Síntoma:** `ERR_TOO_MANY_REDIRECTS` justo después de aceptar en la pantalla de Google. Pasaba
+también en incógnito, así que no era estado sucio de cookies.
+
+**Lo que NO era:** el proxy. `proxy.ts` nunca cubrió `/entrar` ni `/auth/*`, y sin sesión la
+cadena era correcta (`/entrar` → 200, las privadas → `/entrar?volver=…`). El bucle tampoco tenía
+que ver con Google: se disparaba con cualquier método de entrada.
+
+**La causa.** `app/(cuenta)/layout.tsx` llamaba a `requiereSesion()` **sin argumento**, y la
+guarda contra el bucle era esta:
+
+```ts
+if (!perfil.perfilCompleto && rutaActual !== "/completar-perfil") {
+  redirect("/completar-perfil");
+}
+```
+
+La guarda existía y era correcta, pero **dependía de un parámetro que el layout no pasaba**. Con
+`rutaActual` en `undefined` la comparación siempre daba verdadero. Y como `/completar-perfil`
+vivía dentro del grupo `(cuenta)`, redirigir ahí volvía a ejecutar ese mismo layout:
+
+```
+/mi-perfil        307 -> /completar-perfil
+/completar-perfil 307 -> /completar-perfil
+/completar-perfil 307 -> /completar-perfil   … hasta que el navegador corta
+```
+
+La página sí pasaba la ruta (`requiereSesion("/completar-perfil")`), pero daba igual: el layout
+corre antes y su `redirect()` corta el render.
+
+Se disparaba justo después de Google porque una cuenta recién creada tiene `perfil_completo_at`
+en `null`. Por eso pasaba también en incógnito: no era estado sucio, era **un usuario nuevo**.
+
+### Por qué se movió la ruta en vez de pasar el pathname
+
+La opción obvia era hacer que el layout pasara su ruta. En App Router un layout **no tiene acceso
+al pathname**, así que habría que leerlo en el proxy y reenviarlo como header, y que cada layout
+se acordara de pasarlo. Eso deja el sistema en el mismo lugar donde estaba: **correcto solo
+mientras nadie olvide un argumento**, que es exactamente cómo se produjo este bug.
+
+Se eligió cambiar la topología: **`/completar-perfil` salió de `(cuenta)` y vive en la raíz**.
+Ahora ningún layout de grupo corre sobre ella, así que redirigir hacia ahí no puede reejecutar al
+que redirigió. El bucle no está mitigado, es **inalcanzable**.
+
+Como la página ya no hereda el layout del grupo, renderiza `<Portal>` ella misma y usa
+`requiereSesionSinCompletar()`, que exige sesión pero no perfil completo — es la única página que
+por definición se ve con el perfil a medias.
+
+### La red, para que no vuelva a pasar en otro grupo
+
+Los otros tres layouts tenían el mismo defecto latente. `lib/rutas.ts` declara ahora qué rutas
+cubre cada grupo, los cuatro layouts pasan el suyo, y antes de redirigir el guard comprueba que el
+destino no caiga bajo el layout que lo está ejecutando. Si cae, manda a la landing y deja un
+`console.error` explicando qué mover. Hoy ninguna combinación llega ahí; es para el día en que
+alguien mueva una ruta de vuelta adentro.
+
+De paso, `proxy.ts` dejó de tener su propia copia de la lista de rutas privadas: la importa de
+`lib/rutas.ts`, para que no pueda desincronizarse de los guards.
+
+### Un segundo defecto, encontrado de paso
+
+`service_role` no tenía **ningún grant sobre `perfiles`**. Postgres lo decía textual:
+`42501 permission denied for table perfiles`. La migración hacía `revoke all … from anon,
+authenticated` y otorgaba a `authenticated`, pero nunca a `service_role` — en los proyectos nuevos
+de Supabase los privilegios por defecto ya no alcanzan a los roles del Data API, algo que la
+migración de `leads` sí había tenido en cuenta.
+
+No causaba el bucle y arreglarlo no lo resolvía: `cambiar_rol` y el trigger de alta son
+`security definer`, así que corrían igual. Pero cualquier lectura futura de `perfiles` con el
+cliente admin habría fallado con un 403 poco obvio. Se agregó `grant select` —solo lectura: las
+escrituras siguen pasando por funciones `security definer`.
+
+### Verificación
+
+Reproducido y vuelto a verificar contra el servidor de desarrollo, con un usuario desechable
+creado por la admin API y un enlace generado con `generateLink`, que **no envía correo**. El
+usuario se borró al terminar.
+
+| Paso | Antes | Después |
+|---|---|---|
+| `/auth/confirmar` | 307 → `/mi-perfil` | 307 → `/mi-perfil` |
+| `/mi-perfil` (perfil incompleto) | 307 → `/completar-perfil` | 307 → `/completar-perfil` |
+| `/completar-perfil` | **307 → `/completar-perfil`, sin fin** | **200** |
+| `/mi-perfil` (perfil completo) | — | 200 |
+| `/admin`, `/profesora/…`, `/owner/…` como alumna | — | 307 → `/mi-perfil`, que responde 200 |
+
+También se comprobó, con la llave publishable y la sesión de la propia alumna, que el `update` que
+hace el server action de `/completar-perfil` funciona, y que un intento de autoascenso a `owner`
+en la misma tabla se rechaza con `42501`. Los grants por columna hacen su trabajo.
+
+⚠️ **La migración ya está aplicada en Supabase**, contra lo que decía §11: se verificó que
+`cambios_rol.profesora_id` y la firma de cinco argumentos de `cambiar_rol` están en la base. El
+`grant select` nuevo **no toma efecto hasta volver a aplicarla**.

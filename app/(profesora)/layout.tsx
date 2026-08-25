@@ -14,6 +14,8 @@ export default async function LayoutProfesora({
 }: {
   children: React.ReactNode;
 }) {
-  const perfil = await requiereNivel("profesora");
+  // Segundo argumento: el grupo que cubre este layout, para que el guard no
+  // pueda redirigir a una ruta suya. Ver PRD-0004 §12.
+  const perfil = await requiereNivel("profesora", "profesora");
   return <Portal perfil={perfil}>{children}</Portal>;
 }

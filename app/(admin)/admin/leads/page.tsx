@@ -40,7 +40,7 @@ const FECHA = new Intl.DateTimeFormat("es-CL", {
  * que hace falta para leer un lead histórico sin huecos.
  */
 export default async function Leads() {
-  await requiereNivel("admin", "/admin/leads");
+  await requiereNivel("admin", "admin");
   const supabase = await clienteServidor();
 
   const { data, error } = await supabase

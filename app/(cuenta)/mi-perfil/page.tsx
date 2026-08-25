@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function MiPerfil() {
-  const perfil = await requiereSesion("/mi-perfil");
+  const perfil = await requiereSesion("cuenta");
 
   return (
     <>

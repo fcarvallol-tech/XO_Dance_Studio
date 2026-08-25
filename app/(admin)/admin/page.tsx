@@ -30,7 +30,7 @@ type FilaPerfil = {
  * vez de filtrar datos.
  */
 export default async function Admin() {
-  const actor = await requiereNivel("admin", "/admin");
+  const actor = await requiereNivel("admin", "admin");
   const supabase = await clienteServidor();
 
   const { data, error } = await supabase

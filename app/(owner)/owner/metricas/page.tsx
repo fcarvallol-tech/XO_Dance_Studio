@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Metricas() {
-  await requiereNivel("owner", "/owner/metricas");
+  await requiereNivel("owner", "owner");
 
   return (
     <>

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function MisClases() {
-  const perfil = await requiereNivel("profesora", "/profesora/mis-clases");
+  const perfil = await requiereNivel("profesora", "profesora");
 
   // El rol `profesora` no puede existir sin identidad: lo garantiza el check
   // `perfiles_profesora_con_identidad`. Un admin o un owner sí llegan acá sin

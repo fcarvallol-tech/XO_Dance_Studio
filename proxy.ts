@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { exigeSesion } from "@/lib/rutas";
 
 /**
  * Proxy — en Next 16 es lo que antes se llamaba middleware.
@@ -17,8 +18,6 @@ import { NextResponse, type NextRequest } from "next/server";
  * ruta, incluidas las prefetcheadas, y "should not be used as a full session
  * management or authorization solution". Acá no se consulta el rol.
  */
-const PRIVADAS = ["/mi-perfil", "/completar-perfil", "/profesora", "/admin", "/owner"];
-
 export async function proxy(request: NextRequest) {
   let respuesta = NextResponse.next({ request });
 
@@ -53,12 +52,11 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const haySesion = Boolean(data?.claims?.sub);
 
+  // La lista vive en lib/rutas.ts, junto al mapa de qué layout cubre qué, para
+  // que no se pueda desincronizar con los guards.
   const ruta = request.nextUrl.pathname;
-  const esPrivada = PRIVADAS.some(
-    (base) => ruta === base || ruta.startsWith(`${base}/`),
-  );
 
-  if (esPrivada && !haySesion) {
+  if (exigeSesion(ruta) && !haySesion) {
     const destino = request.nextUrl.clone();
     destino.pathname = "/entrar";
     destino.search = `?volver=${encodeURIComponent(ruta)}`;

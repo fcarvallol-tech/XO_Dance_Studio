@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { TituloPortal } from "@/components/Portal";
+import { Portal, TituloPortal } from "@/components/Portal";
 import { inicioSegunRol } from "@/lib/roles";
-import { requiereSesion } from "@/lib/sesion";
+import { requiereSesionSinCompletar } from "@/lib/sesion";
 import { validarPerfil, type ErroresPerfil } from "@/lib/perfil";
 import { clienteServidor } from "@/lib/supabase/servidor";
 
@@ -16,6 +16,16 @@ type Props = { searchParams: Promise<{ error?: string }> };
 /**
  * El paso que falta después del primer ingreso.
  *
+ * **Vive fuera de los grupos `(cuenta)`, `(profesora)`, `(admin)` y `(owner)`,
+ * y eso no es un detalle de organización.** Cuando estaba dentro de `(cuenta)`,
+ * el layout de ese grupo redirigía acá a quien tuviera el perfil incompleto —
+ * y como esta página también estaba cubierta por ese layout, volvía a correr y
+ * a redirigir, en bucle, hasta el ERR_TOO_MANY_REDIRECTS. Ver PRD-0004 §12.
+ *
+ * Por lo mismo renderiza `<Portal>` ella misma, y usa
+ * `requiereSesionSinCompletar`: es la única página que por definición se ve con
+ * el perfil todavía incompleto.
+ *
  * Se pide lo mínimo: Google trae el nombre pero no el teléfono, y sin teléfono
  * no hay cómo coordinar por WhatsApp, que hoy es todo el canal.
  *
@@ -24,7 +34,7 @@ type Props = { searchParams: Promise<{ error?: string }> };
  * hacen que `rol` no sea alcanzable ni queriendo.
  */
 export default async function CompletarPerfil({ searchParams }: Props) {
-  const perfil = await requiereSesion("/completar-perfil");
+  const perfil = await requiereSesionSinCompletar();
   const { error } = await searchParams;
 
   if (perfil.perfilCompleto) redirect(inicioSegunRol(perfil.rol));
@@ -42,7 +52,7 @@ export default async function CompletarPerfil({ searchParams }: Props) {
       redirect(`/completar-perfil?error=${primero}`);
     }
 
-    const actual = await requiereSesion("/completar-perfil");
+    const actual = await requiereSesionSinCompletar();
     const supabase = await clienteServidor();
 
     const { error: fallo } = await supabase
@@ -63,7 +73,7 @@ export default async function CompletarPerfil({ searchParams }: Props) {
   }
 
   return (
-    <>
+    <Portal perfil={perfil}>
       <TituloPortal
         eyebrow="Falta poco"
         titulo="Completa tu perfil"
@@ -124,7 +134,7 @@ export default async function CompletarPerfil({ searchParams }: Props) {
           Guardar y entrar
         </button>
       </form>
-    </>
+    </Portal>
   );
 }
 
