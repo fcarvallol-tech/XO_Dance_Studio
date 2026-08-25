@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, Cormorant_Garamond, Montserrat } from "next/font/google";
 import "./globals.css";
+import { sitio } from "@/lib/sitio";
 
 // Bebas: la voz de la página. Un solo peso, siempre en mayúsculas.
 const bebas = Bebas_Neue({
@@ -25,29 +26,6 @@ const montserrat = Montserrat({
   subsets: ["latin"],
   display: "swap",
 });
-
-/**
- * De dónde sale `metadataBase`, en orden.
- *
- * El fallback a localhost solo, sin la variable puesta, dejó el Open Graph
- * roto 18 días sin que nadie se enterara: la vista previa al compartir el link
- * apuntaba a una máquina que no existe. `VERCEL_PROJECT_PRODUCTION_URL` es
- * variable de sistema y siempre está en Vercel, así que el peor caso pasa de
- * "URL inválida en producción" a "el dominio de Vercel en vez del propio".
- *
- * Se descartan las cadenas vacías: una variable creada y sin valor es
- * exactamente el escenario del incidente, y `??` la dejaría pasar.
- */
-function sitio(): string {
-  const propio = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (propio) return propio;
-
-  // Viene sin protocolo, por diseño de Vercel.
-  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
-  if (vercel) return `https://${vercel}`;
-
-  return "http://localhost:3000";
-}
 
 const SITIO = sitio();
 

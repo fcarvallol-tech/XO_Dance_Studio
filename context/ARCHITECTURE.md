@@ -16,7 +16,7 @@
 | Lenguaje | TypeScript | 5 |
 | Estilos | **Tailwind CSS v4** vía `@tailwindcss/postcss` | 4 |
 | Base de datos | Supabase (Postgres) | `@supabase/supabase-js` 2.111 |
-| Auth | Supabase Auth — **Google OAuth** | a implementar |
+| Auth | Supabase Auth — **Google + magic link**, vía `@supabase/ssr` 0.12 | implementado, sin aplicar la migración |
 | Emails | Transaccional (Resend o similar) — **a decidir** | a implementar |
 | Pagos | **Flow** (incluye Webpay, tarjetas y transferencia) — ADR-0003 | a implementar |
 | Deploy | Vercel, proyecto `xo-dance-studio`, equipo `Unicornio` (Hobby) | en línea |
@@ -38,7 +38,11 @@
 | `SUPABASE_SERVICE_ROLE_KEY` | Llave secreta, formato nuevo `sb_secret_...` | **Sí** |
 | `NEXT_PUBLIC_SITE_URL` | `https://xo-dance-studio.vercel.app` — actualizar al registrar dominio propio | No |
 
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Llave publishable `sb_publishable_...`. **Falta cargarla**: sin ella no entra nadie | No |
+
 `NEXT_PUBLIC_WHATSAPP` es opcional: `lib/contacto.ts` cae al número correcto si falta.
+`VERCEL_PROJECT_PRODUCTION_URL` es variable de sistema y no hay que cargarla: la usa
+`lib/sitio.ts` como respaldo de `NEXT_PUBLIC_SITE_URL`.
 
 ⚠️ Las `NEXT_PUBLIC_*` se incrustan en el bundle **durante el build**. Cambiarlas exige redeploy
 sin caché; guardarlas no surte efecto por sí solo. Ver `CONTEXT.md` §10.
@@ -132,6 +136,25 @@ Cuatro roles, jerárquicos en facultades:
 
 ⚠️ `owner` es superconjunto de `admin`. Implementar como jerarquía, no como listas paralelas de
 permisos que se van a desincronizar.
+
+**Construido el 25/08/2026 (PRD-0004),** en
+`supabase/migrations/20260825120000_perfiles_roles_y_rls.sql`:
+
+- `perfiles` existe con `rol`, `nombre`, `email`, `telefono`, `avatar_url`, `profesora_id`,
+  `fecha_nacimiento`, `autoriza_uso_imagen` y `perfil_completo_at`. **Sin los campos de
+  apoderado:** esa parte está recortada hasta que se defina el rango etario de XO Mini. Ver
+  PRD-0004 §9.
+- La jerarquía es aritmética: `nivel_rol()`, `mi_rol()` y `tiene_nivel()`. Una política que dice
+  `tiene_nivel('admin')` incluye a `owner` sin nombrarlo, así que no hay dos listas que
+  desincronizar. `mi_rol()` es `security definer` para no entrar en recursión al consultar
+  `perfiles` desde una política sobre `perfiles`.
+- El perfil lo crea un trigger sobre `auth.users`, con `rol` en `alumna` por defecto. Nadie elige
+  su rol al insertarlo.
+- **`cambios_rol`** — libro de cambios de rol: `perfil_id, rol_anterior, rol_nuevo, cambiado_por,
+  motivo`. Solo se agrega, y el `revoke update, delete ... from service_role` lo garantiza: la
+  service role key salta RLS pero no salta los grants. Sin `deleted_at`, excepción deliberada a la
+  convención de arriba. La columna `rol` solo se toca por `public.cambiar_rol`, vía
+  `POST /api/roles`. Ver PRD-0004 §8.
 
 ### 5.2 Catálogo
 
@@ -294,7 +317,7 @@ RLS activo, sin políticas, `revoke all` a `anon`/`authenticated`, solo `INSERT`
 | `estado`, `notas`, `motivo_perdida` | Seguimiento del lead |
 | `updated_at` | Saber hace cuánto está sin contactar |
 | `perfil_id` | Vincular el lead con la cuenta cuando la persona se registra |
-| Política RLS de `select`/`update` para `admin` y `owner` | Hoy nadie puede leer la tabla |
+| ✅ Política RLS de `select`/`update` para `admin` y `owner` | Hecho el 25/08/2026 (PRD-0004): `leads_admin_lee` y `leads_admin_edita`, con `grant select, update ... to authenticated`. El grant habilita y la política restringe; se necesitan los dos. A `anon` no se le devolvió nada |
 
 ⚠️ **No relajar la seguridad actual por comodidad.** El camino es una política RLS por rol, no
 devolver grants a `anon`.
@@ -379,6 +402,7 @@ cliente. Todo pasa por Route Handler o función de base de datos, en transacció
 | Sin alerta de caída | Nadie se entera si el formulario deja de guardar leads. Con Supabase pausándose solo en plan gratuito, es un agujero real |
 | Plan gratuito de Supabase | Se pausa tras ~1 semana sin actividad. Con cobros online esto pasa de molestia a inaceptable: subir a Pro antes de cobrar |
 | Catálogo en `/lib` | `cursos.ts` y `profesoras.ts` deben migrar a base de datos |
+| `perfiles.profesora_id` sin FK | Hoy guarda el **slug** de `lib/profesoras.ts` (`"drimy"`), sin llave foránea, porque el catálogo todavía vive en `/lib` y no hay tabla a la que apuntar. Aceptable mientras tanto, pero nada impide escribir un slug que no existe. **Cuando el catálogo migre a base de datos, esa columna pasa a FK real** contra `profesoras(id)`, con su `on delete` explícito. Va junto con la fila de arriba: es la misma migración |
 | Sin tests | `lib/lead.ts` es lógica pura, candidato obvio. La lógica de créditos **sí o sí** necesita tests |
 | `README.md` | Sigue siendo el de `create-next-app` |
 | Dominio | Sin registrar |
