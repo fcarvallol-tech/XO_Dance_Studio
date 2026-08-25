@@ -88,7 +88,7 @@ export default async function Leads() {
                     href={`https://wa.me/569${lead.whatsapp}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline underline-offset-4"
+                    className="whitespace-nowrap underline underline-offset-4"
                   >
                     +56 9 {lead.whatsapp}
                   </a>

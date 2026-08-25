@@ -169,7 +169,7 @@ export function Formulario() {
           >
             <span
               aria-hidden="true"
-              className="flex items-center border-r border-xo-blanco/20 px-4 text-xo-blanco/55"
+              className="flex shrink-0 items-center border-r border-xo-blanco/20 px-4 whitespace-nowrap text-xo-blanco/55"
             >
               +56 9
             </span>

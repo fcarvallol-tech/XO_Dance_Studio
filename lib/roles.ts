@@ -32,12 +32,23 @@ export function tieneNivel(rol: Rol, minimo: Rol): boolean {
   return NIVEL[rol] >= NIVEL[minimo];
 }
 
-/** Cómo se le dice a cada rol en pantalla. */
+/**
+ * Cómo se le dice a cada rol en pantalla.
+ *
+ * `alumna` y `profesora` van en femenino porque son los términos del dominio,
+ * y el dominio es explícitamente femenino: son los nombres que usan CLAUDE.md,
+ * el esquema y toda la comunicación de la academia.
+ *
+ * `admin` y `owner` **no**: sus identificadores son neutros y quien los ocupa
+ * puede ser cualquiera. "Dueña" le inventaba un género que el esquema no tiene
+ * — el owner hoy son Felipe y Carla— así que se dice "Owner", igual que la
+ * columna.
+ */
 export const NOMBRE_ROL: Record<Rol, string> = {
   alumna: "Alumna",
   profesora: "Profesora",
   admin: "Administración",
-  owner: "Dueña",
+  owner: "Owner",
 };
 
 /** A dónde mandar a alguien según su rol, después de entrar. */

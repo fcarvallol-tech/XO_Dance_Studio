@@ -13,7 +13,7 @@ export default async function Metricas() {
   return (
     <>
       <TituloPortal
-        eyebrow="Portal de dueña"
+        eyebrow="Portal del owner"
         titulo="Métricas"
         bajada="Lo único que un admin no ve. El dashboard es PRD-0010; por ahora esta página solo prueba que el nivel owner se distingue del de admin."
       />

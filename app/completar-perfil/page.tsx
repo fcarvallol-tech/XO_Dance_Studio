@@ -106,7 +106,10 @@ export default async function CompletarPerfil({ searchParams }: Props) {
           }
         >
           <div className="mt-2 flex items-stretch">
-            <span className="flex items-center rounded-l-lg border border-r-0 border-xo-negro/25 px-3 text-sm text-xo-gris">
+            {/* shrink-0 y whitespace-nowrap: sin ellos el input `w-full`
+                aprieta al prefijo hasta su min-content, que corta en el
+                espacio de "+56 9" y lo parte en dos líneas. */}
+            <span className="flex shrink-0 items-center rounded-l-lg border border-r-0 border-xo-negro/25 px-3 text-sm whitespace-nowrap text-xo-gris">
               +56 9
             </span>
             <input
