@@ -5,6 +5,7 @@ const SECCIONES = [
   { href: "#que-es-xo", texto: "Qué es XO" },
   { href: "#profesoras", texto: "Las profes" },
   { href: "#cursos", texto: "Cursos" },
+  { href: "#planes", texto: "Planes" },
 ];
 
 /**

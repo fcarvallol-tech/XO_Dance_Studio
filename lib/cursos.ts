@@ -19,9 +19,9 @@ export type Curso = {
    */
   activa: boolean;
 
-  // TODO — pendientes de Carla. `null` se muestra como "Por confirmar".
-  // Este es el único lugar donde se editan: no repetir estos datos en la UI.
-  precio: string | null;
+  // El precio ya no es por curso: son packs iguales para todos y viven en
+  // `lib/planes.ts`. Acá quedan los que siguen pendientes de Carla; `null` se
+  // muestra como "Por confirmar" y este es el único lugar donde se editan.
   horario: string | null;
   cupos: number | null;
 };
@@ -39,7 +39,6 @@ export const CURSOS: Curso[] = [
     // Fuera del catálogo desde el 21/08/2026: la franja de 7 a 10 deja de
     // ofrecerse y las alumnas actuales pasan a Teens. No se borra.
     activa: false,
-    precio: null, // TODO
     horario: null, // TODO
     cupos: null, // TODO
   },
@@ -53,7 +52,6 @@ export const CURSOS: Curso[] = [
     formato: null,
     profesoras: ["carli", "drimy", "lina"],
     activa: true,
-    precio: null, // TODO
     horario: null, // TODO
     cupos: null, // TODO
   },
@@ -68,7 +66,6 @@ export const CURSOS: Curso[] = [
       "Intensivo mensual por artista. Un artista al mes —Omar Cruz, De la Rose, Standly—, cuatro clases y una coreografía nueva por semana.",
     profesoras: ["carli", "pau"],
     activa: true,
-    precio: null, // TODO
     horario: null, // TODO
     cupos: null, // TODO
   },
@@ -83,7 +80,6 @@ export const CURSOS: Curso[] = [
       "Intensivo mensual por artista. Un artista al mes, cuatro clases y una coreografía nueva por semana.",
     profesoras: ["pau"],
     activa: true,
-    precio: null, // TODO
     horario: null, // TODO
     cupos: null, // TODO
   },
@@ -97,7 +93,6 @@ export const CURSOS: Curso[] = [
     formato: null,
     profesoras: ["maida"],
     activa: true,
-    precio: null, // TODO
     horario: null, // TODO
     cupos: null, // TODO
   },

@@ -159,7 +159,10 @@ regados, sin traducir desde inglés.
 empoderamiento y actitud, nunca vulgaridad.
 
 **Reglas de negocio que afectan el copy:**
-- Los precios no se publican mientras estén sin definir. Se informan al contactar
+- **Los precios se publican.** Están definidos desde el 25/08/2026 y el Instagram ya los mostraba
+  hacía una semana: callarlos en la web solo la hacía ver desactualizada frente al post que trae
+  a la visitante. La landing tiene sección de planes (PRD-0014). Lo que **sí** se sigue callando
+  es lo que de verdad no está definido: horarios y cupos, que dicen "Por confirmar"
 - **CTA principal: "Reservar clase"** (antes "Reservar clase gratis"). Quitar la palabra
   "gratis" cambia la promesa: ya no se ofrece una prueba sin costo, se ofrece reservar
 - **La pregunta de captación es por profesora, no por curso:** "¿Con quién quieres tomar

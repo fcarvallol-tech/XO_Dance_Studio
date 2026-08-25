@@ -376,10 +376,14 @@ cliente. Todo pasa por Route Handler o función de base de datos, en transacció
 
 | Item | Detalle |
 |---|---|
-| Fallback de `metadataBase` | `app/layout.tsx` cae a `localhost:3000` si falta la variable. Ya causó un incidente. **Arreglo:** encadenar `NEXT_PUBLIC_SITE_URL` → `VERCEL_PROJECT_PRODUCTION_URL` → localhost |
 | Sin alerta de caída | Nadie se entera si el formulario deja de guardar leads. Con Supabase pausándose solo en plan gratuito, es un agujero real |
 | Plan gratuito de Supabase | Se pausa tras ~1 semana sin actividad. Con cobros online esto pasa de molestia a inaceptable: subir a Pro antes de cobrar |
 | Catálogo en `/lib` | `cursos.ts` y `profesoras.ts` deben migrar a base de datos |
 | Sin tests | `lib/lead.ts` es lógica pura, candidato obvio. La lógica de créditos **sí o sí** necesita tests |
 | `README.md` | Sigue siendo el de `create-next-app` |
 | Dominio | Sin registrar |
+
+> ✅ **Saldada el 25/08/2026:** el fallback de `metadataBase`. `app/layout.tsx` encadena
+> `NEXT_PUBLIC_SITE_URL` → `VERCEL_PROJECT_PRODUCTION_URL` → `localhost`, descartando cadenas
+> vacías, que era el escenario real del incidente. El peor caso pasa de "URL inválida en
+> producción" a "el dominio de Vercel en vez del propio".

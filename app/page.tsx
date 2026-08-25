@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { Formulario } from "@/components/Formulario";
 import { Hero } from "@/components/Hero";
 import { Lineup } from "@/components/Lineup";
+import { Planes } from "@/components/Planes";
 import { PreseleccionPorUrl } from "@/components/PreseleccionPorUrl";
 import { QueEsXo } from "@/components/QueEsXo";
 import { SeleccionProvider } from "@/components/Seleccion";
@@ -25,6 +26,7 @@ export default function Home() {
         <QueEsXo />
         <Lineup />
         <Cursos />
+        <Planes />
         <ClaseDePrueba />
         <Formulario />
       </main>

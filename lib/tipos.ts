@@ -15,6 +15,7 @@ export type Origen =
   | "barra"
   | "hero"
   | "tarjeta-curso"
+  | "planes"
   | "ficha-profesora"
   | "perfil-profesora"
   | "clase-de-prueba"

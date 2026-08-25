@@ -1,6 +1,7 @@
 import { BotonInscripcion } from "./BotonInscripcion";
 import { Reveal } from "./Reveal";
 import { CURSOS_ACTIVOS, type Curso } from "@/lib/cursos";
+import { DESDE_POR_CLASE, clp } from "@/lib/planes";
 import { nombresDe } from "@/lib/profesoras";
 import { POR_CONFIRMAR } from "@/lib/tipos";
 
@@ -16,8 +17,15 @@ export function Cursos() {
           Elige dónde quieres partir
         </h2>
         <p className="mt-5 max-w-md text-xo-blanco/70">
-          Todos parten en septiembre. Los horarios y los valores te los
-          contamos por WhatsApp.
+          Todos parten en septiembre. Los horarios te los contamos por
+          WhatsApp; los valores están más abajo, en{" "}
+          <a
+            href="#planes"
+            className="text-xo-rosa underline-offset-4 hover:underline"
+          >
+            los planes
+          </a>
+          .
         </p>
 
         <ul className="mt-14 grid gap-px overflow-hidden rounded-lg bg-xo-blanco/15 sm:grid-cols-2">
@@ -63,7 +71,10 @@ function Tarjeta({ curso }: { curso: Curso }) {
         <Dato etiqueta="Estilo" valor={curso.estilo} />
         <Dato etiqueta="Profes" valor={profesoras.join(", ")} />
         <Dato etiqueta="Horario" valor={curso.horario} />
-        <Dato etiqueta="Valor" valor={curso.precio} />
+        <Dato
+          etiqueta="Valor"
+          valor={`Packs desde ${clp(DESDE_POR_CLASE)} por clase`}
+        />
         <Dato
           etiqueta="Cupos"
           valor={curso.cupos === null ? null : `${curso.cupos} disponibles`}

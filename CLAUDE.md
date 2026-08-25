@@ -51,8 +51,9 @@ Fuentes vía `next/font/google`.
 - Todo el copy en español de Chile. Nunca traducir desde inglés.
 - Mobile-first: el diseño se piensa desde 375px hacia arriba.
 - Correr `npm run build` antes de dar por terminada una fase.
-- **No inventar datos.** Precios, horarios y cupos van en `lib/cursos.ts` marcados `TODO` y se
-  muestran como "Por confirmar". Lo mismo aplica a cualquier dato de negocio que no esté en
+- **No inventar datos.** Los precios están definidos y publicados: viven en `lib/planes.ts` y en
+  ningún otro lado. Horarios y cupos siguen en `lib/cursos.ts` marcados `TODO` y se muestran como
+  "Por confirmar". Lo mismo aplica a cualquier dato de negocio que no esté en
   `context/CONTEXT.md`: si no está, se pregunta.
 - No mostrar la dirección exacta ni la fecha de lanzamiento. Solo "Las Condes, Santiago" y
   "Las clases parten en septiembre".
@@ -76,13 +77,14 @@ reemplace. No la cambies en silencio.
 ## Estructura
 
 Sitio público: una sola página con scroll (`app/page.tsx`). Secciones en orden: Hero · Qué es
-XO · Profesoras · Cursos · Clase de prueba · Formulario · Footer.
+XO · Profesoras · Cursos · Planes · Clase de prueba · Formulario · Footer.
 
 ERP: rutas bajo `app/(erp)/`, todas autenticadas. No existe todavía.
 
 ## Datos
 
-- `lib/cursos.ts` — los 5 cursos. Fuente única de precios, horarios y cupos.
+- `lib/planes.ts` — los packs. Fuente única de precios y de la promo vigente.
+- `lib/cursos.ts` — los 5 cursos. Fuente única de horarios y cupos.
 - `lib/profesoras.ts` — las 5 profesoras. Relación curso ↔ profesora es muchos a muchos.
 - `lib/lead.ts` — validación compartida cliente/servidor. El servidor es el que manda.
 - La inserción de leads pasa **siempre** por `app/api/lead/route.ts`. La service role key salta
@@ -142,6 +144,7 @@ npm run lint
 ## Pendientes de Carla
 
 - Video del hero y videos/fotos de las cinco profesoras.
-- Bios reales (hoy dicen `Acá la bio de "Nombre"`).
-- Precios, horarios y cupos en `lib/cursos.ts`.
+- Bios reales de **Carli y Maida** (siguen diciendo `Acá la bio de "Nombre"`). Drimy, Lina y Pau
+  ya entregaron la suya.
+- Horarios y cupos en `lib/cursos.ts`. (Precios ya definidos.)
 - Confirmar la nueva ubicación.

@@ -24,11 +24,15 @@ obliga a acordarse de revertirlo a mano. Nadie se acuerda.
 **Vigente hasta el 31 de agosto de 2026.** Es la promoción que corre en el flyer de lanzamiento,
 y es la que este PRD tiene que poder expresar y apagar sola.
 
-⚠️ **El flyer dice "hasta el lunes 31 a las 00:00" y eso es ambiguo.** Las 00:00 del lunes 31 es
-el instante en que *empieza* el lunes, no en que termina: leído literal, la promoción se acaba el
-domingo 30 a medianoche y el lunes ya no aplica. Casi con seguridad la intención era el final del
-lunes 31 (las 23:59). Hay que aclararlo **antes de cargar la fecha de término**, porque el sistema
-va a hacer exactamente lo que diga el campo y la diferencia es un día completo de campaña.
+✅ **Resuelto el 25/08/2026: la promoción vence el lunes 31 de agosto a las 23:59**, no a las
+00:00 como dice el flyer. Las 00:00 del lunes 31 es el instante en que *empieza* el lunes: leído
+literal, la promoción se habría acabado el domingo 30 y el lunes ya no aplicaría — un día completo
+de campaña de diferencia.
+
+Consecuencia para este PRD: la fecha de término es un **instante**, no un día, y hay que cargarla
+como `2026-08-31 23:59:59` en `America/Santiago`. Guardar solo la fecha reabre la misma ambigüedad
+dentro del sistema. En el sitio, la promo se anuncia como **"hasta el lunes 31 de agosto"**, sin
+hora: nombrar una hora en un aviso comercial solo invita a discutir si alcanzó o no.
 
 ⚠️ **Falta definir si el plazo aplica a la fecha de compra o a la de uso.** No es lo mismo
 "compra antes del 31 y usas tus clases cuando quieras" que "las clases tienen que estar usadas al
