@@ -187,25 +187,27 @@ construir (cuentas, pagos online y reservas, todo en la primera versión).
 
 | Curso | Modelo de venta |
 |---|---|
-| **XO Teens** (11–15) | **Suscripción mensual.** Horario fijo, la mamá paga, no se reserva clase a clase. **Precio: el mismo de los packs** ($30.000 por 4 clases al mes) |
+| **XO Teens** (11–15) | **Suscripción mensual.** Horario fijo, la mamá paga, no se reserva clase a clase. **Precio: el mismo de los packs** ($28.000 por 4 clases al mes) |
 | **XO Girly Básico / Intermedio** | Packs de clases con reserva libre |
 | **K-Pop** | Packs de clases con reserva libre |
 
 El sistema debe soportar **las dos ramas desde el principio**. Ver `decisions/0002-modelo-creditos.md`.
 
-### Pricing (definido el 21/08/2026)
+### Pricing (definitivo, 25/08/2026)
 
-| Plan | General | Unitario | Universitario | Unitario |
-|---|---|---|---|---|
-| Clase suelta | $9.000 | $9.000 | $8.000 | $8.000 |
-| 2 clases | $16.000 | $8.000 | $14.000 | $7.000 |
-| 4 clases | $30.000 | $7.500 | $26.000 | $6.500 |
-| 8 clases | $52.000 | $6.500 | $48.000 | $6.000 |
+**Un solo nivel de precios.** Reemplaza a la planilla del 21/08.
 
-Planilla corregida el 21/08/2026. Estos valores son los definitivos.
+| Plan | Precio | Por clase |
+|---|---|---|
+| Clase suelta | $8.500 | $8.500 |
+| 2 clases | $16.000 | $8.000 |
+| 4 clases | $28.000 | $7.000 |
+| 8 clases | $48.000 | $6.000 |
 
-**Tarifa universitaria:** se acredita con el **certificado de alumno regular**, que la alumna
-sube y un admin aprueba. Hasta que esté aprobado, no ve los precios universitarios.
+**Se elimina la tarifa universitaria**, y con ella el certificado de alumno regular: ya no hay
+dos segmentos de precio, ni verificación, ni un documento personal que guardar. El descuento a
+universitarias se hará con un **código de descuento** (PRD-0013), que llega por el canal que
+corresponda y no obliga a construir un flujo de aprobación ni a custodiar certificados.
 
 **Vigencia de los créditos: 2 meses** desde la compra.
 **Ventana de cancelación: hasta 30 minutos antes** de la clase, devolviendo el crédito.
@@ -224,33 +226,37 @@ Todas las clases duran **1 hora**.
 
 | Tarifa | Los Leones | Los Dominicos |
 |---|---|---|
-| Clase suelta ($9.000) | 4 | 2 |
-| Pack de 4 ($7.500) | 5 | 3 |
-| Pack de 8 ($6.500) | 6 | 3 |
-| Universitario pack 8 ($6.000) | 6 | 3 |
+| Clase suelta ($8.500) | 5 | 3 |
+| Pack de 4 ($7.000) | 5 | 3 |
+| Pack de 8 ($6.000) | 6 | 3 |
 
-Con capacidad 45, una clase llena en Los Leones deja $302.500. El techo es altísimo; el piso son
-5 alumnas.
+Con capacidad 45, una clase llena en Los Leones deja $280.000 a tarifa de pack de 4. El techo
+sigue siendo altísimo; el piso son 5 o 6 alumnas según el pack.
 
 ⚠️ Hay un **variable** para las profesoras además del sueldo base, todavía sin definir. Cuando
 exista, se resta de estos márgenes.
 
 ### El cambio de precio de Teens, con los números reales
 
-Teens pasa de $45.000 al mes a la tarifa de packs ($30.000 por 4 clases). Es un 33% menos por
-alumna, pero con las salas nuevas el resultado neto **no empeora, y además la profesora empieza
-a cobrar**:
+Teens pasa de $45.000 al mes a la tarifa de packs ($28.000 por 4 clases). Es un **38% menos por
+alumna**, y ahora además la profesora cobra:
 
 | | Antes | Ahora (Los Leones) | Ahora (Los Dominicos) |
 |---|---|---|---|
-| Ingreso mensual (8 alumnas) | $360.000 | $240.000 | $240.000 |
+| Ingreso mensual (8 alumnas) | $360.000 | $224.000 | $224.000 |
 | Arriendo (4 clases) | –$240.000 | –$68.000 | $0 |
 | Profesora (4 clases) | $0 | –$72.000 | –$72.000 |
-| **Neto** | **$120.000** | **$100.000** | **$168.000** |
+| **Neto** | **$120.000** | **$84.000** | **$152.000** |
 
 Antes quedaban $120.000 pero **nadie le pagaba a Carla**. Ahora la profesora cobra $72.000 al mes
-por ese curso y el negocio queda igual o mejor. El precio bajó y la estructura mejoró: es
-consecuencia directa de la mudanza de sedes.
+por ese curso, y ahí está el cambio de fondo.
+
+⚠️ **Con el precio de $28.000 la comparación ya no es "igual o mejor" en las dos sedes.** En Los
+Dominicos queda mejor que antes ($152.000). En **Los Leones queda por debajo** ($84.000): el
+curso paga a la profesora y cubre la sala, pero con 8 alumnas deja menos caja que el modelo viejo
+que no le pagaba a nadie. La diferencia se cierra con volumen —cada alumna adicional suma $28.000
+sin agregar costo, así que a 10 alumnas Los Leones vuelve a superar los $120.000—, pero conviene
+tenerlo a la vista al programar horarios en esa sede.
 
 Detalle técnico en `ARCHITECTURE.md` §5. Fundamento en `decisions/0002-modelo-creditos.md`.
 

@@ -5,7 +5,7 @@ export type Profesora = {
   nombre: string;
   /** Eyebrow del lineup: el estilo que enseña, en minúsculas y corto. */
   estilo: string;
-  /** TODO — bio real pendiente de cada profesora. */
+  /** Texto propio de cada profesora, tal cual lo escribió. TODO: faltan Carli y Maida. */
   bio: string;
   cursos: CursoId[];
   instagram: string;
@@ -36,7 +36,8 @@ export const PROFESORAS: Profesora[] = [
     id: "pau",
     nombre: "Pau",
     estilo: "reggaetón femenino",
-    bio: 'Acá la bio de "Pau"',
+    bio:
+      "Soy la Pau💗 mi estilo de baile es muy femenino, esta es la base de mis clases de girly y reggaeton. En ambos cursos podrás aprender a ocupar todo tu cuerpo (amplitud), mantener el centro (equilibrio), y trabajo de suelo. El nivel coreográfico será básico, y el nivel explicativo, principiante. Esta es TU clase, estaré muy preocupada de ir a tu ritmo😉 Tengo muchas ganas de conocerte!! Nos vemos en xo💋",
     cursos: ["girly-basico", "girly-intermedio"],
     instagram: "https://www.instagram.com/pau_balbontinc/",
     video: null,
@@ -47,7 +48,8 @@ export const PROFESORAS: Profesora[] = [
     id: "drimy",
     nombre: "Drimy",
     estilo: "urbano teens",
-    bio: 'Acá la bio de "Drimy"',
+    bio:
+      "Holaa✨️ Soy la Drimy, bailo hace 8 años y me dedico principalmente a los estilos urbanos y al jazz. La danza ha sido una parte fundamental de mi crecimiento personal: me ayudó a conocerme, a confiar en mí misma y a descubrir una seguridad que no sabía que necesitaba. Por eso decidí enseñar; porque quiero que otras personas también puedan encontrar en la danza un espacio para potenciarse, ganar confianza y crecer. Me apasiona acompañar ese proceso y ver cómo cada persona descubre todo lo que es capaz de hacer a través del movimiento.",
     cursos: ["teens"],
     instagram: "https://www.instagram.com/ladrimy/",
     video: null,
@@ -58,7 +60,8 @@ export const PROFESORAS: Profesora[] = [
     id: "lina",
     nombre: "Lina",
     estilo: "urbano teens",
-    bio: 'Acá la bio de "Lina"',
+    bio:
+      "Soy Lina, bailarina, intérprete y profesora. A lo largo de los años he aprendido y explorado distintos estilos como jazz y urbano, además de técnicas como ballet, lo que me ha permitido ir formando mi propia manera de bailar y de enseñar. Desde 2024 hago clases a niños y niñas desde los 2 hasta los 13 años, y me encanta poder compartir con ellos todo lo que he aprendido. En mis clases busco que cada niño pueda aprender a su ritmo, divertirse, expresarse y, sobre todo, disfrutar del baile. Nos vemos en clase!",
     cursos: ["teens"],
     instagram: "https://www.instagram.com/linaapop/",
     video: null,

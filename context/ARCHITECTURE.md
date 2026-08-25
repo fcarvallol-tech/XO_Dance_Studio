@@ -201,32 +201,27 @@ la v1, manual es defendible: son pocas alumnas y la complejidad no se justifica.
 ### 5.4 Créditos, planes y compras
 
 **`planes`** — lo que se vende.
-`nombre, cantidad_clases, precio_clp, segmento (general|universitario), vigencia_dias, activo, orden`
+`nombre, cantidad_clases, precio_clp, vigencia_dias, activo, orden`
 
-Ocho filas iniciales: clase suelta, 2, 4 y 8 clases, cada una en sus dos segmentos.
+Cuatro filas iniciales: clase suelta, 2, 4 y 8 clases. **Un solo nivel de precio**, sin segmento.
 
-| Plan | General | Universitario |
-|---|---|---|
-| Clase suelta | $9.000 | $8.000 |
-| 2 clases | $16.000 | $14.000 |
-| 4 clases | $30.000 | $26.000 |
-| 8 clases | $52.000 | $48.000 |
+| Plan | Precio |
+|---|---|
+| Clase suelta | $8.500 |
+| 2 clases | $16.000 |
+| 4 clases | $28.000 |
+| 8 clases | $48.000 |
 
 **`vigencia_dias` = 60** en todos los planes: los créditos vencen a los **2 meses**.
 
 > El precio vive en la tabla, no en el código: los precios cambian y no puede hacer falta un
 > deploy para subirlos. El nombre propio de cada plan viene después; la estructura ya lo soporta.
 
-**Tarifa universitaria.** `perfiles` necesita `es_universitaria`, `universitaria_verificada_at`,
-`universitaria_verificada_por` y `certificado_url`.
-
-Mecanismo definido: la alumna sube su **certificado de alumno regular** y un admin lo aprueba o
-rechaza. Los planes universitarios solo se muestran y solo se pueden comprar con la verificación
-aprobada.
-
-⚠️ El certificado es un documento personal: va a un **bucket privado** de Storage, con URL
-firmada y acceso solo para admin. Nunca público. Y tiene fecha: un certificado de alumno regular
-vale por semestre, así que conviene guardar `verificacion_vence_at` y volver a pedirlo.
+> **La tarifa universitaria salió del esquema (25/08/2026).** No hay `segmento` en `planes` ni
+> `es_universitaria`, `universitaria_verificada_at` o `certificado_url` en `perfiles`, y no hay
+> bucket de certificados. El descuento a universitarias se resuelve con un código de descuento
+> (PRD-0013): un mecanismo que ya hay que construir, contra tres columnas, un flujo de aprobación
+> y la custodia de un documento personal que ya no hacen falta.
 
 **`compras`** — una transacción.
 `perfil_id, plan_id, cantidad_clases, monto_clp, estado (pendiente|pagada|fallida|reembolsada),

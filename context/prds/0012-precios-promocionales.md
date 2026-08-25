@@ -9,19 +9,38 @@
 
 ## 1. Problema
 
-Los precios de lista son fijos, pero el negocio necesita bajarlos por períodos acotados. El caso
-concreto e inmediato: para el lanzamiento, dejar el pack de 4 en **$20.000** (lista: $30.000) y
-el de 8 en **$36.000** (lista: $52.000).
+Los precios de lista son fijos, pero el negocio necesita bajarlos por períodos acotados.
 
 Hoy eso solo se puede hacer editando el precio del plan, lo que borra el precio de lista y
 obliga a acordarse de revertirlo a mano. Nadie se acuerda.
+
+### Primer caso concreto: promoción de lanzamiento
+
+| Plan | Promoción | Lista | Descuento |
+|---|---|---|---|
+| 4 clases | **$20.000** | $28.000 | 29% |
+| 8 clases | **$36.000** | $48.000 | 25% |
+
+**Vigente hasta el 31 de agosto de 2026.** Es la promoción que corre en el flyer de lanzamiento,
+y es la que este PRD tiene que poder expresar y apagar sola.
+
+⚠️ **El flyer dice "hasta el lunes 31 a las 00:00" y eso es ambiguo.** Las 00:00 del lunes 31 es
+el instante en que *empieza* el lunes, no en que termina: leído literal, la promoción se acaba el
+domingo 30 a medianoche y el lunes ya no aplica. Casi con seguridad la intención era el final del
+lunes 31 (las 23:59). Hay que aclararlo **antes de cargar la fecha de término**, porque el sistema
+va a hacer exactamente lo que diga el campo y la diferencia es un día completo de campaña.
+
+⚠️ **Falta definir si el plazo aplica a la fecha de compra o a la de uso.** No es lo mismo
+"compra antes del 31 y usas tus clases cuando quieras" que "las clases tienen que estar usadas al
+31". La primera lectura es la coherente con el modelo —el precio se congela al comprar y los
+créditos vigen 60 días—, pero está sin confirmar y es lo primero que va a preguntar alguien.
 
 ## 2. Alcance
 
 1. Tabla de **precios promocionales**: plan, precio promocional, fecha de inicio, fecha de
    término, nombre de la promoción, activa.
-2. El precio vigente se resuelve al momento de comprar: si hay promoción activa para ese plan y
-   segmento, manda ella; si no, el precio de lista.
+2. El precio vigente se resuelve al momento de comprar: si hay promoción activa para ese plan,
+   manda ella; si no, el precio de lista.
 3. En la página de compra, el plan muestra el precio promocional con el de lista tachado y el
    período de validez.
 4. Administración de promociones **exclusiva del rol `owner`**.

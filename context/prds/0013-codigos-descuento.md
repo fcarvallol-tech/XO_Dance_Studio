@@ -20,6 +20,21 @@ general no sirve para eso: se necesita un descuento que solo obtiene quien tiene
 | **Un solo uso** | Se generan en lote, cada uno sirve una vez y queda quemado | Flyers impresos, Open Day |
 | **Primera compra** | Un código compartido, válido solo si la persona no tiene compras pagadas previas | Captación de alumnas nuevas |
 | **Estacional** | Un código compartido con fecha de término y tope opcional de usos | Campañas de temporada |
+| **Universitaria** | Un código compartido que se reparte por los canales donde están ellas: universidades, federaciones, el Instagram de la academia | **Descuento a universitarias** |
+
+### El descuento universitario es un código, no un segmento de precio
+
+Hasta el 25/08/2026 el descuento a universitarias era un **segundo nivel de precios** que se
+desbloqueaba subiendo un certificado de alumno regular que un admin aprobaba. Eso salió del
+modelo (ver `CONTEXT.md` §5.b): significaba tres columnas en `perfiles`, un flujo de aprobación,
+un bucket privado para un documento personal de una menor o de una alumna, y una verificación que
+caduca cada semestre. Todo eso para un descuento.
+
+Como código no cuesta nada nuevo: es el mismo mecanismo que ya hay que construir para los flyers.
+**No se verifica que quien lo usa sea universitaria**, y es deliberado, con el mismo criterio con
+que se decidió no controlar el abuso del código de primera compra: el control sale más caro que
+la pérdida. El descuento llega a quien recibe el código, y el canal por donde se reparte es el
+filtro.
 
 Las tres dimensiones son **independientes y combinables**: vigencia por fechas, tope de usos
 (global y por persona), y condición sobre quién puede usarlo. Un código de un solo uso es

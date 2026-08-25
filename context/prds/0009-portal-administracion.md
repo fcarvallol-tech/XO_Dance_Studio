@@ -26,8 +26,6 @@ quién está inscrita y resolver las solicitudes. Hoy eso es Felipe con planilla
    alguien.
 7. **Solicitudes de horario:** bandeja con aprobar o rechazar y respuesta escrita.
 8. **Otorgar créditos** a una alumna, con motivo obligatorio. Disponible para admin y owner.
-9. **Verificación universitaria:** revisar el certificado de alumno regular subido y aprobar o
-   rechazar.
 
 ## 2.b Datos iniciales
 
@@ -67,7 +65,6 @@ volver a cambiar: el sistema tiene que asumir que el catálogo es data, no confi
 - [ ] Toda alumna es encontrable por nombre o correo en menos de dos pasos.
 - [ ] Una solicitud de horario se resuelve y la profesora ve la respuesta.
 - [ ] Un admin puede otorgar créditos y queda registrado quién, cuándo y por qué.
-- [ ] Un admin puede aprobar o rechazar una verificación universitaria.
 - [ ] Se puede crear una profesora y un curso nuevos sin escribir código ni desplegar.
 - [ ] Los cursos y profesoras actuales aparecen precargados y son editables.
 - [ ] Ninguna vista de admin expone montos si el usuario no es `owner`.

@@ -15,14 +15,14 @@ ni de llevar cuenta de cuántas clases le quedan a cada persona.
 ## 2. Alcance
 
 1. Catálogo de **planes** en base de datos (editable sin deploy): nombre, cantidad de clases,
-   precio, segmento y vigencia. Ocho planes iniciales:
+   precio y vigencia. **Un solo nivel de precio, sin segmento.** Cuatro planes iniciales:
 
-   | Plan | General | Universitario |
-   |---|---|---|
-   | Clase suelta | $9.000 | $8.000 |
-   | 2 clases | $16.000 | $14.000 |
-   | 4 clases | $30.000 | $26.000 |
-   | 8 clases | $52.000 | $48.000 |
+   | Plan | Precio |
+   |---|---|
+   | Clase suelta | $8.500 |
+   | 2 clases | $16.000 |
+   | 4 clases | $28.000 |
+   | 8 clases | $48.000 |
 2. Página de compra con los planes disponibles.
 3. Integración con **Flow** (ADR-0003): checkout, webhook idempotente, acreditación en servidor.
 4. **Créditos por lotes**, no un contador: cada compra genera un lote con su propia vigencia.
@@ -33,14 +33,13 @@ ni de llevar cuenta de cuántas clases le quedan a cada persona.
 8. Proceso de expiración de créditos vencidos (60 días).
 9. **Otorgar créditos manualmente** desde admin u owner, con motivo obligatorio y autor
    registrado. Se crea un lote sin compra asociada y un movimiento tipo `regalo`.
-10. **Verificación universitaria:** subir certificado de alumno regular, aprobación por admin,
-    y desbloqueo de los planes del segmento.
 
 ## 3. Fuera de alcance
 
 - Suscripción con cobro recurrente automático.
-- Descuentos, cupones y códigos de referido. (Relacionado con el campo "afiliado" del perfil,
-  cuyo significado está por definir.)
+- Descuentos y códigos → PRD-0012 (promociones por período) y PRD-0013 (códigos). Ahí vive
+  también el **descuento a universitarias**, que ya no es un segmento de precio.
+- Códigos de referido. (Relacionado con el campo "afiliado" del perfil, todavía sin definir.)
 - Reembolsos automáticos: en la v1 los hace un admin a mano y quedan como movimiento.
 - Facturación electrónica al SII.
 
@@ -62,18 +61,15 @@ ni de llevar cuenta de cuántas clases le quedan a cada persona.
 2. El saldo disponible se calcula desde los lotes vigentes, nunca se guarda como número suelto.
 3. Al reservar se consume **primero el lote que vence antes**.
 4. La acreditación ocurre en el servidor, disparada por el webhook, jamás desde el cliente.
-5. Los planes universitarios solo se muestran y solo se pueden comprar con el perfil verificado.
-6. Los precios se editan desde administración, nunca en código.
-7. Un crédito otorgado a mano deja siempre rastro: quién, cuándo y por qué. Nunca se edita el
+5. Los precios se editan desde administración, nunca en código.
+6. Un crédito otorgado a mano deja siempre rastro: quién, cuándo y por qué. Nunca se edita el
    saldo directamente.
-8. El certificado de alumno regular se guarda en bucket privado, con URL firmada, visible solo
-   para admin.
 
 ## 6. ⚠️ Decisiones que bloquean este PRD
 
-- ✅ Precios definidos (planilla corregida del 21/08).
+- ✅ Precios definidos: un solo nivel, definitivo el 25/08. Ver `CONTEXT.md` §5.b.
 - ✅ Vigencia: **60 días**.
-- ✅ Verificación universitaria: **certificado de alumno regular**, aprobado por admin.
+- ✅ Sin tarifa universitaria: el descuento va por código de descuento (PRD-0013).
 - ✅ Modelo híbrido resuelto (ADR-0002).
 - ✅ Pasarela: **Flow** (ADR-0003). ⚠️ Inicio de Actividades **en curso**, falta la firma de Carla.
 - ⚠️ Política de reembolso en dinero (distinta de devolver créditos).
@@ -88,8 +84,6 @@ ni de llevar cuenta de cuántas clases le quedan a cada persona.
 - [ ] Un crédito vencido deja de estar disponible y queda registrado como expiración.
 - [ ] Un crédito vence exactamente a los 60 días y queda registrado como expiración.
 - [ ] Un admin puede regalar créditos y el movimiento queda con motivo y autor.
-- [ ] Los planes universitarios no son visibles ni comprables sin verificación aprobada.
-- [ ] El certificado no es accesible por URL pública.
 - [ ] Hay tests de la lógica de saldo, consumo y vencimiento.
 
 ## 8. Métrica de éxito
