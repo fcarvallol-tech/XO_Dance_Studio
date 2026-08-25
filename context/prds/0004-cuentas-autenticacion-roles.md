@@ -77,6 +77,9 @@ las profesoras y quienes administran, que entran desde computador.
 - [x] Nadie puede cambiar su propio rol, ni asignar uno superior al suyo.
 - [x] Todo cambio de rol queda registrado con autor, roles y fecha.
 - [x] La academia no puede quedarse sin `owner`.
+- [x] Nadie queda con rol `profesora` sin estar amarrada a una profesora del catálogo, ni por la
+      interfaz, ni por la API, ni por un `update` a mano en la base.
+- [x] Al salir del rol `profesora`, el `profesora_id` se limpia.
 
 ## 8. Roles: cómo se cambian y cómo se asigna el primero
 
@@ -95,7 +98,7 @@ role key, que vive solo en el servidor.
 
 ### El camino
 
-**`POST /api/roles`** con `{ perfilId, rol, motivo }`. Dos verificaciones, no una:
+**`POST /api/roles`** con `{ perfilId, rol, motivo, profesoraId }`. Dos verificaciones, no una:
 
 1. **La ruta** comprueba sesión y nivel de quien llama, para responder algo entendible y no
    exponerle la base a alguien sin sesión. A quien no es admin le responde **404, no 403**: quien
@@ -113,11 +116,37 @@ Las reglas, todas en SQL:
 | Nadie asigna por encima de su nivel | Un admin no puede fabricar un owner |
 | Nadie degrada a quien está más arriba | Un admin no puede sacar a la dueña |
 | Nunca cero owners | Sin owner no hay cómo repartir roles salvo entrando a la base |
+| `profesora` exige `profesora_id` | Ver abajo |
+
+### El rol de profesora viaja con su identidad
+
+Promover a alguien a `profesora` sin decir **cuál** de las del catálogo es la dejaba con
+`profesora_id` en `null`: entraba al portal y no veía ninguna clase, porque el sistema no tenía
+cómo saber de quién eran. El rol y la identidad viajan juntos o no viajan.
+
+Tres capas, otra vez, cada una tapando lo que la anterior no puede:
+
+1. **Check de tabla.** `perfiles_profesora_con_identidad`:
+   `check (rol <> 'profesora' or profesora_id is not null)`. Es lo único que resiste un `update`
+   escrito a mano en el SQL Editor, que es exactamente como se asigna el primer owner.
+2. **`cambiar_rol`** exige `p_profesora_id` cuando el rol nuevo es `profesora`, y **lo limpia al
+   salir del rol**: un slug colgando de alguien que ya no hace clases es un dato que después nadie
+   sabe interpretar. El libro guarda a qué profesora quedó amarrada en cada cambio.
+3. **La ruta de servidor** valida que el slug exista, contra `PROFESORAS_ACTIVAS` de
+   `lib/profesoras.ts`. Esta capa está solo porque **todavía no hay llave foránea**: mientras el
+   catálogo viva en `/lib` no hay tabla contra la cual comprobarlo desde la base. Se exige
+   **activa**, con el mismo criterio que usa el formulario de leads — a una profesora que ya no
+   hace clases no se le asigna a nadie nuevo, aunque los perfiles antiguos conserven su slug.
+   Cuando el catálogo migre a base de datos, esta validación se cae sola y la reemplaza la FK.
+   Ver `ARCHITECTURE.md` §10.
+
+⚠️ Consecuencia para el primer owner: si alguna vez se asigna un rol a mano, un
+`update ... set rol = 'profesora'` **sin `profesora_id` falla**, y falla a propósito.
 
 ### El libro
 
-`cambios_rol` guarda `perfil_id`, `rol_anterior`, `rol_nuevo`, `cambiado_por`, `motivo` y
-`created_at`. Es la operación más sensible del sistema: quien cambia un rol cambia quién ve la
+`cambios_rol` guarda `perfil_id`, `rol_anterior`, `rol_nuevo`, `cambiado_por`, `motivo`,
+`profesora_id` y `created_at`. Es la operación más sensible del sistema: quien cambia un rol cambia quién ve la
 plata.
 
 **Solo se agrega.** No tiene `deleted_at` —excepción deliberada a la convención de

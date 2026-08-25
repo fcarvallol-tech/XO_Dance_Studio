@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { TituloPortal } from "@/components/Portal";
 import { requiereNivel } from "@/lib/sesion";
+import { getProfesora } from "@/lib/profesoras";
+import type { ProfesoraId } from "@/lib/tipos";
 
 export const metadata: Metadata = {
   title: "Mis clases — XO Dance Studio",
@@ -9,6 +11,13 @@ export const metadata: Metadata = {
 
 export default async function MisClases() {
   const perfil = await requiereNivel("profesora", "/profesora/mis-clases");
+
+  // El rol `profesora` no puede existir sin identidad: lo garantiza el check
+  // `perfiles_profesora_con_identidad`. Un admin o un owner sí llegan acá sin
+  // profesora_id, porque entran por jerarquía sin hacer clases.
+  const enElCatalogo = perfil.profesoraId
+    ? (getProfesora(perfil.profesoraId as ProfesoraId)?.nombre ?? perfil.profesoraId)
+    : null;
 
   return (
     <>
@@ -19,13 +28,14 @@ export default async function MisClases() {
       />
 
       <p className="text-xo-gris">
-        Entraste como <strong className="text-xo-negro">{perfil.nombre ?? perfil.email}</strong>.
-        {perfil.profesoraId ? null : (
+        Entraste como <strong className="text-xo-negro">{perfil.nombre ?? perfil.email}</strong>
+        {enElCatalogo ? (
           <>
-            {" "}
-            Todavía no estás enlazada a una profesora del catálogo: eso lo hace
-            administración.
+            , enlazada a <strong className="text-xo-negro">{enElCatalogo}</strong> en
+            el catálogo.
           </>
+        ) : (
+          "."
         )}
       </p>
     </>

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { TituloPortal } from "@/components/Portal";
 import { CambiarRol } from "@/components/CambiarRol";
 import { NOMBRE_ROL, esRol, type Rol } from "@/lib/roles";
+import { getProfesora } from "@/lib/profesoras";
+import type { ProfesoraId } from "@/lib/tipos";
 import { requiereNivel } from "@/lib/sesion";
 import { clienteServidor } from "@/lib/supabase/servidor";
 
@@ -15,6 +17,7 @@ type FilaPerfil = {
   nombre: string | null;
   email: string | null;
   rol: string;
+  profesora_id: string | null;
   created_at: string;
 };
 
@@ -32,7 +35,7 @@ export default async function Admin() {
 
   const { data, error } = await supabase
     .from("perfiles")
-    .select("id, nombre, email, rol, created_at")
+    .select("id, nombre, email, rol, profesora_id, created_at")
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(200);
@@ -44,7 +47,7 @@ export default async function Admin() {
       <TituloPortal
         eyebrow="Administración"
         titulo="Personas y roles"
-        bajada="Cada cambio de rol queda registrado con quién lo hizo y cuándo. No puedes cambiar el tuyo ni repartir un rol más alto que el tuyo."
+        bajada="Cada cambio de rol queda registrado con quién lo hizo y cuándo. No puedes cambiar el tuyo ni repartir un rol más alto que el tuyo. Dejar a alguien como profesora obliga a decir cuál del catálogo es: si no, entra al portal y no ve ninguna clase."
       />
 
       {error ? (
@@ -54,12 +57,13 @@ export default async function Admin() {
       ) : null}
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[42rem] border-collapse text-left">
+        <table className="w-full min-w-[52rem] border-collapse text-left">
           <thead>
             <tr className="border-b border-xo-negro/20">
               <Th>Nombre</Th>
               <Th>Correo</Th>
               <Th>Rol</Th>
+              <Th>Profesora</Th>
               <Th>Cambiar a</Th>
             </tr>
           </thead>
@@ -73,6 +77,14 @@ export default async function Admin() {
                 <td className="py-3 pr-4 text-sm text-xo-negro">
                   {esRol(fila.rol) ? NOMBRE_ROL[fila.rol] : fila.rol}
                 </td>
+                <td className="py-3 pr-4 text-sm text-xo-negro">
+                  {fila.profesora_id ? (
+                    (getProfesora(fila.profesora_id as ProfesoraId)?.nombre ??
+                      fila.profesora_id)
+                  ) : (
+                    <span className="text-xo-gris">—</span>
+                  )}
+                </td>
                 <td className="py-3">
                   {fila.id === actor.id ? (
                     <span className="text-sm text-xo-gris italic">Eres tú</span>
@@ -80,6 +92,7 @@ export default async function Admin() {
                     <CambiarRol
                       perfilId={fila.id}
                       rolActual={esRol(fila.rol) ? fila.rol : ("alumna" as Rol)}
+                      profesoraActual={fila.profesora_id}
                       nivelActor={actor.rol}
                     />
                   )}

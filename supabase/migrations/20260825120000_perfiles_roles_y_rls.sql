@@ -44,6 +44,22 @@ comment on column public.perfiles.rol is
 comment on column public.perfiles.profesora_id is
   'Slug de lib/profesoras.ts. Deuda: pasa a FK cuando el catálogo migre a base de datos.';
 
+-- Una profesora sin saber cuál de las cinco es no puede ver ninguna clase:
+-- entra al portal y le sale vacío. El rol y la identidad viajan juntos o no
+-- viajan. La base lo garantiza; la aplicación no alcanza.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'perfiles_profesora_con_identidad'
+      and conrelid = 'public.perfiles'::regclass
+  ) then
+    alter table public.perfiles
+      add constraint perfiles_profesora_con_identidad
+      check (rol <> 'profesora' or profesora_id is not null);
+  end if;
+end $$;
+
 create index if not exists perfiles_rol_idx on public.perfiles (rol);
 create index if not exists perfiles_email_idx on public.perfiles (email);
 
@@ -162,6 +178,8 @@ create table if not exists public.cambios_rol (
   -- Quién lo hizo. Nunca nulo: no hay cambios de rol anónimos.
   cambiado_por uuid not null references public.perfiles (id),
   motivo text,
+  -- A qué profesora del catálogo quedó amarrada, cuando el rol nuevo lo exige.
+  profesora_id text,
   created_at timestamptz not null default now()
 );
 
@@ -179,11 +197,16 @@ create index if not exists cambios_rol_perfil_idx
 -- role key. El actor viaja explícito porque quien ejecuta es service_role,
 -- donde auth.uid() es nulo.
 
+-- La firma cambió el 25/08/2026 al sumar p_profesora_id. Con defaults, dejar la
+-- vieja convertiría cualquier llamada de cuatro argumentos en ambigua.
+drop function if exists public.cambiar_rol(uuid, text, uuid, text);
+
 create or replace function public.cambiar_rol(
   p_perfil_id uuid,
   p_rol_nuevo text,
   p_actor_user_id uuid,
-  p_motivo text default null
+  p_motivo text default null,
+  p_profesora_id text default null
 )
 returns public.perfiles
 language plpgsql
@@ -194,6 +217,7 @@ declare
   v_actor public.perfiles;
   v_objetivo public.perfiles;
   v_owners int;
+  v_profesora_id text;
 begin
   if public.nivel_rol(p_rol_nuevo) = 0 then
     raise exception 'Rol desconocido: %', p_rol_nuevo using errcode = '22023';
@@ -235,7 +259,28 @@ begin
     raise exception 'No puedes cambiar el rol de alguien de nivel superior' using errcode = '42501';
   end if;
 
-  if v_objetivo.rol = p_rol_nuevo then
+  -- Quien pasa a profesora tiene que quedar amarrada a una del catálogo. Sin
+  -- esto queda con profesora_id nulo, entra al portal y no ve ninguna clase,
+  -- porque el sistema no sabe cuál de las cinco es.
+  --
+  -- El slug se valida contra lib/profesoras.ts en la ruta de servidor: acá no
+  -- hay contra qué comprobarlo mientras el catálogo no sea una tabla. Cuando lo
+  -- sea, esto pasa a ser una llave foránea. Ver ARCHITECTURE.md §10.
+  if p_rol_nuevo = 'profesora' then
+    v_profesora_id := nullif(btrim(p_profesora_id), '');
+    if v_profesora_id is null then
+      raise exception 'Para dejarla como profesora hay que decir cuál es'
+        using errcode = '23514';
+    end if;
+  else
+    -- Al salir del rol se limpia: un slug colgando de alguien que ya no hace
+    -- clases es un dato que después nadie sabe interpretar.
+    v_profesora_id := null;
+  end if;
+
+  -- Nada que cambiar: mismo rol y misma profesora.
+  if v_objetivo.rol = p_rol_nuevo
+     and v_objetivo.profesora_id is not distinct from v_profesora_id then
     return v_objetivo;
   end if;
 
@@ -251,11 +296,15 @@ begin
     end if;
   end if;
 
-  insert into public.cambios_rol (perfil_id, rol_anterior, rol_nuevo, cambiado_por, motivo)
-  values (v_objetivo.id, v_objetivo.rol, p_rol_nuevo, v_actor.id, nullif(btrim(p_motivo), ''));
+  insert into public.cambios_rol
+    (perfil_id, rol_anterior, rol_nuevo, cambiado_por, motivo, profesora_id)
+  values
+    (v_objetivo.id, v_objetivo.rol, p_rol_nuevo, v_actor.id,
+     nullif(btrim(p_motivo), ''), v_profesora_id);
 
   update public.perfiles
-  set rol = p_rol_nuevo
+  set rol = p_rol_nuevo,
+      profesora_id = v_profesora_id
   where id = v_objetivo.id
   returning * into v_objetivo;
 
@@ -264,8 +313,8 @@ end;
 $$;
 
 -- La función es el único camino. Nadie la llama desde el navegador.
-revoke all on function public.cambiar_rol(uuid, text, uuid, text) from public, anon, authenticated;
-grant execute on function public.cambiar_rol(uuid, text, uuid, text) to service_role;
+revoke all on function public.cambiar_rol(uuid, text, uuid, text, text) from public, anon, authenticated;
+grant execute on function public.cambiar_rol(uuid, text, uuid, text, text) to service_role;
 
 -- ---------------------------------------------------------------------------
 -- 6. RLS
