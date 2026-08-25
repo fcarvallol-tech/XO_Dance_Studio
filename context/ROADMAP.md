@@ -46,7 +46,7 @@ Nada se implementa sin PRD aprobado.
 
 | # | Entregable | PRD |
 |---|---|---|
-| 1.1 | Autenticación con Google, perfiles y roles | PRD-0004 |
+| 1.1 | Autenticación con Google y magic link, perfiles y roles | PRD-0004 |
 | 1.2 | Catálogo en base de datos: sedes, salas, cursos, profesoras | — |
 | 1.3 | Clases y horarios recurrentes | PRD-0006 |
 | 1.4 | Perfiles públicos de profesoras con CTA a inscribirse | ✅ Adelantado en PRD-0003 |
@@ -122,6 +122,7 @@ Modelo profesor-cliente: comisiones, rentabilidad por profesora, marca personal.
 
 | Fecha | Cambio |
 |---|---|
+| 25 ago 2026 | **ADR-0006: se agrega magic link por correo como segundo método de acceso, junto a Google y sin contraseñas.** Reemplaza a ADR-0004. Lo obliga el cruce de dos decisiones previas: K-Pop es 11+ y se vende con packs de reserva libre, así que la alumna reserva por sí misma, pero Google exige 13 años para tener cuenta propia. Decisión asociada: todo perfil menor de 18 debe registrar datos del apoderado y autorización explícita **antes de poder comprar** — la cuenta es de la alumna, sin dependientes ni cuentas vinculadas. Se descarta modelar dependientes con la mamá como titular: tocaba créditos, reservas y permisos, y el objetivo se logra con un requisito de perfil. PRD-0004 §3, §4, §5 y §7 quedan alineados y su decisión bloqueante sobre menores queda cerrada |
 | 24 ago 2026 | Cierre de PRD-0003: `Formulario` pasa a `getCursoActivo`, para que el curso que se le muestra a la visitante y el que acepta el servidor usen el mismo predicado. Se corrigen tres referencias cruzadas rotas entre documentos de contexto: `CONTEXT.md` §4 apuntaba a `ARCHITECTURE.md` §2/§9 en vez de §5/§7, `ARCHITECTURE.md` §7 citaba un `CONTEXT.md` §13 que no existe (es §12) y PRD-0001 mandaba a `ARCHITECTURE.md` §3 por la tabla `leads`, que está en §6 |
 | 24 ago 2026 | **Decisión: K-Pop pasa a ser de 11 años para arriba**, igual que el resto del catálogo. `publico` deja de decir "Todas las edades" y `EDAD_MINIMA` queda en 11 como constante global, coherente con que XO Teens sea el curso más chico. Se reescribe la descripción de XO Teens, que aludía a Kids, y los cursos de una profesora se resuelven con `getCursoActivo` para que un curso fuera de catálogo no reaparezca en su ficha ni en su perfil. Se sincronizan `CONTEXT.md` §2, §4, §5 y §5.b, `BRAND.md` §2 y la regla de copy de `.claude/rules/estilo.md`. En el camino se corrige una contradicción con ADR-0002: `CONTEXT.md` daba K-Pop por inscripción continua con mensualidad cuando el modelo híbrido lo dejó con packs, y seguía abierta una pregunta sobre Kids y Teens que se había resuelto el 21/08 |
 | 22 ago 2026 | Se aplica en código la salida de XO Kids que ya estaba decidida en `CONTEXT.md` §4: `kids` queda `activa: false` en `lib/cursos.ts` y sale de los cursos de Drimy y Lina. No se borra: los leads históricos apuntan a ese id y `getCurso` los sigue resolviendo |

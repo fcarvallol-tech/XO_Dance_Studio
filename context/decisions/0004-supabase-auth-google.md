@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | Aceptada |
+| **Estado** | **Reemplazada por ADR-0006** |
 | **Fecha** | 21 de agosto de 2026 |
 | **Decide** | Felipe Carvalho |
 

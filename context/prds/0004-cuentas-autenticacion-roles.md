@@ -5,7 +5,7 @@
 | **Estado** | Borrador |
 | **Fecha** | 21 de agosto de 2026 |
 | **Hito** | Hito 1 |
-| **Relacionados** | PRD-0005 (compras) · PRD-0007/0008/0009/0010 (portales) |
+| **Relacionados** | PRD-0005 (compras) · PRD-0007/0008/0009/0010 (portales) · ADR-0006 (acceso) |
 
 ## 1. Problema
 
@@ -19,29 +19,41 @@ las profesoras y quienes administran, que entran desde computador.
 
 ## 3. Alcance
 
-1. Login con **Google** vía Supabase Auth. Un botón, sin formulario de contraseña.
+1. Login con **Google** o con **magic link por correo**, ambos vía Supabase Auth. **Sin
+   contraseñas.** El magic link no es un extra de comodidad: Google exige 13 años para tener
+   cuenta propia y la academia recibe desde los 11, así que sin él las alumnas de 11 y 12 no
+   pueden entrar. Ver `decisions/0006-login-con-correo-ademas-de-google.md`.
 2. Tabla `perfiles` ligada a `auth.users`, con `rol`.
 3. Cuatro roles: `alumna`, `profesora`, `admin`, `owner`, con `owner` como superconjunto de
    `admin`.
 4. Middleware de protección de rutas por grupo (`(cuenta)`, `(profesora)`, `(admin)`, `(owner)`).
 5. Políticas RLS por rol en todas las tablas.
-6. Completar perfil tras el primer login: teléfono, y si la alumna es menor, datos del apoderado.
-7. Vincular el lead existente con la cuenta si coincide el teléfono o el email.
+6. Completar perfil tras el primer login: teléfono, y si la alumna es menor de 18, datos del
+   apoderado.
+7. **Bloqueo de compra sin datos de apoderado.** Un perfil menor de 18 puede entrar y mirar,
+   pero no puede pagar hasta registrar nombre, teléfono y correo del apoderado más la
+   autorización explícita. Bloquea la compra, no el acceso.
+8. Vincular el lead existente con la cuenta si coincide el teléfono o el email.
 
 ## 4. Fuera de alcance
 
-- Login con email y contraseña, o con Instagram. Solo Google en la v1.
-- Recuperación de cuenta: la resuelve Google.
+- Login con **contraseña**, o con Instagram. Los dos métodos de la v1 son sin contraseña.
+- Recuperación de contraseña: no existe, porque no hay contraseñas que recuperar.
+- **Cuentas vinculadas o dependientes.** La cuenta es de la alumna; el apoderado son campos de
+  su perfil, no otro perfil colgando. Descartado en ADR-0006 con su razón.
 - Cambio de rol autoservicio: los roles los asigna admin.
 
 ## 5. Casos borde
 
-- **Menor de edad.** Kids tiene alumnas de 7 años; no van a tener cuenta de Google. La cuenta la
-  abre la mamá y debe poder gestionar reservas de una o más hijas. ⚠️ Esto implica que un perfil
-  adulto tenga **dependientes**, y afecta a créditos y reservas: ¿el crédito es del apoderado o
-  de la niña? **Decisión pendiente y bloqueante.**
-- Una persona con dos cuentas de Google distintas: quedan dos perfiles. Debe poder fusionarlos
-  un admin.
+- **Menor de edad. ✅ Resuelto en ADR-0006 (25/08/2026).** La academia recibe desde los 11 y
+  K-Pop se vende con packs de reserva libre, así que una alumna de 11 a 15 necesita entrar y
+  reservar por sí misma. Google exige 13, y de ahí el magic link por correo. **La cuenta es de
+  la alumna**, con crédito y reservas suyos: no hay dependientes ni cuentas vinculadas.
+  Lo que la mayoría de edad sí cambia es la compra: quien paga sigue siendo la mamá y los datos
+  de una menor están bajo Ley 19.628 / 21.719, así que un perfil menor de 18 no puede comprar
+  hasta registrar nombre, teléfono y correo del apoderado y una autorización explícita.
+- Una persona con dos identidades distintas —dos cuentas de Google, o Google y magic link con
+  otro correo— queda con dos perfiles. Debe poder fusionarlos un admin.
 - Una profesora que además toma clases: necesita rol `profesora` y poder reservar como alumna.
 - Primer `owner`: se asigna a mano en base de datos, no puede haber un flujo de autoservicio.
 
@@ -56,6 +68,10 @@ las profesoras y quienes administran, que entran desde computador.
 ## 7. Criterios de aceptación
 
 - [ ] Una persona nueva entra con Google en menos de tres toques y queda con rol `alumna`.
+- [ ] Una alumna de 11 años, sin cuenta de Google, entra con magic link a su correo y queda con
+      rol `alumna`.
+- [ ] Un perfil menor de 18 sin datos de apoderado no logra completar una compra, por interfaz
+      ni por API directa, y se le explica qué le falta.
 - [ ] Las rutas de cada portal rechazan a quien no tiene el rol.
 - [ ] Un `owner` accede a todo lo de `admin` sin necesitar dos asignaciones.
 - [ ] Ninguna consulta sin sesión devuelve datos de perfiles.
