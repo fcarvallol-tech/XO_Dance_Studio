@@ -428,11 +428,10 @@ sin caché de build · verificación real enviando el formulario desde producci�
 | Ventana de cancelación: ¿hasta cuántas horas antes se devuelve el crédito? | Sin definir |
 | ¿Sobrevive la clase de prueba gratis? | Sin definir. El CTA nuevo sugiere que no |
 | Pasarela de pago y si se puede cobrar antes del Inicio de Actividades | Sin definir. Ver ADR-0003 |
-
 | Componente **variable** del pago a profesoras | Sin definir. El base son $18.000/hora |
 | ¿Por qué Los Dominicos es gratis y por cuánto tiempo? | Sin confirmar. Si es un favor, es un riesgo de concentración |
 | ¿Una alumna de Teens puede además comprar packs de Girly? | Sin definir |
 | ¿El precio de los packs es igual en ambas sedes? | Sin definir. El costo de sala no lo es |
 | Sala con capacidad 45: ¿confirmada? | El tope de 45 asume una sala mucho mayor que la actual, y ahora además más barata |
 | Qué significa "afiliado" en el perfil de la alumna | Sin definir |
-| ¿Cómo se maneja la cuenta de una menor de 7 años? | Sin definir. La abre la mamá; falta modelar |
+| ¿Cómo se maneja la cuenta de una alumna menor de edad? | ✅ **Resuelto por ADR-0006 (25/08/2026).** La premisa cambió: ya no hay menores de 11. La cuenta es de la alumna, con magic link por correo porque Google exige 13. Sin dependientes ni cuentas vinculadas. Para comprar, un perfil menor de 18 registra datos del apoderado y **el apoderado confirma por correo** |

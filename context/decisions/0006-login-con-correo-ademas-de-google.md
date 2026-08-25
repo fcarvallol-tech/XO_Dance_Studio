@@ -67,9 +67,13 @@ Tres cosas de una sola vez:
 **Más fácil:** entra cualquiera con un correo. Se cierra la decisión que PRD-0004 §5 tenía
 marcada como *pendiente y bloqueante*, sin tocar el modelo de datos.
 
-**Más difícil:** dos caminos de acceso que probar y mantener, y una persona puede terminar con
-dos perfiles si un día entra con Google y otro con el mismo correo por magic link. Eso ya estaba
-contemplado en PRD-0004 §5 y se resuelve fusionando desde admin.
+**Más difícil:** dos caminos de acceso que probar y mantener.
+
+⚠️ **Por verificar al implementar:** si alguien entra un día con Google y otro con magic link
+usando **el mismo correo**, ¿queda con un perfil o con dos? Supabase tiene configuración de
+vinculación de identidades por correo, así que el caso puede no darse. Hay que confirmarlo contra
+la configuración real del proyecto antes de construir nada: si las identidades se vinculan, no hay
+problema que resolver; si no, aplica lo que PRD-0004 §5 ya contempla, que es fusión desde admin.
 
 ### Lo que esta decisión NO resuelve
 
@@ -82,9 +86,20 @@ Que la alumna pueda entrar no cambia dos hechos:
 ### Decisión asociada
 
 **Todo perfil menor de 18 debe registrar datos del apoderado —nombre, teléfono y correo— y una
-autorización explícita, antes de poder comprar.** Es un requisito de completitud del perfil que
-bloquea la compra, no el acceso: la menor puede entrar y mirar; no puede pagar hasta que esos
-datos estén.
+autorización explícita, antes de poder comprar.** Bloquea la compra, no el acceso: la menor puede
+entrar y mirar; no puede pagar hasta que eso esté.
+
+**La autorización la confirma el apoderado, no la menor.** Si la niña escribe el correo de su mamá
+y marca una casilla, el consentimiento es autodeclarado: la mamá nunca participó y no hay nada que
+distinga una autorización real de una inventada por una niña de 12 que quiere ir a bailar. Eso no
+sirve como consentimiento ni frente a la Ley 19.628 / 21.719 ni frente a la mamá cuando llegue el
+cobro. Entonces: al guardar los datos se envía un correo al apoderado con un **enlace de
+confirmación**, reutilizando la misma infraestructura de magic link que esta decisión ya obliga a
+construir para el acceso. **La compra se desbloquea cuando el apoderado confirma, no cuando la
+menor declara.** Mientras tanto el perfil queda pendiente de autorización.
+
+Que no cueste infraestructura nueva es parte del argumento: el mismo mecanismo que resuelve el
+piso de edad resuelve el consentimiento del apoderado.
 
 **La cuenta es de la alumna.** No se modelan cuentas vinculadas ni dependientes: los datos del
 apoderado son campos del perfil de la alumna, no otro perfil ni otra relación.
@@ -109,4 +124,7 @@ reconsidera con datos.
   de perfil se queda corto.
 - Si la entrega de los magic links resulta poco confiable —correos que caen en spam, demoras—
   al punto de costar registros. Ahí se evalúa un tercer método.
+- Si la confirmación del apoderado resulta ser un embudo caro: la compra de una menor ahora
+  depende de que un tercero abra un correo y haga click. Si muchas se quedan a medio camino, hay
+  que buscar otra forma de obtener el consentimiento, no eliminarlo.
 - Si cambia la edad mínima de la academia, porque este ADR se apoya en que es 11.

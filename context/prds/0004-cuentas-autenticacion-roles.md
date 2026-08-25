@@ -30,9 +30,11 @@ las profesoras y quienes administran, que entran desde computador.
 5. Políticas RLS por rol en todas las tablas.
 6. Completar perfil tras el primer login: teléfono, y si la alumna es menor de 18, datos del
    apoderado.
-7. **Bloqueo de compra sin datos de apoderado.** Un perfil menor de 18 puede entrar y mirar,
-   pero no puede pagar hasta registrar nombre, teléfono y correo del apoderado más la
-   autorización explícita. Bloquea la compra, no el acceso.
+7. **Bloqueo de compra sin autorización confirmada del apoderado.** Un perfil menor de 18 puede
+   entrar y mirar, pero no puede pagar hasta que se cumplan dos cosas: que registre nombre,
+   teléfono y correo del apoderado, y que **el apoderado confirme** desde un enlace enviado a ese
+   correo, con la misma infraestructura de magic link del punto 1. Lo que la menor declara no
+   desbloquea nada por sí solo. Bloquea la compra, no el acceso.
 8. Vincular el lead existente con la cuenta si coincide el teléfono o el email.
 
 ## 4. Fuera de alcance
@@ -51,7 +53,9 @@ las profesoras y quienes administran, que entran desde computador.
   la alumna**, con crédito y reservas suyos: no hay dependientes ni cuentas vinculadas.
   Lo que la mayoría de edad sí cambia es la compra: quien paga sigue siendo la mamá y los datos
   de una menor están bajo Ley 19.628 / 21.719, así que un perfil menor de 18 no puede comprar
-  hasta registrar nombre, teléfono y correo del apoderado y una autorización explícita.
+  hasta registrar nombre, teléfono y correo del apoderado **y que el apoderado confirme la
+  autorización desde un enlace enviado a ese correo**. Autodeclarada no sirve: la menor podría
+  marcar la casilla sola y la mamá nunca se enteraría.
 - Una persona con dos identidades distintas —dos cuentas de Google, o Google y magic link con
   otro correo— queda con dos perfiles. Debe poder fusionarlos un admin.
 - Una profesora que además toma clases: necesita rol `profesora` y poder reservar como alumna.
@@ -70,8 +74,10 @@ las profesoras y quienes administran, que entran desde computador.
 - [ ] Una persona nueva entra con Google en menos de tres toques y queda con rol `alumna`.
 - [ ] Una alumna de 11 años, sin cuenta de Google, entra con magic link a su correo y queda con
       rol `alumna`.
-- [ ] Un perfil menor de 18 sin datos de apoderado no logra completar una compra, por interfaz
-      ni por API directa, y se le explica qué le falta.
+- [ ] Un perfil menor de 18 no logra completar una compra —ni por interfaz ni por API directa—
+      mientras el apoderado no haya confirmado, y se le explica qué falta.
+- [ ] Declarar los datos del apoderado no desbloquea la compra por sí solo: hace falta el click
+      en el enlace que llega a ese correo.
 - [ ] Las rutas de cada portal rechazan a quien no tiene el rol.
 - [ ] Un `owner` accede a todo lo de `admin` sin necesitar dos asignaciones.
 - [ ] Ninguna consulta sin sesión devuelve datos de perfiles.
