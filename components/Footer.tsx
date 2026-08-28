@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import {
   INSTAGRAM_HANDLE,
   INSTAGRAM_URL,
@@ -41,6 +42,29 @@ export function Footer() {
             </a>
           </li>
           <li className="text-xo-blanco/60">{UBICACION}</li>
+        </ul>
+      </div>
+
+      {/* Legales aparte del contacto: no compiten con el CTA y quedan donde
+          se las busca, al final de todo. */}
+      <div className="relative mx-auto mt-12 max-w-6xl border-t border-xo-blanco/10 pt-6">
+        <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <li>
+            <Link
+              href="/privacidad"
+              className="text-xo-blanco/60 underline-offset-4 transition-colors hover:text-xo-rosa hover:underline"
+            >
+              Política de Privacidad
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/terminos"
+              className="text-xo-blanco/60 underline-offset-4 transition-colors hover:text-xo-rosa hover:underline"
+            >
+              Condiciones del Servicio
+            </Link>
+          </li>
         </ul>
       </div>
     </footer>
