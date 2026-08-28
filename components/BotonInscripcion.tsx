@@ -1,7 +1,7 @@
 "use client";
 
 import { useSeleccion } from "./Seleccion";
-import type { CursoId, Origen, ProfesoraId } from "@/lib/tipos";
+import type { Origen } from "@/lib/tipos";
 
 /**
  * Único camino al formulario. Preselecciona curso y profesora y guarda de qué
@@ -18,8 +18,8 @@ export function BotonInscripcion({
 }: {
   children: React.ReactNode;
   origen: Origen;
-  cursoId?: CursoId | null;
-  profesoraId?: ProfesoraId | null;
+  cursoId?: string | null;
+  profesoraId?: string | null;
   variante?: "solido" | "borde";
   /** "compacto" es para la barra fija, donde no cabe el botón normal. */
   tamano?: "normal" | "compacto";

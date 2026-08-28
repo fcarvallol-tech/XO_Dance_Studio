@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { esRol, tieneNivel } from "@/lib/roles";
-import { esProfesoraActiva } from "@/lib/profesoras";
 import { perfilActual } from "@/lib/sesion";
 import { clienteAdmin } from "@/lib/supabase/admin";
 
@@ -27,10 +26,10 @@ import { clienteAdmin } from "@/lib/supabase/admin";
  * la academia no puede quedarse sin owner; y quien pasa a `profesora` queda
  * amarrada a una del catálogo.
  *
- * Lo único que se valida acá y no allá es que el slug de la profesora exista:
- * mientras el catálogo viva en `lib/profesoras.ts` no hay llave foránea contra
- * la cual comprobarlo desde la base. Cuando el catálogo migre a una tabla, esta
- * validación se cae sola y la reemplaza la FK. Ver ARCHITECTURE.md §10.
+ * Desde PRD-0015 acá **no** se valida el slug de la profesora. Esa validación
+ * existía solo porque el catálogo vivía en `lib/profesoras.ts` y no había
+ * llave foránea; ahora la existencia la garantiza `perfiles_profesora_fk` y
+ * que esté activa lo comprueba `cambiar_rol`. La regla vive en un solo lugar.
  */
 export async function POST(request: Request) {
   const actor = await perfilActual();
@@ -64,11 +63,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ mensaje: "Ese rol no existe." }, { status: 400 });
   }
 
-  // Sin esto, quien queda como profesora entra al portal y no ve ninguna clase:
-  // el sistema no sabe cuál de las cinco es. Se exige activa, con el mismo
-  // criterio del formulario de leads — a una profesora que ya no hace clases no
-  // se le asigna a nadie nuevo. Los perfiles antiguos conservan su slug.
-  if (rol === "profesora" && !esProfesoraActiva(String(profesoraId ?? ""))) {
+  // Que venga *algo* sí se comprueba acá, para responder algo entendible en vez
+  // de dejar que la base levante una excepción por un campo vacío.
+  if (rol === "profesora" && !String(profesoraId ?? "").trim()) {
     return NextResponse.json(
       { mensaje: "Elige a qué profesora del catálogo corresponde." },
       { status: 400 },
@@ -87,6 +84,7 @@ export async function POST(request: Request) {
 
   if (error) {
     // La base es la que decide. Sus mensajes están escritos para mostrarse.
+    // 23503 lo levanta la llave foránea o el chequeo de profesora activa.
     const permiso = error.code === "42501";
     console.error("cambiar_rol rechazó el cambio:", error.message);
     return NextResponse.json(

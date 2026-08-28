@@ -1,5 +1,3 @@
-import { esCursoActivo } from "./cursos";
-import { esProfesoraActiva } from "./profesoras";
 import type { CursoId, ProfesoraId } from "./tipos";
 
 export type ParaQuien = "propio" | "hija";
@@ -38,8 +36,17 @@ export const EDAD_MINIMA = 11;
 export const EDAD_MAXIMA = 17;
 
 /**
- * Misma validación en el cliente y en la Route Handler. El cliente la usa para
- * avisar antes de enviar; el servidor es el que manda.
+ * Validación de **forma**, compartida por cliente y servidor.
+ *
+ * El cliente la usa para avisar antes de enviar; el servidor la vuelve a correr
+ * porque es el que manda. Las dos capas se conservan a propósito: si toda la
+ * validación viviera en la base, la persona se enteraría del error *después* de
+ * enviar en vez de antes.
+ *
+ * Lo que **no** está acá desde PRD-0015 es si el curso y la profesora existen y
+ * están activos. Eso solo lo sabe la base, y lo verifica `public.crear_lead`
+ * dentro del mismo insert, sin agregar un viaje. Acá los slugs se limpian y se
+ * pasan tal cual.
  */
 export function validarLead(
   bruto: LeadBruto,
@@ -79,15 +86,16 @@ export function validarLead(
 
   // El curso ya no se pregunta: llega solo si la visitante entró desde una
   // tarjeta de curso. Si viene basura, se descarta en silencio en vez de
-  // frenar el envío por un dato que la visitante nunca eligió.
+  // frenar el envío por un dato que la visitante nunca eligió. Que el slug
+  // corresponda a un curso vigente lo comprueba la base.
   const cursoId =
-    typeof bruto.cursoId === "string" && esCursoActivo(bruto.cursoId)
-      ? bruto.cursoId
+    typeof bruto.cursoId === "string" && bruto.cursoId.trim()
+      ? bruto.cursoId.trim()
       : null;
 
   const profesoraId =
-    typeof bruto.profesoraId === "string" && esProfesoraActiva(bruto.profesoraId)
-      ? bruto.profesoraId
+    typeof bruto.profesoraId === "string" && bruto.profesoraId.trim()
+      ? bruto.profesoraId.trim()
       : null;
   if (!profesoraId) {
     errores.profesoraId = "Elige con quién quieres tomar clases.";

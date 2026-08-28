@@ -6,19 +6,23 @@ import { useEffect, useRef, useState } from "react";
 import { BotonInscripcion } from "./BotonInscripcion";
 import { Placeholder } from "./Placeholder";
 import { Reveal } from "./Reveal";
-import { getCursoActivo } from "@/lib/cursos";
-import { PROFESORAS_ACTIVAS, type Profesora } from "@/lib/profesoras";
-import type { ProfesoraId } from "@/lib/tipos";
+import { nombreDe, type Curso, type Profesora } from "@/lib/catalogo";
 
 /**
  * El lineup: las cinco profesoras como cartelera de festival.
  * Desktop activa por hover; en táctil, la fila que cruza el centro de la
  * pantalla al hacer scroll. Click abre la ficha.
  */
-export function Lineup() {
-  const [activa, setActiva] = useState<ProfesoraId>(PROFESORAS_ACTIVAS[0].id);
-  const [abierta, setAbierta] = useState<ProfesoraId | null>(null);
-  const filas = useRef(new Map<ProfesoraId, HTMLElement>());
+export function Lineup({
+  cursos,
+  profesoras,
+}: {
+  cursos: Curso[];
+  profesoras: Profesora[];
+}) {
+  const [activa, setActiva] = useState<string | null>(profesoras[0]?.slug ?? null);
+  const [abierta, setAbierta] = useState<string | null>(null);
+  const filas = useRef(new Map<string, HTMLElement>());
 
   useEffect(() => {
     // Con mouse manda el hover. Sin mouse, manda el scroll.
@@ -35,7 +39,7 @@ export function Lineup() {
         for (const entrada of entradas) {
           if (!entrada.isIntersecting) continue;
           const id = entrada.target.getAttribute("data-profesora");
-          if (id) setActiva(id as ProfesoraId);
+          if (id) setActiva(id);
         }
       },
       { rootMargin: "-45% 0px -45% 0px" },
@@ -44,7 +48,7 @@ export function Lineup() {
     return () => observer.disconnect();
   }, []);
 
-  const conMedia = PROFESORAS_ACTIVAS.some((p) => p.video ?? p.foto);
+  const conMedia = profesoras.some((p) => p.video ?? p.foto);
 
   return (
     <section
@@ -54,11 +58,11 @@ export function Lineup() {
       {/* Fondo que cambia con la profesora activa. Sin material todavía. */}
       {conMedia ? (
         <div aria-hidden="true" className="absolute inset-0">
-          {PROFESORAS_ACTIVAS.map((profesora) => (
+          {profesoras.map((profesora) => (
             <FondoProfesora
-              key={profesora.id}
+              key={profesora.slug}
               profesora={profesora}
-              activa={profesora.id === activa}
+              activa={profesora.slug === activa}
             />
           ))}
           <div className="absolute inset-0 bg-xo-negro/70" />
@@ -76,22 +80,23 @@ export function Lineup() {
       </Reveal>
 
       <ul className="relative mt-14 px-6 sm:px-10">
-        {PROFESORAS_ACTIVAS.map((profesora, indice) => (
-          <li key={profesora.id}>
+        {profesoras.map((profesora, indice) => (
+          <li key={profesora.slug}>
             {indice > 0 ? <Separador /> : null}
             <Fila
               profesora={profesora}
-              activa={profesora.id === activa}
-              abierta={abierta === profesora.id}
-              onActivar={() => setActiva(profesora.id)}
+              cursos={cursos}
+              activa={profesora.slug === activa}
+              abierta={abierta === profesora.slug}
+              onActivar={() => setActiva(profesora.slug)}
               onAbrir={() =>
                 setAbierta((previa) =>
-                  previa === profesora.id ? null : profesora.id,
+                  previa === profesora.slug ? null : profesora.slug,
                 )
               }
               registrar={(elemento) => {
-                if (elemento) filas.current.set(profesora.id, elemento);
-                else filas.current.delete(profesora.id);
+                if (elemento) filas.current.set(profesora.slug, elemento);
+                else filas.current.delete(profesora.slug);
               }}
             />
           </li>
@@ -152,6 +157,7 @@ function FondoProfesora({
 
 function Fila({
   profesora,
+  cursos,
   activa,
   abierta,
   onActivar,
@@ -159,21 +165,22 @@ function Fila({
   registrar,
 }: {
   profesora: Profesora;
+  cursos: Curso[];
   activa: boolean;
   abierta: boolean;
   onActivar: () => void;
   onAbrir: () => void;
   registrar: (elemento: HTMLElement | null) => void;
 }) {
-  const fichaId = `ficha-${profesora.id}`;
-  // Solo los cursos vigentes: una profesora puede seguir listando uno que ya
-  // salió del catálogo, y en la landing no se nombra.
-  const cursos = profesora.cursos
-    .map((id) => getCursoActivo(id)?.nombre)
+  const fichaId = `ficha-${profesora.slug}`;
+  // El filtro de cursos vigentes ya lo hizo la consulta pública: getCatalogoPublico
+  // solo devuelve los activos en `profesora.cursos`.
+  const nombresCursos = profesora.cursos
+    .map((slug) => nombreDe(cursos, slug))
     .filter((nombre): nombre is string => Boolean(nombre));
 
   return (
-    <div ref={registrar} data-profesora={profesora.id}>
+    <div ref={registrar} data-profesora={profesora.slug}>
       <h3>
         <button
           type="button"
@@ -201,7 +208,9 @@ function Fila({
         </button>
       </h3>
 
-      {abierta ? <Ficha id={fichaId} profesora={profesora} cursos={cursos} /> : null}
+      {abierta ? (
+        <Ficha id={fichaId} profesora={profesora} cursos={nombresCursos} />
+      ) : null}
     </div>
   );
 }
@@ -261,19 +270,19 @@ function Ficha({
         </ul>
 
         <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
-          <BotonInscripcion origen="ficha-profesora" profesoraId={profesora.id}>
+          <BotonInscripcion origen="ficha-profesora" profesoraId={profesora.slug}>
             Reservar clase con {profesora.nombre}
           </BotonInscripcion>
 
           <Link
-            href={`/profesoras/${profesora.id}`}
+            href={`/profesoras/${profesora.slug}`}
             className="xo-eyebrow text-xo-rosa underline-offset-4 hover:underline"
           >
             Ver el perfil de {profesora.nombre}
           </Link>
 
           <a
-            href={profesora.instagram}
+            href={profesora.instagram ?? "#"}
             target="_blank"
             rel="noopener noreferrer"
             className="xo-eyebrow text-xo-rosa underline-offset-4 hover:underline"

@@ -1,11 +1,12 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import type { CursoId, Origen, ProfesoraId } from "@/lib/tipos";
+import type { Origen } from "@/lib/tipos";
 
 export type Seleccion = {
-  cursoId: CursoId | null;
-  profesoraId: ProfesoraId | null;
+  /** Slug del curso. Desde PRD-0015 es un string cualquiera: lo valida la base. */
+  cursoId: string | null;
+  profesoraId: string | null;
   origen: Origen;
 };
 
@@ -21,7 +22,7 @@ type Contexto = {
    * moverla dos veces.
    */
   preseleccionar: (parcial: Parcial) => void;
-  setProfesoraId: (id: ProfesoraId | null) => void;
+  setProfesoraId: (id: string | null) => void;
 };
 
 const SeleccionContext = createContext<Contexto | null>(null);
@@ -63,7 +64,7 @@ export function SeleccionProvider({ children }: { children: React.ReactNode }) {
     [preseleccionar],
   );
 
-  const setProfesoraId = useCallback((id: ProfesoraId | null) => {
+  const setProfesoraId = useCallback((id: string | null) => {
     setSeleccion((previa) => ({ ...previa, profesoraId: id }));
   }, []);
 

@@ -4,23 +4,33 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/Footer";
 import { Placeholder } from "@/components/Placeholder";
-import { getCursoActivo } from "@/lib/cursos";
 import { UBICACION } from "@/lib/contacto";
-import { PROFESORAS_ACTIVAS, getProfesoraActiva } from "@/lib/profesoras";
+import { nombreDe } from "@/lib/catalogo";
+import { getCatalogoPublico, getProfesoraPublica } from "@/lib/catalogo-consultas";
 
 type Props = { params: Promise<{ slug: string }> };
 
-// Las cinco se generan en build. Una profesora inactiva no tiene perfil: el
-// slug no existe y la ruta responde 404, no una página vacía.
-export const dynamicParams = false;
+/**
+ * Las que existen al momento del build salen prerenderizadas. Una profesora
+ * creada después en el Table Editor **no puede dar 404 hasta el próximo
+ * deploy**, que es justo lo que PRD-0015 vino a eliminar: con
+ * `dynamicParams = true` se renderiza en la primera visita y queda cacheada.
+ *
+ * Un slug que de verdad no existe, o que existe pero está inactiva, sigue
+ * respondiendo 404 con notFound(). Eso no cambia.
+ */
+export const dynamicParams = true;
 
-export function generateStaticParams() {
-  return PROFESORAS_ACTIVAS.map((profesora) => ({ slug: profesora.id }));
+export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  const { profesoras } = await getCatalogoPublico();
+  return profesoras.map((profesora) => ({ slug: profesora.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const profesora = getProfesoraActiva(slug);
+  const profesora = await getProfesoraPublica(slug);
   if (!profesora) return {};
 
   const titulo = `${profesora.nombre} — Profesora de XO Dance Studio`;
@@ -31,14 +41,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: titulo,
     description: descripcion,
-    alternates: { canonical: `/profesoras/${profesora.id}` },
+    alternates: { canonical: `/profesoras/${profesora.slug}` },
     openGraph: {
       type: "profile",
       locale: "es_CL",
       siteName: "XO Dance Studio",
       title: titulo,
       description: descripcion,
-      url: `/profesoras/${profesora.id}`,
+      url: `/profesoras/${profesora.slug}`,
     },
     twitter: {
       card: "summary_large_image",
@@ -50,18 +60,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PerfilProfesora({ params }: Props) {
   const { slug } = await params;
-  const profesora = getProfesoraActiva(slug);
+  const profesora = await getProfesoraPublica(slug);
   if (!profesora) notFound();
 
-  // Solo los cursos vigentes: una profesora puede seguir listando uno que ya
-  // salió del catálogo, y en la landing no se nombra.
+  // getCatalogoPublico y getProfesoraPublica ya devuelven solo cursos activos
+  // en `profesora.cursos`: el filtro lo hace la consulta, no la vista.
+  const { cursos: todos } = await getCatalogoPublico();
   const cursos = profesora.cursos
-    .map((id) => getCursoActivo(id)?.nombre)
+    .map((slugCurso) => nombreDe(todos, slugCurso))
     .filter((nombre): nombre is string => Boolean(nombre));
 
   // El formulario vive en la landing. El perfil manda para allá con la profe
   // ya elegida: la lee <PreseleccionPorUrl>.
-  const reservar = `/?profesora=${profesora.id}#inscripcion`;
+  const reservar = `/?profesora=${profesora.slug}#inscripcion`;
 
   return (
     <>
@@ -158,7 +169,7 @@ export default async function PerfilProfesora({ params }: Props) {
                 </Link>
 
                 <a
-                  href={profesora.instagram}
+                  href={profesora.instagram ?? "#"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="xo-eyebrow text-xo-rosa underline-offset-4 hover:underline"

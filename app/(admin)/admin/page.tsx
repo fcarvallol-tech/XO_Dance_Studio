@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { TituloPortal } from "@/components/Portal";
 import { CambiarRol } from "@/components/CambiarRol";
 import { NOMBRE_ROL, esRol, type Rol } from "@/lib/roles";
-import { getProfesora } from "@/lib/profesoras";
-import type { ProfesoraId } from "@/lib/tipos";
+import { nombreDe } from "@/lib/catalogo";
+import { getCatalogoCompleto } from "@/lib/catalogo-consultas";
 import { requiereNivel } from "@/lib/sesion";
 import { clienteServidor } from "@/lib/supabase/servidor";
 
@@ -32,6 +32,9 @@ type FilaPerfil = {
 export default async function Admin() {
   const actor = await requiereNivel("admin", "admin");
   const supabase = await clienteServidor();
+  // Completo, no público: un admin tiene que poder ver también lo desactivado.
+  const { profesoras } = await getCatalogoCompleto();
+  const activas = profesoras.filter((p) => p.activa);
 
   const { data, error } = await supabase
     .from("perfiles")
@@ -79,8 +82,7 @@ export default async function Admin() {
                 </td>
                 <td className="py-3 pr-4 text-sm text-xo-negro">
                   {fila.profesora_id ? (
-                    (getProfesora(fila.profesora_id as ProfesoraId)?.nombre ??
-                      fila.profesora_id)
+                    nombreDe(profesoras, fila.profesora_id)
                   ) : (
                     <span className="text-xo-gris">—</span>
                   )}
@@ -94,6 +96,7 @@ export default async function Admin() {
                       rolActual={esRol(fila.rol) ? fila.rol : ("alumna" as Rol)}
                       profesoraActual={fila.profesora_id}
                       nivelActor={actor.rol}
+                      profesoras={activas}
                     />
                   )}
                 </td>

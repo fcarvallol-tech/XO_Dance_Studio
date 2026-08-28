@@ -4,8 +4,7 @@ import { useState } from "react";
 import { Reveal } from "./Reveal";
 import { useSeleccion } from "./Seleccion";
 import { linkWhatsApp } from "@/lib/contacto";
-import { getCursoActivo } from "@/lib/cursos";
-import { PROFESORAS_ACTIVAS, getProfesora } from "@/lib/profesoras";
+import { porSlug, type Curso, type Profesora } from "@/lib/catalogo";
 import {
   EDAD_MAXIMA,
   EDAD_MINIMA,
@@ -16,7 +15,13 @@ import {
 
 type Estado = "reposo" | "enviando" | "listo";
 
-export function Formulario() {
+export function Formulario({
+  cursos,
+  profesoras,
+}: {
+  cursos: Curso[];
+  profesoras: Profesora[];
+}) {
   const { seleccion, setProfesoraId } = useSeleccion();
 
   const [nombre, setNombre] = useState("");
@@ -34,13 +39,10 @@ export function Formulario() {
   const profesoraId = seleccion.profesoraId;
   const cursoId = seleccion.cursoId;
 
-  const profesora = profesoraId ? getProfesora(profesoraId) : undefined;
-  // getCursoActivo y no getCurso: este curso se le muestra a la visitante
-  // ("Viniste desde X") y viaja en el mensaje de WhatsApp, mientras el
-  // servidor descarta con esCursoActivo cualquier curso fuera de catálogo.
-  // Con getCurso, la pantalla podría nombrar un curso que el lead guardado no
-  // contiene. Los dos lados usan el mismo predicado.
-  const curso = cursoId ? getCursoActivo(cursoId) : undefined;
+  const profesora = porSlug(profesoras, profesoraId);
+  // Las listas llegan del catálogo público, que solo trae lo activo: la
+  // pantalla no puede nombrar un curso que la base después va a rechazar.
+  const curso = porSlug(cursos, cursoId);
 
   // Volver al formulario desde otra tarjeta lo reabre en blanco, no en la
   // confirmación de la inscripción anterior. Ajustar el estado durante el
@@ -263,8 +265,8 @@ export function Formulario() {
             className={claseInput(Boolean(errores.profesoraId))}
           >
             <option value="">Elige una profe</option>
-            {PROFESORAS_ACTIVAS.map((opcion) => (
-              <option key={opcion.id} value={opcion.id}>
+            {profesoras.map((opcion) => (
+              <option key={opcion.slug} value={opcion.slug}>
                 {opcion.nombre} — {opcion.estilo}
               </option>
             ))}

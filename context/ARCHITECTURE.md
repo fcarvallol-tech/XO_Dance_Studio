@@ -39,6 +39,7 @@
 | `NEXT_PUBLIC_SITE_URL` | `https://xo-dance-studio.vercel.app` — actualizar al registrar dominio propio | No |
 
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Llave publishable `sb_publishable_...`. **Falta cargarla**: sin ella no entra nadie | No |
+| `REVALIDAR_SECRETO` | Secreto compartido con el Database Webhook que refresca el catálogo. Sin él `/api/revalidar` responde 503 y los cambios tardan hasta una hora | **Sí** |
 
 `NEXT_PUBLIC_WHATSAPP` es opcional: `lib/contacto.ts` cae al número correcto si falta.
 `VERCEL_PROJECT_PRODUCTION_URL` es variable de sistema y no hay que cargarla: la usa
@@ -166,9 +167,22 @@ permisos que se van a desincronizar.
 > Los Leones: $17.000. Los Dominicos: $0. La capacidad máxima es **45**: tope duro de reservas
 > por clase. El costo por sala es lo que permite calcular margen por clase dictada.
 
-**`cursos`** — `slug, nombre, estilo, descripcion, edad_min, edad_max, activo`
-**`profesoras`** — `nombre, alias, bio, foto_url, instagram, perfil_publico, porcentaje_comision, activa`
+**✅ Construido el 28/08/2026 (PRD-0015),** en
+`supabase/migrations/20260828120000_catalogo_en_base_de_datos.sql`:
+
+**`cursos`** — `slug, nombre, publico, estilo, descripcion, formato, horario, cupos, orden, activo`
+**`profesoras`** — `slug, nombre, estilo, bio, instagram, foto_url, video_url, orden, activa`
 **`cursos_profesoras`** — relación muchos a muchos.
+
+- El **slug** es la identidad pública y es **inmutable por trigger**: lo guardan `leads`,
+  `perfiles` y las URLs `/profesoras/<slug>`. Renombrarlo dejaría leads huérfanos y rompería un
+  link compartido por Instagram.
+- **RLS:** `anon` y `authenticated` leen solo lo activo; `admin`+ lee todo y escribe. Son las
+  primeras tablas que `anon` puede leer, así que la política dice `activo` de forma literal.
+- `perfiles.profesora_id`, `leads.curso_id` y `leads.profesora_id` son **llaves foráneas** contra
+  esos slugs, con `on update cascade`.
+- Sin `edad_min`/`edad_max` ni `porcentaje_comision`: no los usa nada todavía. La edad mínima es
+  una sola para toda la academia y vive en `lib/lead.ts`.
 
 > **Requisito explícito:** cursos y profesoras se crean y editan **desde la página**, por un
 > admin. No son datos de código. Los cinco cursos y las cinco profesoras de `lib/cursos.ts` y
@@ -399,10 +413,10 @@ cliente. Todo pasa por Route Handler o función de base de datos, en transacció
 
 | Item | Detalle |
 |---|---|
+| Build acoplado a Supabase | Desde PRD-0015 el catálogo se lee en `next build`. Si el proyecto está pausado o la migración no se aplicó, **el deploy falla**. Es deliberado —un sitio sin catálogo no debe publicarse— y el error dice qué hacer, pero sube la apuesta de la fila sobre el plan gratuito |
 | Sin alerta de caída | Nadie se entera si el formulario deja de guardar leads. Con Supabase pausándose solo en plan gratuito, es un agujero real |
 | Plan gratuito de Supabase | Se pausa tras ~1 semana sin actividad. Con cobros online esto pasa de molestia a inaceptable: subir a Pro antes de cobrar |
-| Catálogo en `/lib` | `cursos.ts` y `profesoras.ts` deben migrar a base de datos |
-| `perfiles.profesora_id` sin FK | Hoy guarda el **slug** de `lib/profesoras.ts` (`"drimy"`), sin llave foránea, porque el catálogo todavía vive en `/lib` y no hay tabla a la que apuntar. Aceptable mientras tanto, pero nada impide escribir un slug que no existe. **Cuando el catálogo migre a base de datos, esa columna pasa a FK real** contra `profesoras(id)`, con su `on delete` explícito. Va junto con la fila de arriba: es la misma migración |
+| `CursoId` y `ProfesoraId` son `string` | **Consecuencia consciente de PRD-0015, no un olvido.** Eran uniones cerradas y el compilador verificaba cada slug del sitio. Con el catálogo en la base ese conjunto deja de conocerse en compilación. Se cambió chequeo estático por llaves foráneas contra `cursos(slug)` y `profesoras(slug)`, que cubren además lo que el compilador nunca cubrió: los datos que ya están en la base. Si alguna vez se generan tipos desde el esquema (`supabase gen types`), se recupera parte de ese chequeo |
 | Sin tests | `lib/lead.ts` es lógica pura, candidato obvio. La lógica de créditos **sí o sí** necesita tests |
 | `README.md` | Sigue siendo el de `create-next-app` |
 | Dominio | Sin registrar |

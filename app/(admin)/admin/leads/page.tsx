@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import { TituloPortal } from "@/components/Portal";
 import { requiereNivel } from "@/lib/sesion";
 import { clienteServidor } from "@/lib/supabase/servidor";
-import { getCurso } from "@/lib/cursos";
-import { getProfesora } from "@/lib/profesoras";
-import type { CursoId, ProfesoraId } from "@/lib/tipos";
+import { nombreDe } from "@/lib/catalogo";
+import { getCatalogoCompleto } from "@/lib/catalogo-consultas";
 
 export const metadata: Metadata = {
   title: "Leads — XO Dance Studio",
@@ -36,12 +35,13 @@ const FECHA = new Intl.DateTimeFormat("es-CL", {
  * sesión de quien mira: una alumna que llegue acá por URL no ve nada, porque
  * `leads_admin_lee` no la deja, aunque el layout fallara.
  *
- * `getCurso` y `getProfesora` resuelven también los inactivos, que es justo lo
- * que hace falta para leer un lead histórico sin huecos.
+ * El catálogo se lee completo, inactivos incluidos: es justo lo que hace falta
+ * para leer un lead histórico que apunta a XO Kids sin dejar un hueco.
  */
 export default async function Leads() {
   await requiereNivel("admin", "admin");
   const supabase = await clienteServidor();
+  const { cursos, profesoras } = await getCatalogoCompleto();
 
   const { data, error } = await supabase
     .from("leads")
@@ -94,17 +94,8 @@ export default async function Leads() {
                   </a>
                 </Td>
                 <Td>{lead.para_quien === "hija" ? "Su hija" : "Ella"}</Td>
-                <Td>
-                  {lead.profesora_id
-                    ? (getProfesora(lead.profesora_id as ProfesoraId)?.nombre ??
-                      lead.profesora_id)
-                    : "—"}
-                </Td>
-                <Td>
-                  {lead.curso_id
-                    ? (getCurso(lead.curso_id as CursoId)?.nombre ?? lead.curso_id)
-                    : "—"}
-                </Td>
+                <Td>{nombreDe(profesoras, lead.profesora_id) ?? "—"}</Td>
+                <Td>{nombreDe(cursos, lead.curso_id) ?? "—"}</Td>
                 <Td>{lead.origen ?? "—"}</Td>
               </tr>
             ))}

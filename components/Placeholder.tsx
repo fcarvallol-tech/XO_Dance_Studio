@@ -1,6 +1,6 @@
 /**
  * Hueco visible para material que todavía no existe.
- * Se borra solo: en cuanto `lib/profesoras.ts` tenga rutas de video o foto,
+ * Se borra solo: en cuanto una profesora tenga foto o video en el catálogo,
  * los componentes dejan de renderizar esto.
  */
 export function Placeholder({

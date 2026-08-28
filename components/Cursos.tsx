@@ -1,11 +1,16 @@
 import { BotonInscripcion } from "./BotonInscripcion";
 import { Reveal } from "./Reveal";
-import { CURSOS_ACTIVOS, type Curso } from "@/lib/cursos";
+import { nombresDe, type Curso, type Profesora } from "@/lib/catalogo";
 import { DESDE_POR_CLASE, clp } from "@/lib/planes";
-import { nombresDe } from "@/lib/profesoras";
 import { POR_CONFIRMAR } from "@/lib/tipos";
 
-export function Cursos() {
+export function Cursos({
+  cursos,
+  profesoras,
+}: {
+  cursos: Curso[];
+  profesoras: Profesora[];
+}) {
   return (
     <section
       id="cursos"
@@ -29,15 +34,15 @@ export function Cursos() {
         </p>
 
         <ul className="mt-14 grid gap-px overflow-hidden rounded-lg bg-xo-blanco/15 sm:grid-cols-2">
-          {CURSOS_ACTIVOS.map((curso) => (
-            <li key={curso.id} className="bg-xo-negro-alt">
-              <Tarjeta curso={curso} />
+          {cursos.map((curso) => (
+            <li key={curso.slug} className="bg-xo-negro-alt">
+              <Tarjeta curso={curso} profesoras={profesoras} />
             </li>
           ))}
           {/* Con un número impar de cursos en dos columnas, el hueco final
               deja ver el color de los divisores. La celda lo tapa. El
               catálogo ya cambió una vez, así que se calcula, no se asume. */}
-          {CURSOS_ACTIVOS.length % 2 === 1 ? (
+          {cursos.length % 2 === 1 ? (
             <li aria-hidden="true" className="hidden bg-xo-negro-alt sm:block" />
           ) : null}
         </ul>
@@ -46,8 +51,14 @@ export function Cursos() {
   );
 }
 
-function Tarjeta({ curso }: { curso: Curso }) {
-  const profesoras = nombresDe(curso.profesoras);
+function Tarjeta({
+  curso,
+  profesoras,
+}: {
+  curso: Curso;
+  profesoras: Profesora[];
+}) {
+  const nombres = nombresDe(profesoras, curso.profesoras);
 
   return (
     <article className="flex h-full flex-col p-7 sm:p-9">
@@ -69,7 +80,7 @@ function Tarjeta({ curso }: { curso: Curso }) {
 
       <dl className="mt-8 space-y-3 border-t border-xo-blanco/15 pt-6 text-sm">
         <Dato etiqueta="Estilo" valor={curso.estilo} />
-        <Dato etiqueta="Profes" valor={profesoras.join(", ")} />
+        <Dato etiqueta="Profes" valor={nombres.join(", ")} />
         <Dato etiqueta="Horario" valor={curso.horario} />
         <Dato
           etiqueta="Valor"
@@ -84,7 +95,7 @@ function Tarjeta({ curso }: { curso: Curso }) {
       <div className="mt-8 pt-2">
         <BotonInscripcion
           origen="tarjeta-curso"
-          cursoId={curso.id}
+          cursoId={curso.slug}
           variante="borde"
         >
           Reservar clase

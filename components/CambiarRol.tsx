@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { NOMBRE_ROL, ROLES, nivelRol, type Rol } from "@/lib/roles";
-import { PROFESORAS_ACTIVAS } from "@/lib/profesoras";
+import type { Profesora } from "@/lib/catalogo";
 
 /**
  * Cambia el rol de una persona llamando a POST /api/roles.
@@ -22,16 +22,19 @@ export function CambiarRol({
   rolActual,
   profesoraActual,
   nivelActor,
+  profesoras,
 }: {
   perfilId: string;
   rolActual: Rol;
   profesoraActual: string | null;
   nivelActor: Rol;
+  /** Las activas del catálogo. Llegan por props: esto es cliente. */
+  profesoras: Profesora[];
 }) {
   const router = useRouter();
   const [rol, setRol] = useState<Rol>(rolActual);
   const [profesoraId, setProfesoraId] = useState(
-    profesoraActual ?? PROFESORAS_ACTIVAS[0].id,
+    profesoraActual ?? profesoras[0]?.slug ?? "",
   );
   const [motivo, setMotivo] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -109,8 +112,8 @@ export function CambiarRol({
             onChange={(evento) => setProfesoraId(evento.target.value)}
             className="w-full rounded-lg border border-xo-negro/25 bg-xo-blanco px-3 py-2 text-sm text-xo-negro disabled:opacity-50"
           >
-            {PROFESORAS_ACTIVAS.map((profesora) => (
-              <option key={profesora.id} value={profesora.id}>
+            {profesoras.map((profesora) => (
+              <option key={profesora.slug} value={profesora.slug}>
                 {profesora.nombre}
               </option>
             ))}
@@ -147,7 +150,7 @@ export function CambiarRol({
               disabled={enviando}
               onClick={() => {
                 setRol(rolActual);
-                setProfesoraId(profesoraActual ?? PROFESORAS_ACTIVAS[0].id);
+                setProfesoraId(profesoraActual ?? profesoras[0]?.slug ?? "");
                 setMotivo("");
                 setFallo(null);
               }}

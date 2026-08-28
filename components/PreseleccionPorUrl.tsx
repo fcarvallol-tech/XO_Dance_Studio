@@ -3,7 +3,6 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { useSeleccion } from "./Seleccion";
-import { esProfesoraActiva } from "@/lib/profesoras";
 
 /**
  * Puente entre los perfiles públicos y el formulario: `/?profesora=carli`
@@ -13,16 +12,22 @@ import { esProfesoraActiva } from "@/lib/profesoras";
  * `useSearchParams` saca del prerender estático a todo lo que tenga encima.
  * Acá arriba no hay nada: la landing se sigue generando estática.
  */
-export function PreseleccionPorUrl() {
+export function PreseleccionPorUrl({
+  slugsValidos,
+}: {
+  /** Las profesoras activas. Llegan por props: el catálogo vive en la base y
+      un componente cliente no la consulta. */
+  slugsValidos: string[];
+}) {
   const parametros = useSearchParams();
   const { preseleccionar } = useSeleccion();
 
   const desdeUrl = parametros.get("profesora");
 
   useEffect(() => {
-    if (!desdeUrl || !esProfesoraActiva(desdeUrl)) return;
+    if (!desdeUrl || !slugsValidos.includes(desdeUrl)) return;
     preseleccionar({ profesoraId: desdeUrl, origen: "perfil-profesora" });
-  }, [desdeUrl, preseleccionar]);
+  }, [desdeUrl, slugsValidos, preseleccionar]);
 
   return null;
 }

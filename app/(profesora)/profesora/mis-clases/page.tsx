@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { TituloPortal } from "@/components/Portal";
 import { requiereNivel } from "@/lib/sesion";
-import { getProfesora } from "@/lib/profesoras";
-import type { ProfesoraId } from "@/lib/tipos";
+import { nombreDe } from "@/lib/catalogo";
+import { getCatalogoCompleto } from "@/lib/catalogo-consultas";
 
 export const metadata: Metadata = {
   title: "Mis clases — XO Dance Studio",
@@ -15,9 +15,8 @@ export default async function MisClases() {
   // El rol `profesora` no puede existir sin identidad: lo garantiza el check
   // `perfiles_profesora_con_identidad`. Un admin o un owner sí llegan acá sin
   // profesora_id, porque entran por jerarquía sin hacer clases.
-  const enElCatalogo = perfil.profesoraId
-    ? (getProfesora(perfil.profesoraId as ProfesoraId)?.nombre ?? perfil.profesoraId)
-    : null;
+  const { profesoras } = await getCatalogoCompleto();
+  const enElCatalogo = nombreDe(profesoras, perfil.profesoraId);
 
   return (
     <>
