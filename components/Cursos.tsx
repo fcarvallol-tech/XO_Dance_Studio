@@ -106,12 +106,6 @@ function Tarjeta({
         {curso.descripcion}
       </p>
 
-      {curso.formato ? (
-        <p className="mt-6 border-l-2 border-xo-rosa/60 pl-4 font-serif-xo text-lg italic leading-snug text-xo-rosa-claro">
-          {curso.formato}
-        </p>
-      ) : null}
-
       <dl className="mt-8 space-y-3 border-t border-xo-blanco/15 pt-6 text-sm">
         <Dato etiqueta="Estilo" valor={curso.estilo} />
         <Dato etiqueta="Nivel" valor={NIVEL[curso.dificultad]} />

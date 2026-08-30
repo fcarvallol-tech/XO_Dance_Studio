@@ -82,6 +82,20 @@ de abrir un horario nuevo cae mucho. Tres alumnas cubren la sala en Los Leones; 
 ninguna. Eso hace viable una parrilla amplia de horarios, que es justamente lo que el modelo de
 reserva libre necesita para funcionar.
 
+## Aclaración del 30/08/2026: los créditos son universales
+
+Este ADR eligió el híbrido pero **no decía si un crédito estaba atado a un curso**. Queda
+cerrado: **no lo está**. Un pack de N clases sirve para cualquier clase de la parrilla, con
+cualquier profesora y en cualquier sede.
+
+No cambia la decisión, la **refuerza**. El argumento central de este ADR era que si la
+captación pregunta "¿con quién quieres tomar clases?", el producto tiene que dejar elegir
+profesora clase a clase. Un crédito atado a un curso cumplía esa promesa a medias.
+
+Y elimina de paso la complicación que este ADR arrastraba: el **formato intensivo mensual por
+artista** de los Girly viejos. Ese formato desapareció con el catálogo del 30/08, así que ya
+no hay que decidir cómo convive con los créditos. **Teens sigue siendo la única excepción.**
+
 ## Cuándo revisar
 
 Si a los tres meses la tasa de utilización de créditos está por debajo del 60%, o si las mamás

@@ -344,9 +344,11 @@ Decisiones y hallazgos al implementar:
   inventar ningún dato de negocio —no prometen formato, duración ni cantidad de clases—, pero
   **son copy propuesto y necesitan la revisión de Carla**. Se editan desde el Table Editor sin
   tocar código, que es justo lo que PRD-0015 vino a habilitar.
-- **`formato` quedó en `null` para los cursos nuevos.** El "intensivo mensual por artista" era del
-  Girly viejo y no sé si el Girly nuevo lo hereda. Inventarlo habría sido inventar un dato de
-  negocio.
+- **`formato` se eliminó** el mismo día. Quedó en `null` para los cursos nuevos porque el
+  "intensivo mensual por artista" era del Girly viejo, y la aclaración de negocio de esa tarde
+  —**los créditos son universales**— lo cerró: si una clase se paga con un crédito que sirve para
+  cualquier otra, no hay a qué inscribirse por un mes. La columna se borra en
+  `20260830130000_creditos_universales.sql`.
 - **Un horario que apunta a algo inactivo se descarta en la consulta.** Es el caso que §7.5 dejó
   anotado: RLS oculta el curso o la sede, el join devuelve `null` en esa punta, y mostrarlo a
   medias sería peor que no mostrarlo.

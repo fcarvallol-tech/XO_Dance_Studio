@@ -168,7 +168,7 @@ permisos que se van a desincronizar.
 
 **✅ Construido el 28/08/2026 (PRD-0015) y ampliado el 30/08/2026 (PRD-0016):**
 
-**`cursos`** — `slug, nombre, publico, estilo, descripcion, formato, cupos, dificultad, orden, activo`
+**`cursos`** — `slug, nombre, publico, estilo, descripcion, cupos, dificultad, orden, activo`
 **`profesoras`** — `slug, nombre, estilo, bio, instagram, foto_url, video_url, orden, activa`
 **`sedes`** — `slug, nombre, direccion, comuna, referencia, orden, activa`
 **`horarios`** — `curso_id, profesora_id, sede_id, dia_semana, hora, activo`
@@ -188,6 +188,9 @@ permisos que se van a desincronizar.
   esos slugs, con `on update cascade`.
 - Sin `edad_min`/`edad_max` ni `porcentaje_comision`: no los usa nada todavía.
 - **`salas` sigue sin existir.** Con una sala por sede no aporta; entra con PRD-0006.
+- **`cursos.formato` se eliminó el 30/08/2026.** Existía para el intensivo mensual por artista de
+  los Girly viejos, que murió con el catálogo nuevo y que los créditos universales contradicen de
+  raíz. Estaba en `null` en las siete filas.
 
 ### 5.3 Clases y calendario
 
@@ -266,6 +269,15 @@ medio_pago, referencia_pasarela, pagada_at`
 
 **`creditos`** — el saldo. **No es un contador simple.**
 `perfil_id, compra_id, cantidad_inicial, cantidad_disponible, fecha_vencimiento, estado`
+
+> ⚠️ **No hay `curso_id` acá, y no es un olvido.** Los créditos son **universales** desde el
+> 30/08/2026: un pack de N clases sirve para cualquier clase de la parrilla, con cualquier
+> profesora y en cualquier sede. Agregarle un `curso_id` a `creditos` —o a `compras`, o a
+> `planes`— rompería el producto, no lo precisaría.
+>
+> Lo que se reserva es un **horario**, no un curso: `reservas` apunta a una clase concreta de
+> la parrilla y el crédito que la paga no pregunta de qué curso es. **Teens es la excepción**
+> y no usa créditos: va por la rama de suscripción de §5.3.b.
 
 ⚠️ **No modelar los créditos como un número en la tabla del perfil.** Un `saldo int` parece más
 simple y es una trampa: no permite vencimientos por lote, ni auditar de dónde salió cada clase,

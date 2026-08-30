@@ -11,7 +11,7 @@ import { DIFICULTADES, type Catalogo, type Dificultad } from "./catalogo";
  */
 
 const CAMPOS_CURSO =
-  "slug, nombre, publico, estilo, descripcion, formato, cupos, dificultad, activo, orden";
+  "slug, nombre, publico, estilo, descripcion, cupos, dificultad, activo, orden";
 const CAMPOS_PROFESORA =
   "slug, nombre, estilo, bio, instagram, foto_url, video_url, activa, orden";
 const CAMPOS_SEDE = "slug, nombre, direccion, comuna, referencia, activa, orden";
@@ -78,7 +78,6 @@ function armar(filas: Filas, estricto: boolean): Catalogo {
       publico: f.publico as string,
       estilo: f.estilo as string,
       descripcion: f.descripcion as string,
-      formato: (f.formato as string | null) ?? null,
       cupos: (f.cupos as number | null) ?? null,
       dificultad: esDificultad(f.dificultad) ? f.dificultad : "principiante",
       activo: f.activo as boolean,

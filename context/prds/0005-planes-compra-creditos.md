@@ -56,6 +56,9 @@ ni de llevar cuenta de cuántas clases le quedan a cada persona.
 
 ## 5. Reglas de negocio
 
+0. **Un crédito sirve para cualquier clase de la parrilla.** No se asocia a un curso, ni al
+   comprarlo ni al consumirlo. Es la regla que más barato sale respetar ahora y más caro
+   revertir después: toca `planes`, `compras`, `creditos` y `reservas` a la vez.
 1. Un crédito acreditado nunca se borra: se consume, se expira o se ajusta, y todo queda en el
    libro.
 2. El saldo disponible se calcula desde los lotes vigentes, nunca se guarda como número suelto.
@@ -70,6 +73,9 @@ ni de llevar cuenta de cuántas clases le quedan a cada persona.
 - ✅ Precios definidos: un solo nivel, definitivo el 25/08. Ver `CONTEXT.md` §5.b.
 - ✅ Vigencia: **60 días**.
 - ✅ Sin tarifa universitaria: el descuento va por código de descuento (PRD-0013).
+- ✅ **Créditos universales (30/08/2026).** Simplifica este PRD: no hay que modelar
+  compatibilidad entre plan y curso, ni validar al reservar que el crédito "sirva" para esa
+  clase, ni explicar en la página de compra qué cubre cada pack. Un crédito es un crédito.
 - ✅ Modelo híbrido resuelto (ADR-0002).
 - ✅ Pasarela: **Flow** (ADR-0003). ⚠️ Inicio de Actividades **en curso**, falta la firma de Carla.
 - ⚠️ Política de reembolso en dinero (distinta de devolver créditos).

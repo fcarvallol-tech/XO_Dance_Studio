@@ -163,23 +163,20 @@ Siete clases a la semana. Viven en la tabla `horarios` y se muestran en el sitio
 > así que la edad mínima es una sola para toda la academia y vive como constante en `lib/lead.ts`.
 > La voz de K-Pop **no cambia**: le sigue hablando a la alumna, no a la mamá. Ver `BRAND.md` §7.
 
-### ⚠️ Formato Girly vs. modelo de créditos
+### ✅ Resuelto: el formato intensivo ya no existe (30/08/2026)
 
-Lo que sigue describe cómo funcionan hoy los cursos Girly. Con el cambio a paquetes de clases
-hay que decidir si este formato sobrevive tal cual, se adapta o desaparece.
+Los Girly viejos eran **intensivos mensuales por artista** —un artista al mes, cuatro clases, una
+coreografía nueva por semana, y la alumna se inscribía *a un mes concreto*—. Eso murió con el
+catálogo nuevo, y los **créditos universales** lo contradicen de raíz: si una clase se paga con
+un crédito que sirve para cualquier otra, no hay a qué "inscribirse por un mes".
 
-### Formato de los cursos Girly
+La pregunta que esta sección dejaba abierta —si el formato sobrevivía, se adaptaba o
+desaparecía— queda cerrada: **desaparece**. La columna `cursos.formato` se eliminó del esquema.
 
-Los dos cursos Girly no son mensualidad continua: son **intensivos mensuales por artista**.
-Un artista al mes (Omar Cruz, De la Rose, Standly…), cuatro clases, una coreografía nueva por
-semana. La alumna se inscribe *a un mes concreto*, no a un curso indefinido.
+**XO Teens** sigue siendo la excepción: inscripción continua, horario fijo y suscripción mensual.
 
-**XO Teens** sí funciona como inscripción continua: horario fijo y suscripción mensual.
-**K-Pop no.** Su contenido es continuo, pero se vende con packs de clases y reserva libre, igual
-que Girly. Formato y forma de cobro son dos ejes distintos y acá no coinciden. Ver el modelo
-híbrido en §5.b y `decisions/0002-modelo-creditos.md`.
-
-⚠️ **Esto significa que el ERP necesita dos modelos de cobro distintos**, no uno.
+⚠️ **El ERP sigue necesitando dos modelos de cobro**, pero por Teens, no por el formato Girly:
+suscripción para Teens y créditos universales para todo lo demás.
 Ver `ARCHITECTURE.md` §5 (modelo de dominio) y §7 (decisiones abiertas).
 
 ---
@@ -221,6 +218,28 @@ construir (cuentas, pagos online y reservas, todo en la primera versión).
 | **K-Pop** | Packs de clases con reserva libre |
 
 El sistema debe soportar **las dos ramas desde el principio**. Ver `decisions/0002-modelo-creditos.md`.
+
+### ✅ Los créditos son universales (30/08/2026)
+
+**Un pack de N clases sirve para cualquier clase de la parrilla**, con cualquier profesora y en
+cualquier sede. No están atados a un curso.
+
+Alguien compra cuatro clases y las gasta en la misma semana yendo a una de Pau, una de Drimy, una
+de Lina y una de Carli. Eso es el producto, no un caso borde.
+
+Por qué importa más allá de la caja:
+
+- **Es lo que hace coherente la captación por profesora.** Si el crédito estuviera atado a un
+  curso, elegir profesora sería una promesa a medias.
+- **Sube el valor de tener parrilla amplia.** Cada horario nuevo no compite con los otros: le
+  agrega opciones a un crédito ya comprado.
+- **Cambia qué significa "curso".** Deja de ser una unidad de venta y pasa a ser una etiqueta de
+  contenido. Lo que se reserva es un **horario**, no un curso.
+
+⚠️ Consecuencia técnica: **`creditos` no lleva `curso_id`**, y no es un olvido. Ver
+`ARCHITECTURE.md` §5.4.
+
+**Teens es la excepción**, y la única: suscripción mensual con horario fijo. No usa créditos.
 
 ### Pricing (definitivo, 25/08/2026)
 
@@ -457,7 +476,7 @@ sin caché de build · verificación real enviando el formulario desde producci�
 | Arquetipo de marca | Pendiente decisión de Carla |
 | Dominio propio | Sin registrar. Al registrarlo hay que **actualizar `NEXT_PUBLIC_SITE_URL`** en Vercel |
 | Registro INAPI | Sin presentar |
-| Cómo se cobran los intensivos mensuales Girly vs las mensualidades continuas | Sin definir. Afecta el diseño del sistema |
+| ~~Cómo se cobran los intensivos mensuales Girly~~ | ✅ **Resuelto el 30/08/2026:** el formato intensivo desapareció con el catálogo nuevo. Créditos universales para todo, salvo Teens con suscripción |
 | ¿Un mes con 5 clases se cobra distinto que uno con 4? | Sin definir |
 | ¿Los créditos vencen? ¿En cuánto tiempo? | Sin definir. Sin vencimiento, la caja cobrada es pasivo eterno |
 | Ventana de cancelación: ¿hasta cuántas horas antes se devuelve el crédito? | Sin definir |

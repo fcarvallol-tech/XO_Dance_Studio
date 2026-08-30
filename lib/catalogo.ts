@@ -56,7 +56,6 @@ export type Curso = {
   publico: string;
   estilo: string;
   descripcion: string;
-  formato: string | null;
   cupos: number | null;
   dificultad: Dificultad;
   activo: boolean;
