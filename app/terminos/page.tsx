@@ -27,8 +27,8 @@ export default function Terminos() {
       <Seccion numero={1} titulo="Sobre estas condiciones">
         <P>
           Estas condiciones regulan el uso del sitio web de XO Dance Studio SpA,
-          academia de baile ubicada en Las Condes, Santiago de Chile. Al usar el
-          sitio o crear una cuenta, aceptas lo que sigue.
+          academia de baile con salas en Providencia y Las Condes, Santiago de
+          Chile. Al usar el sitio o crear una cuenta, aceptas lo que sigue.
         </P>
         <P>
           <Fuerte>Contacto:</Fuerte> <Correo />
@@ -212,8 +212,8 @@ export default function Terminos() {
 
         <Destacado>
           <p className="leading-[1.7] text-xo-negro">
-            <Fuerte>XO Dance Studio SpA</Fuerte> · Las Condes, Santiago de Chile
-            · <Correo />
+            <Fuerte>XO Dance Studio SpA</Fuerte> · Providencia y Las Condes,
+            Santiago de Chile · <Correo />
           </p>
         </Destacado>
       </Seccion>

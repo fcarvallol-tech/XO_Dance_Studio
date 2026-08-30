@@ -1,15 +1,35 @@
 import { BotonInscripcion } from "./BotonInscripcion";
 import { Reveal } from "./Reveal";
-import { nombresDe, type Curso, type Profesora } from "@/lib/catalogo";
+import {
+  cuando,
+  horariosDeCurso,
+  nombreDe,
+  profesorasDeCurso,
+  type Curso,
+  type Horario,
+  type Profesora,
+  type Sede,
+} from "@/lib/catalogo";
 import { DESDE_POR_CLASE, clp } from "@/lib/planes";
 import { POR_CONFIRMAR } from "@/lib/tipos";
+
+/** Cómo se dice cada dificultad en pantalla. */
+const NIVEL = {
+  principiante: "Principiante",
+  intermedio: "Intermedio",
+  avanzado: "Avanzado",
+} as const;
 
 export function Cursos({
   cursos,
   profesoras,
+  sedes,
+  horarios,
 }: {
   cursos: Curso[];
   profesoras: Profesora[];
+  sedes: Sede[];
+  horarios: Horario[];
 }) {
   return (
     <section
@@ -36,7 +56,12 @@ export function Cursos({
         <ul className="mt-14 grid gap-px overflow-hidden rounded-lg bg-xo-blanco/15 sm:grid-cols-2">
           {cursos.map((curso) => (
             <li key={curso.slug} className="bg-xo-negro-alt">
-              <Tarjeta curso={curso} profesoras={profesoras} />
+              <Tarjeta
+                curso={curso}
+                profesoras={profesoras}
+                sedes={sedes}
+                horarios={horarios}
+              />
             </li>
           ))}
           {/* Con un número impar de cursos en dos columnas, el hueco final
@@ -54,11 +79,20 @@ export function Cursos({
 function Tarjeta({
   curso,
   profesoras,
+  sedes,
+  horarios,
 }: {
   curso: Curso;
   profesoras: Profesora[];
+  sedes: Sede[];
+  horarios: Horario[];
 }) {
-  const nombres = nombresDe(profesoras, curso.profesoras);
+  // Quién dicta el curso se deriva de los horarios: la tabla cursos_profesoras
+  // se eliminó en PRD-0016 porque no tenía nada que horarios no tuviera.
+  const nombres = profesorasDeCurso(horarios, profesoras, curso.slug).map(
+    (p) => p.nombre,
+  );
+  const suyos = horariosDeCurso(horarios, curso.slug);
 
   return (
     <article className="flex h-full flex-col p-7 sm:p-9">
@@ -80,8 +114,8 @@ function Tarjeta({
 
       <dl className="mt-8 space-y-3 border-t border-xo-blanco/15 pt-6 text-sm">
         <Dato etiqueta="Estilo" valor={curso.estilo} />
+        <Dato etiqueta="Nivel" valor={NIVEL[curso.dificultad]} />
         <Dato etiqueta="Profes" valor={nombres.join(", ")} />
-        <Dato etiqueta="Horario" valor={curso.horario} />
         <Dato
           etiqueta="Valor"
           valor={`Packs desde ${clp(DESDE_POR_CLASE)} por clase`}
@@ -91,6 +125,28 @@ function Tarjeta({
           valor={curso.cupos === null ? null : `${curso.cupos} disponibles`}
         />
       </dl>
+
+      {/* Los horarios ya no caben en una línea: un curso tiene varios, y cada
+          uno trae día, hora, profesora y sede. */}
+      <div className="mt-6 border-t border-xo-blanco/15 pt-6">
+        <p className="xo-eyebrow text-xo-blanco/45">Horarios</p>
+
+        {suyos.length === 0 ? (
+          <p className="mt-3 text-sm text-xo-blanco/40 italic">{POR_CONFIRMAR}</p>
+        ) : (
+          <ul className="mt-3 space-y-2.5">
+            {suyos.map((horario) => (
+              <li key={horario.id} className="text-sm leading-snug">
+                <span className="text-xo-blanco/85">{cuando(horario)}</span>
+                <span className="block text-xo-blanco/55">
+                  {nombreDe(profesoras, horario.profesoraSlug)} ·{" "}
+                  {nombreDe(sedes, horario.sedeSlug)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <div className="mt-8 pt-2">
         <BotonInscripcion

@@ -29,9 +29,9 @@ const montserrat = Montserrat({
 
 const SITIO = sitio();
 
-const TITULO = "XO Dance Studio — Academia de baile en Las Condes";
+const TITULO = "XO Dance Studio — Academia de baile en Providencia y Las Condes";
 const DESCRIPCION =
-  "Academia de baile en Las Condes. Cinco profes, grupos chicos y un lugar donde bailar también significa sentirte parte. Las clases parten en septiembre.";
+  "Academia de baile con salas en Providencia y Las Condes. Grupos chicos, profes cercanas y un lugar donde bailar también significa sentirte parte.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITIO),

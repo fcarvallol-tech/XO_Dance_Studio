@@ -43,13 +43,16 @@ de sus atletas.
 
 | Profesora | Cursos | Instagram |
 |---|---|---|
-| Carli | Girly Básico · Teens | @carlataty.20 |
-| Pau | Girly Básico · Girly Intermedio | @pau_balbontinc |
-| Drimy | Teens | @ladrimy |
-| Lina | Teens | @linaapop |
-| Maida | K-Pop | @maidaquirozc |
+| Carli | Girly · Teens | @carlataty.20 |
+| Pau | Reggaeton Femme · Girly | @pau_balbontinc |
+| Drimy | Reggaeton Femme | @ladrimy |
+| Lina | Slow Femme | @linaapop |
+| ~~Maida~~ | — | @maidaquirozc |
 
-Las cinco tienen Instagram propio con seguidores y son parte activa de la campaña de lanzamiento.
+**Cuatro activas desde el 30/08/2026: Maida se desactiva junto con K-Pop.** No se borra: los
+leads que la nombran se siguen leyendo.
+
+Todas tienen Instagram propio con seguidores y son parte activa de la campaña de lanzamiento.
 
 ---
 
@@ -59,8 +62,8 @@ Las cinco tienen Instagram propio con seguidores y son parte activa de la campa�
 |---|---|
 | **Etapa** | Fase 1 — Validación & Caja. Campaña de lanzamiento en curso |
 | **Modelo** | Academia de baile urbano B2C |
-| **Sedes** | **Dos:** Los Leones y Los Dominicos. La dirección exacta **no se publica en la web**: se entrega por WhatsApp |
-| **Razón social** | Academia de Baile XO SpA (en constitución vía Tu Empresa en un Día) |
+| **Sedes** | **Dos, con dirección pública desde el 30/08/2026:** Seducción Latina Experience (Av. Nueva Providencia 2260, Providencia, sector Los Leones) y Centro Comunitario Diaguitas (Diaguitas 911, Las Condes) |
+| **Razón social** | **XO Dance Studio SpA** (en constitución vía Tu Empresa en un Día) |
 | **Nombre de fantasía** | XO Dance Studio |
 | **Alumnas hoy** | 7–8 (⚠️ confirmar el número exacto). Migran de Kids a Teens |
 | **Precio** | Tarifa de packs para todos los cursos. Teens deja los $45.000/mes |
@@ -122,12 +125,38 @@ Quedan cuatro cursos. En código siguen los cinco (`lib/cursos.ts`): `kids` qued
 el 22/08/2026, no borrado, para no romper los leads históricos que apuntan a ese `curso_id`. Precios, horarios y
 cupos están en `null` y se muestran como **"Por confirmar"**. No inventarlos.
 
-| Curso | Público | Estilo | Profesoras |
-|---|---|---|---|
-| **XO Teens** | Niñas 11–15 · **curso de entrada** | Urbano | Carli · Drimy · Lina |
-| **XO Girly Básico** | Mujeres 16+ sin experiencia | Reggaetón femenino | Carli · Pau |
-| **XO Girly Intermedio** | Mujeres con experiencia | Reggaetón femenino | Pau |
-| **K-Pop** | Desde los 11 años | K-Pop | Maida |
+| Curso | Público | Estilo | Nivel | Profesoras |
+|---|---|---|---|---|
+| **Reggaeton Femme** | Desde los 15 años | Reggaeton Femme | Principiante | Drimy · Pau |
+| **Girly** | Desde los 15 años | Girly | Principiante | Pau · Carli |
+| **Slow Femme** | Desde los 15 años | Slow Femme | Principiante | Lina |
+| **Teens** | Niñas de 11 a 14 años · **curso de entrada** | Variado | Principiante | Carli |
+
+> **Cambio del 30/08/2026 (PRD-0016).** El catálogo se rehízo casi entero: Girly Básico e
+> Intermedio se **funden en un solo Girly**, aparecen **Reggaeton Femme** y **Slow Femme**, y
+> **sale K-Pop**. Teens baja su tramo de 11–15 a **11–14** y el resto sube de 16+ a **15+**.
+> Los cuatro cursos son de nivel **principiante**; la columna `dificultad` soporta intermedio y
+> avanzado para cuando vuelvan los niveles.
+>
+> Los cursos que salen **se desactivan, no se borran**: `kpop`, `girly-basico`, `girly-intermedio`
+> y `kids`. Hay llaves foráneas desde `leads` apuntando a sus slugs.
+>
+> ⚠️ `girly` es un **slug nuevo**, no un `girly-basico` renombrado: los slugs son inmutables por
+> trigger desde PRD-0015.
+
+### Horarios (30/08/2026)
+
+Siete clases a la semana. Viven en la tabla `horarios` y se muestran en el sitio.
+
+| Curso | Profesora | Día | Hora | Sede |
+|---|---|---|---|---|
+| Reggaeton Femme | Drimy | lunes | 17:00 | Seducción Latina Experience |
+| Teens | Carli | lunes | 18:00 | Centro Comunitario Diaguitas |
+| Girly | Pau | lunes | 20:00 | Centro Comunitario Diaguitas |
+| Reggaeton Femme | Pau | miércoles | 20:00 | Centro Comunitario Diaguitas |
+| Girly | Carli | viernes | 20:00 | Seducción Latina Experience |
+| Slow Femme | Lina | sábado | 17:00 | Seducción Latina Experience |
+| Girly | Carli | sábado | 18:00 | Seducción Latina Experience |
 
 > **Cambio del 24/08/2026:** K-Pop deja de ser "todas las edades" y pasa a ser **de 11 años para
 > arriba**, igual que el resto del catálogo. Con Kids fuera, ningún curso recibe a alguien menor,

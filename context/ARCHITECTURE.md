@@ -16,7 +16,7 @@
 | Lenguaje | TypeScript | 5 |
 | Estilos | **Tailwind CSS v4** vía `@tailwindcss/postcss` | 4 |
 | Base de datos | Supabase (Postgres) | `@supabase/supabase-js` 2.111 |
-| Auth | Supabase Auth — **Google + magic link**, vía `@supabase/ssr` 0.12 | implementado, sin aplicar la migración |
+| Auth | Supabase Auth — **Google + magic link**, vía `@supabase/ssr` 0.12 | implementado |
 | Emails | Transaccional (Resend o similar) — **a decidir** | a implementar |
 | Pagos | **Flow** (incluye Webpay, tarjetas y transferencia) — ADR-0003 | a implementar |
 | Deploy | Vercel, proyecto `xo-dance-studio`, equipo `Unicornio` (Hobby) | en línea |
@@ -159,35 +159,35 @@ permisos que se van a desincronizar.
 
 ### 5.2 Catálogo
 
-**`sedes`** — `nombre, direccion, comuna, activa`
-> **Dos sedes reales:** Los Leones y Los Dominicos. El sistema es multi-sede desde el día uno;
-> ya no es una previsión, es un hecho.
+> **Dos sedes reales**, con nombre y dirección desde el 30/08/2026: Seducción Latina Experience
+> (Providencia) y Centro Comunitario Diaguitas (Las Condes). El sistema es multi-sede desde el
+> día uno; ya no es una previsión, es un hecho.
+>
+> **`salas`** sigue pendiente para PRD-0006: ahí van `capacidad` y `costo_hora_clp`, que son lo
+> que permite calcular el margen por clase dictada. Mientras haya una sala por sede no aporta.
 
-**`salas`** — `sede_id, nombre, capacidad, costo_hora_clp`
-> Los Leones: $17.000. Los Dominicos: $0. La capacidad máxima es **45**: tope duro de reservas
-> por clase. El costo por sala es lo que permite calcular margen por clase dictada.
+**✅ Construido el 28/08/2026 (PRD-0015) y ampliado el 30/08/2026 (PRD-0016):**
 
-**✅ Construido el 28/08/2026 (PRD-0015),** en
-`supabase/migrations/20260828120000_catalogo_en_base_de_datos.sql`:
-
-**`cursos`** — `slug, nombre, publico, estilo, descripcion, formato, horario, cupos, orden, activo`
+**`cursos`** — `slug, nombre, publico, estilo, descripcion, formato, cupos, dificultad, orden, activo`
 **`profesoras`** — `slug, nombre, estilo, bio, instagram, foto_url, video_url, orden, activa`
-**`cursos_profesoras`** — relación muchos a muchos.
+**`sedes`** — `slug, nombre, direccion, comuna, referencia, orden, activa`
+**`horarios`** — `curso_id, profesora_id, sede_id, dia_semana, hora, activo`
 
-- El **slug** es la identidad pública y es **inmutable por trigger**: lo guardan `leads`,
-  `perfiles` y las URLs `/profesoras/<slug>`. Renombrarlo dejaría leads huérfanos y rompería un
-  link compartido por Instagram.
-- **RLS:** `anon` y `authenticated` leen solo lo activo; `admin`+ lee todo y escribe. Son las
-  primeras tablas que `anon` puede leer, así que la política dice `activo` de forma literal.
+- El **slug** es la identidad pública y es **inmutable por trigger** en las tres tablas que lo
+  tienen: lo guardan `leads`, `perfiles` y las URLs `/profesoras/<slug>`.
+- **`cursos_profesoras` se eliminó en PRD-0016.** `horarios` dice quién dicta qué, dónde y cuándo:
+  no había ningún hecho en la tabla de unión que no estuviera ahí, y dos fuentes para el mismo
+  dato se desincronizan. La relación se deriva.
+- `dia_semana` es ISO 8601 (1 = lunes … 7 = domingo), para ordenar la semana sin un `case`.
+- **Dos índices únicos parciales** en `horarios`: no hay dos clases a la misma hora en la misma
+  sede, ni una profesora en dos lugares a la vez. El primero **asume una sala por sede**; si
+  alguna llega a tener dos, se revisa junto con el modelado de `salas` de PRD-0006.
+- `cursos.horario` quedó **sin uso** —un curso tiene varios— y está marcada con un `comment`.
+- **RLS:** `anon` y `authenticated` leen solo lo activo; `admin`+ lee todo y escribe.
 - `perfiles.profesora_id`, `leads.curso_id` y `leads.profesora_id` son **llaves foráneas** contra
   esos slugs, con `on update cascade`.
-- Sin `edad_min`/`edad_max` ni `porcentaje_comision`: no los usa nada todavía. La edad mínima es
-  una sola para toda la academia y vive en `lib/lead.ts`.
-
-> **Requisito explícito:** cursos y profesoras se crean y editan **desde la página**, por un
-> admin. No son datos de código. Los cinco cursos y las cinco profesoras de `lib/cursos.ts` y
-> `lib/profesoras.ts` se cargan como **seed inicial editable**, no como valores fijos: la oferta
-> ya cambió una vez y va a volver a cambiar. Ver PRD-0009.
+- Sin `edad_min`/`edad_max` ni `porcentaje_comision`: no los usa nada todavía.
+- **`salas` sigue sin existir.** Con una sala por sede no aporta; entra con PRD-0006.
 
 ### 5.3 Clases y calendario
 

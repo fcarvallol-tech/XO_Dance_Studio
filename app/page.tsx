@@ -9,6 +9,7 @@ import { Lineup } from "@/components/Lineup";
 import { Planes } from "@/components/Planes";
 import { PreseleccionPorUrl } from "@/components/PreseleccionPorUrl";
 import { QueEsXo } from "@/components/QueEsXo";
+import { Sedes } from "@/components/Sedes";
 import { SeleccionProvider } from "@/components/Seleccion";
 import { getCatalogoPublico } from "@/lib/catalogo-consultas";
 
@@ -23,7 +24,7 @@ import { getCatalogoPublico } from "@/lib/catalogo-consultas";
 export const revalidate = 3600;
 
 export default async function Home() {
-  const { cursos, profesoras } = await getCatalogoPublico();
+  const { cursos, profesoras, sedes, horarios } = await getCatalogoPublico();
 
   return (
     <SeleccionProvider>
@@ -37,8 +38,14 @@ export default async function Home() {
       <main id="contenido">
         <Hero />
         <QueEsXo />
-        <Lineup cursos={cursos} profesoras={profesoras} />
-        <Cursos cursos={cursos} profesoras={profesoras} />
+        <Lineup cursos={cursos} profesoras={profesoras} horarios={horarios} />
+        <Cursos
+          cursos={cursos}
+          profesoras={profesoras}
+          sedes={sedes}
+          horarios={horarios}
+        />
+        <Sedes sedes={sedes} />
         <Planes />
         <ClaseDePrueba />
         <Formulario cursos={cursos} profesoras={profesoras} />

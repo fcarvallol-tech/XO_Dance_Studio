@@ -6,7 +6,12 @@ import { useEffect, useRef, useState } from "react";
 import { BotonInscripcion } from "./BotonInscripcion";
 import { Placeholder } from "./Placeholder";
 import { Reveal } from "./Reveal";
-import { nombreDe, type Curso, type Profesora } from "@/lib/catalogo";
+import {
+  cursosDeProfesora,
+  type Curso,
+  type Horario,
+  type Profesora,
+} from "@/lib/catalogo";
 
 /**
  * El lineup: las cinco profesoras como cartelera de festival.
@@ -16,9 +21,11 @@ import { nombreDe, type Curso, type Profesora } from "@/lib/catalogo";
 export function Lineup({
   cursos,
   profesoras,
+  horarios,
 }: {
   cursos: Curso[];
   profesoras: Profesora[];
+  horarios: Horario[];
 }) {
   const [activa, setActiva] = useState<string | null>(profesoras[0]?.slug ?? null);
   const [abierta, setAbierta] = useState<string | null>(null);
@@ -86,6 +93,7 @@ export function Lineup({
             <Fila
               profesora={profesora}
               cursos={cursos}
+              horarios={horarios}
               activa={profesora.slug === activa}
               abierta={abierta === profesora.slug}
               onActivar={() => setActiva(profesora.slug)}
@@ -158,6 +166,7 @@ function FondoProfesora({
 function Fila({
   profesora,
   cursos,
+  horarios,
   activa,
   abierta,
   onActivar,
@@ -166,6 +175,7 @@ function Fila({
 }: {
   profesora: Profesora;
   cursos: Curso[];
+  horarios: Horario[];
   activa: boolean;
   abierta: boolean;
   onActivar: () => void;
@@ -173,11 +183,11 @@ function Fila({
   registrar: (elemento: HTMLElement | null) => void;
 }) {
   const fichaId = `ficha-${profesora.slug}`;
-  // El filtro de cursos vigentes ya lo hizo la consulta pública: getCatalogoPublico
-  // solo devuelve los activos en `profesora.cursos`.
-  const nombresCursos = profesora.cursos
-    .map((slug) => nombreDe(cursos, slug))
-    .filter((nombre): nombre is string => Boolean(nombre));
+  // Qué dicta se deriva de los horarios desde PRD-0016. La consulta pública
+  // solo trae cursos activos, así que un curso fuera de catálogo no aparece.
+  const nombresCursos = cursosDeProfesora(horarios, cursos, profesora.slug).map(
+    (curso) => curso.nombre,
+  );
 
   return (
     <div ref={registrar} data-profesora={profesora.slug}>

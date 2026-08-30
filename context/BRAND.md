@@ -10,7 +10,7 @@
 
 ## 1. Qué es XO
 
-**Academia de baile** en Las Condes. El nombre viene de **XO** — *kiss & hug* —
+**Academia de baile** en Providencia y Las Condes. El nombre viene de **XO** — *kiss & hug* —
 que representa afecto, feminidad y la comunidad que se forma dentro de la academia.
 
 **Tagline:** *"Un lugar donde bailar también significa sentirte parte."*
@@ -167,7 +167,11 @@ empoderamiento y actitud, nunca vulgaridad.
   "gratis" cambia la promesa: ya no se ofrece una prueba sin costo, se ofrece reservar
 - **La pregunta de captación es por profesora, no por curso:** "¿Con quién quieres tomar
   clases?". Pone a las profesoras al centro, coherente con la visión de plataforma de talentos
-- La dirección exacta no se publica: solo "Las Condes, Santiago". Se entrega por WhatsApp
+- **Las direcciones se publican** (PRD-0016). Son dos salas con nombre y calle: Seducción
+  Latina Experience en Providencia y Centro Comunitario Diaguitas en Las Condes. La regla
+  anterior —solo la comuna, el resto por WhatsApp— nació cuando la sede no estaba confirmada;
+  esconder una dirección que ya existe solo agrega fricción para decidir
+- **La academia está en dos comunas: Providencia y Las Condes.** No decir solo Las Condes
 - La fecha exacta de lanzamiento no se publica: solo "Las clases parten en septiembre"
 
 ---

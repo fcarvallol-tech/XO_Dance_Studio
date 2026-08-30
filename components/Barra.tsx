@@ -6,6 +6,7 @@ const SECCIONES = [
   { href: "#profesoras", texto: "Las profes" },
   { href: "#cursos", texto: "Cursos" },
   { href: "#planes", texto: "Planes" },
+  { href: "#sedes", texto: "Sedes" },
 ];
 
 /**

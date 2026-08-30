@@ -28,8 +28,8 @@ export default function Privacidad() {
       <Seccion numero={1} titulo="Quiénes somos">
         <P>
           XO Dance Studio SpA (&quot;XO Dance Studio&quot;,
-          &quot;nosotras&quot;) es una academia de baile ubicada en Las Condes,
-          Santiago de Chile. Somos responsables del tratamiento de los datos
+          &quot;nosotras&quot;) es una academia de baile con salas en Providencia
+          y Las Condes, Santiago de Chile. Somos responsables del tratamiento de los datos
           personales que recogemos a través de este sitio.
         </P>
         <P>
@@ -286,7 +286,7 @@ export default function Privacidad() {
           <p className="leading-[1.7] text-xo-negro">
             <Correo />
             <br />
-            XO Dance Studio SpA · Las Condes, Santiago de Chile
+            XO Dance Studio SpA · Providencia y Las Condes, Santiago de Chile
           </p>
         </Destacado>
         <P>

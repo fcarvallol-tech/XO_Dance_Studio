@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Reveal } from "./Reveal";
 import { useSeleccion } from "./Seleccion";
-import { linkWhatsApp } from "@/lib/contacto";
 import { porSlug, type Curso, type Profesora } from "@/lib/catalogo";
 import {
   EDAD_MAXIMA,
@@ -31,7 +30,6 @@ export function Formulario({
   const [errores, setErrores] = useState<ErroresLead>({});
   const [fallo, setFallo] = useState<string | null>(null);
   const [estado, setEstado] = useState<Estado>("reposo");
-  const [linkWa, setLinkWa] = useState<string | null>(null);
 
   // La profe viene preseleccionada si entró desde una ficha del lineup, desde
   // un perfil público o con ?profesora= en la URL. El curso solo viene cuando
@@ -75,10 +73,6 @@ export function Formulario({
     setErrores({});
     setEstado("enviando");
 
-    // Se abre la pestaña ahora, antes del await: si se abre después, el
-    // navegador la bloquea por no venir de un gesto del usuario.
-    const pestana = window.open("", "_blank", "noopener,noreferrer");
-
     try {
       const respuesta = await fetch("/api/lead", {
         method: "POST",
@@ -88,7 +82,6 @@ export function Formulario({
 
       if (!respuesta.ok) {
         const cuerpo = await respuesta.json().catch(() => null);
-        pestana?.close();
         setErrores(cuerpo?.errores ?? {});
         setFallo(
           cuerpo?.mensaje ??
@@ -98,14 +91,8 @@ export function Formulario({
         return;
       }
 
-      const mensaje = armarMensaje(profesora?.nombre, curso?.nombre);
-      const url = linkWhatsApp(mensaje);
-      setLinkWa(url);
       setEstado("listo");
-
-      if (pestana) pestana.location.href = url;
     } catch {
-      pestana?.close();
       setFallo(
         "Se cortó la conexión antes de guardar tus datos. Prueba de nuevo en un momento.",
       );
@@ -119,7 +106,6 @@ export function Formulario({
         <Confirmacion
           nombre={nombre}
           profesora={profesora?.nombre}
-          linkWa={linkWa}
           onVolver={() => setEstado("reposo")}
         />
       </SeccionFormulario>
@@ -133,8 +119,9 @@ export function Formulario({
         Elige con quién quieres bailar
       </h2>
       <p className="mt-5 text-xo-blanco/70">
-        Cuatro datos y listo. Te escribimos por WhatsApp para coordinar el día,
-        el horario y los valores.
+        Cuatro datos y listo. Los horarios, las salas y los valores ya están más
+        arriba: esto es para que sepamos que vienes y te avisemos cuando se
+        abran las inscripciones.
       </p>
 
       <form onSubmit={enviar} noValidate className="mt-10 space-y-7">
@@ -304,12 +291,6 @@ export function Formulario({
   );
 }
 
-function armarMensaje(profesora?: string, curso?: string): string {
-  const con = profesora ? ` con ${profesora}` : "";
-  const por = curso ? `, sobre todo ${curso}` : "";
-  return `Hola! Vengo de la web, quiero tomar clases${con}${por} 🌸`;
-}
-
 function SeccionFormulario({ children }: { children: React.ReactNode }) {
   return (
     <section
@@ -321,15 +302,25 @@ function SeccionFormulario({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * PRD-0016 le sacó el salto a WhatsApp. Antes esta pantalla abría una pestaña a
+ * `wa.me` con un mensaje precargado; ahora el lead se guarda y se confirma acá
+ * mismo.
+ *
+ * Se fue con eso la pestaña que había que abrir **antes** del `await` para que
+ * el navegador no la bloqueara, y el problema que CONTEXT.md §10 registró: en
+ * escritorio sin sesión, `wa.me` manda a un código QR.
+ *
+ * El copy no promete una coordinación automática, porque hasta que exista la
+ * compra en línea (PRD-0005) la respuesta la escribe una persona a mano.
+ */
 function Confirmacion({
   nombre,
   profesora,
-  linkWa,
   onVolver,
 }: {
   nombre: string;
   profesora?: string;
-  linkWa: string | null;
   onVolver: () => void;
 }) {
   return (
@@ -341,26 +332,15 @@ function Confirmacion({
         Quedaste anotada, {nombre.split(" ")[0]}
       </h2>
       <p className="mt-5 leading-relaxed text-xo-blanco/80">
-        Le vamos a contar a {profesora ?? "la profe"} que preguntaste por ella,
-        y te abrimos WhatsApp con el mensaje escrito. Si la pestaña no se abrió,
-        entra desde acá.
+        Le vamos a contar a {profesora ?? "la profe"} que preguntaste por ella.
+        Te escribimos para decirte cómo inscribirte.
       </p>
       <p className="mt-3 leading-relaxed text-xo-blanco/60">
-        Te respondemos con el horario, los valores y la dirección exacta. Si
-        prefieres esperar, te escribimos nosotras.
+        Mientras tanto, los horarios y las salas están más arriba en esta misma
+        página.
       </p>
 
       <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
-        {linkWa ? (
-          <a
-            href={linkWa}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="xo-eyebrow inline-flex rounded-full bg-xo-rosa px-6 py-3.5 text-xo-negro transition-colors hover:bg-xo-rosa-claro"
-          >
-            Abrir WhatsApp
-          </a>
-        ) : null}
         <button
           type="button"
           onClick={onVolver}

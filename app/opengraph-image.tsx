@@ -5,7 +5,7 @@ import { INICIO_CLASES, UBICACION } from "@/lib/contacto";
 
 // El link se comparte por WhatsApp e Instagram: la preview es la primera
 // impresión de la marca. Se genera en build, no en cada request.
-export const alt = "XO Dance Studio — academia de baile en Las Condes";
+export const alt = "XO Dance Studio — academia de baile en Providencia y Las Condes";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

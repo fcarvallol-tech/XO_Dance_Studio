@@ -5,8 +5,13 @@ import { notFound } from "next/navigation";
 import { Footer } from "@/components/Footer";
 import { Placeholder } from "@/components/Placeholder";
 import { UBICACION } from "@/lib/contacto";
-import { nombreDe } from "@/lib/catalogo";
-import { getCatalogoPublico, getProfesoraPublica } from "@/lib/catalogo-consultas";
+import {
+  cuando,
+  horariosDeProfesora,
+  nombreDe,
+  porSlug,
+} from "@/lib/catalogo";
+import { getCatalogoPublico } from "@/lib/catalogo-consultas";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -30,7 +35,8 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const profesora = await getProfesoraPublica(slug);
+  const { profesoras } = await getCatalogoPublico();
+  const profesora = porSlug(profesoras, slug);
   if (!profesora) return {};
 
   const titulo = `${profesora.nombre} — Profesora de XO Dance Studio`;
@@ -60,15 +66,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PerfilProfesora({ params }: Props) {
   const { slug } = await params;
-  const profesora = await getProfesoraPublica(slug);
+  const { profesoras, cursos: todos, sedes, horarios } = await getCatalogoPublico();
+  const profesora = porSlug(profesoras, slug);
   if (!profesora) notFound();
 
-  // getCatalogoPublico y getProfesoraPublica ya devuelven solo cursos activos
-  // en `profesora.cursos`: el filtro lo hace la consulta, no la vista.
-  const { cursos: todos } = await getCatalogoPublico();
-  const cursos = profesora.cursos
-    .map((slugCurso) => nombreDe(todos, slugCurso))
-    .filter((nombre): nombre is string => Boolean(nombre));
+  // Sus clases de la semana. De acá salen también los cursos que dicta: la
+  // tabla cursos_profesoras se eliminó en PRD-0016.
+  const suyos = horariosDeProfesora(horarios, profesora.slug);
+  const cursos = [
+    ...new Set(suyos.map((h) => nombreDe(todos, h.cursoSlug))),
+  ].filter((nombre): nombre is string => Boolean(nombre));
 
   // El formulario vive en la landing. El perfil manda para allá con la profe
   // ya elegida: la lee <PreseleccionPorUrl>.
@@ -156,6 +163,26 @@ export default async function PerfilProfesora({ params }: Props) {
                   </li>
                 ))}
               </ul>
+
+              <p className="xo-eyebrow mt-10 text-xo-rosa-claro">Sus horarios</p>
+              {suyos.length === 0 ? (
+                <p className="mt-3 text-xo-blanco/60 italic">
+                  Sin horarios publicados por ahora.
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-2.5">
+                  {suyos.map((horario) => (
+                    <li key={horario.id} className="leading-snug">
+                      <span className="text-xo-blanco/85">
+                        {cuando(horario)} · {nombreDe(todos, horario.cursoSlug)}
+                      </span>
+                      <span className="block text-sm text-xo-blanco/55">
+                        {nombreDe(sedes, horario.sedeSlug)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
 
               <p className="xo-eyebrow mt-10 text-xo-rosa-claro">Dónde</p>
               <p className="mt-3 text-xo-blanco/80">{UBICACION}</p>

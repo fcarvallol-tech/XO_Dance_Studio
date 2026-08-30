@@ -36,8 +36,8 @@ export function ClaseDePrueba() {
         </p>
 
         <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-xo-gris">
-          Nos dejas tus datos, te escribimos por WhatsApp y coordinamos el día,
-          el horario y los valores.
+          Los horarios, las salas y los valores están todos acá. Nos dejas tus
+          datos y te escribimos para decirte cómo inscribirte.
         </p>
 
         <div className="mt-10">

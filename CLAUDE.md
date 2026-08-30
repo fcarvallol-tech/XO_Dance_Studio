@@ -4,7 +4,7 @@
 > Es una evolución del `CLAUDE.md` que ya existe: mantiene todas sus reglas y le agrega
 > el sistema de contexto y la parte de ERP. Reemplázalo entero.
 
-Plataforma de una academia de baile en Las Condes, Santiago de Chile: sitio público de
+Plataforma de una academia de baile en Providencia y Las Condes, Santiago de Chile: sitio público de
 captación + cuentas de alumnas, venta de paquetes de clases, reserva por horario y portales
 para alumna, profesora, administración y owner.
 
@@ -55,8 +55,8 @@ Fuentes vía `next/font/google`.
   ningún otro lado. Horarios y cupos siguen en `lib/cursos.ts` marcados `TODO` y se muestran como
   "Por confirmar". Lo mismo aplica a cualquier dato de negocio que no esté en
   `context/CONTEXT.md`: si no está, se pregunta.
-- No mostrar la dirección exacta ni la fecha de lanzamiento. Solo "Las Condes, Santiago" y
-  "Las clases parten en septiembre".
+- **Las direcciones sí se publican** desde PRD-0016: viven en la tabla `sedes` y se muestran en
+  el sitio. Lo que se sigue sin publicar es la fecha exacta de lanzamiento.
 - Sin `localStorage` ni `sessionStorage`.
 - Sin librerías de animación. CSS y transiciones nativas alcanzan.
 - Sin stock photos. Si falta una imagen, placeholder evidente.
@@ -77,7 +77,7 @@ reemplace. No la cambies en silencio.
 ## Estructura
 
 Sitio público: una sola página con scroll (`app/page.tsx`). Secciones en orden: Hero · Qué es
-XO · Profesoras · Cursos · Planes · Clase de prueba · Formulario · Footer.
+XO · Profesoras · Cursos · Planes · Sedes · Clase de prueba · Formulario · Footer.
 
 ERP: rutas bajo `app/(erp)/`, todas autenticadas. No existe todavía.
 
