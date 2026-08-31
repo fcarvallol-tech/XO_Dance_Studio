@@ -33,7 +33,7 @@ caja neta (ingresos − arriendo de sala − pago a profesoras).
   meses antes de que se note en la caja.
 - *Créditos por vencer en 30 días.*
 
-**Demanda.** Ocupación por clase (sobre 45) y por horario · horarios saturados vs. muertos ·
+**Demanda.** Ocupación por clase (sobre 22) y por horario · horarios saturados vs. muertos ·
 ranking de profesoras por reservas y por ingreso atribuido.
 
 **Alumnas.** Activas (con crédito vigente o reserva en 30 días) · **tasa de recompra**, que es

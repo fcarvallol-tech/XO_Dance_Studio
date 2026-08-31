@@ -54,7 +54,7 @@ volver a cambiar: el sistema tiene que asumir que el catálogo es data, no confi
 
 1. Toda acción de admin que toque créditos o reservas ajenas queda registrada con autor y motivo.
 2. Nada se borra físicamente.
-3. El tope de 45 es del sistema: ninguna operación de admin lo supera sin confirmación explícita
+3. El tope de 22 es del sistema: ninguna operación de admin lo supera sin confirmación explícita
    registrada.
 
 ## 6. Criterios de aceptación

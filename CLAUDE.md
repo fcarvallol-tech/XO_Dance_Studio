@@ -95,7 +95,7 @@ ERP: rutas bajo `app/(erp)/`, todas autenticadas. No existe todavía.
 - **Ninguna operación que toque créditos o cupos se ejecuta desde el cliente.** Todo pasa por
   Route Handler o función de base de datos.
 - **Reservar y descontar el crédito ocurren en una sola transacción.** Nunca por separado.
-- **El cupo se valida en la base de datos**, no leyendo un conteo y escribiendo después. Con 45
+- **El cupo se valida en la base de datos**, no leyendo un conteo y escribiendo después. Con 22
   cupos y campañas de Instagram, la condición de carrera es real.
 - **El saldo de créditos no es un `int` en el perfil.** Son lotes con vencimiento, y todo cambio
   queda registrado en `movimientos_credito`. Ese libro nunca se edita, solo se agrega.

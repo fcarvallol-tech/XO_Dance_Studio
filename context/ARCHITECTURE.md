@@ -165,6 +165,11 @@ permisos que se van a desincronizar.
 >
 > **`salas`** sigue pendiente para PRD-0006: ahí van `capacidad` y `costo_hora_clp`, que son lo
 > que permite calcular el margen por clase dictada. Mientras haya una sala por sede no aporta.
+>
+> **Capacidad: 22 personas en las dos sedes** (confirmado el 30/08/2026). El cupo es atributo
+> de la sala —y por herencia de la clase—, **nunca del curso**: depende del espacio físico, no
+> de qué se baila adentro. Mientras `salas` no exista, el default de `clases.cupo_maximo` lo
+> sostiene.
 
 **✅ Construido el 28/08/2026 (PRD-0015) y ampliado el 30/08/2026 (PRD-0016):**
 
@@ -195,7 +200,7 @@ permisos que se van a desincronizar.
 ### 5.3 Clases y calendario
 
 **`clases`** — la unidad reservable. Una ocurrencia concreta en el calendario.
-`curso_id, profesora_id, sala_id, fecha, hora_inicio, hora_fin, cupo_maximo (default 45),
+`curso_id, profesora_id, sala_id, fecha, hora_inicio, hora_fin, cupo_maximo (default 22),
 estado (programada|realizada|cancelada), motivo_cancelacion`
 
 > **Cambio importante de modelo.** Antes existía `secciones` (curso + horario fijo) y las
@@ -304,7 +309,7 @@ reservada_at, cancelada_at, comprobante_enviado_at`
 **Reglas duras:**
 
 1. Una alumna no puede tener dos reservas confirmadas para la misma clase.
-2. No se puede reservar si `reservas confirmadas >= cupo_maximo` (45).
+2. No se puede reservar si `reservas confirmadas >= cupo_maximo` (22).
 3. No se puede reservar sin crédito disponible y vigente.
 4. La reserva y el descuento del crédito ocurren en **una sola transacción**. Si falla el email,
    la reserva vale igual; si falla el descuento, no hay reserva.
@@ -313,7 +318,7 @@ reservada_at, cancelada_at, comprobante_enviado_at`
    Después de ese momento, la cancelación libera el cupo pero **no devuelve el crédito**.
 7. Si XO cancela la clase, el crédito se devuelve siempre, sin importar la ventana.
 
-⚠️ **Concurrencia.** Con 45 cupos y campañas de Instagram, dos personas pueden reservar el
+⚠️ **Concurrencia.** Con 22 cupos y campañas de Instagram, dos personas pueden reservar el
 último lugar al mismo tiempo. El chequeo de cupo debe hacerse en base de datos —constraint o
 transacción con bloqueo—, no leyendo el conteo y escribiendo después.
 
@@ -359,7 +364,7 @@ Estas no se resuelven programando. Ver `CONTEXT.md` §12.
 2. **¿Los créditos vencen?** Sin vencimiento, la caja cobrada hoy es un pasivo eterno. Con
    vencimiento, hay que definir el plazo y comunicarlo.
 3. **Ventana de cancelación.** ¿Hasta cuántas horas antes se devuelve el crédito? Sin regla, una
-   clase con 45 reservas puede quedar con 6 personas.
+   clase con 22 reservas puede quedar con 6 personas.
 4. **¿Sobrevive la clase de prueba gratis?** El CTA cambia a "Reservar clase", lo que sugiere que
    no. Es la principal herramienta de conversión que existe hoy.
 5. **Pasarela de pago** y si se puede cobrar antes del Inicio de Actividades en el SII.
@@ -392,7 +397,7 @@ Propuesta. En un modelo de paquetes, las métricas clásicas de academia no alca
 - **Créditos por vencer en los próximos 30 días.**
 
 **Demanda y ocupación**
-- Ocupación por clase (reservas / 45) y por horario
+- Ocupación por clase (reservas / 22) y por horario
 - Horarios saturados vs. horarios muertos → decisiones de programación
 - Ranking de profesoras por reservas y por ingreso atribuido
 

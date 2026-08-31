@@ -40,7 +40,7 @@ hay, con quién, y reservar en dos toques.
 
 ## 5. Casos borde — los que importan
 
-- **Dos personas reservan el último cupo a la vez.** Con 45 cupos y campañas de Instagram esto
+- **Dos personas reservan el último cupo a la vez.** Con 22 cupos y campañas de Instagram esto
   va a pasar. El cupo se valida en base de datos, en transacción o con constraint. Nunca leyendo
   el conteo y escribiendo después.
 - **Reservar sin créditos.** Se bloquea y se ofrece comprar.
@@ -55,7 +55,9 @@ hay, con quién, y reservar en dos toques.
 ## 6. Reglas de negocio
 
 1. Una reserva confirmada por alumna y clase. Sin duplicados.
-2. Tope duro de **45** reservas confirmadas por clase (capacidad de sala).
+2. Tope duro de **22** reservas confirmadas por clase (capacidad de sala, confirmada el
+   30/08/2026 en las dos sedes). El cupo es atributo de la **sala**, no del curso: depende del
+   espacio físico.
 3. Reserva y descuento de crédito son atómicos.
 4. No se reserva en el pasado ni en clases canceladas.
 
@@ -80,7 +82,7 @@ no una constante en el código, para poder ajustarlo sin desplegar.
       legible el texto de las atenuadas.
 - [ ] El detalle muestra los cinco datos: profesora, horario, lugar, estilo y curso.
 - [ ] Reservar descuenta exactamente un crédito y llega el comprobante.
-- [ ] Con 45 reservas la clase se muestra llena y no acepta más, ni siquiera con dos personas
+- [ ] Con 22 reservas la clase se muestra llena y no acepta más, ni siquiera con dos personas
       reservando simultáneamente.
 - [ ] Cancelar a más de 30 minutos devuelve el crédito; a menos, no, y se avisa antes de
       confirmar.

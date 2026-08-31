@@ -21,7 +21,7 @@ la sala.
 
 1. **Mis cursos:** los cursos que dicta.
 2. **Mis clases:** calendario propio, con el mismo patrón de filtro del calendario general.
-3. **Listado de alumnas inscritas** por clase, con el conteo sobre el tope de 45.
+3. **Listado de alumnas inscritas** por clase, con el conteo sobre el tope de 22.
 4. **Solicitar horario:** formulario para pedir un bloque nuevo (día, hora, curso propuesto,
    mensaje). Va a la bandeja del administrador.
 5. Estado de sus solicitudes: pendiente, aprobada o rechazada, con la respuesta.
@@ -47,12 +47,12 @@ la sala.
 1. Una profesora ve solo sus clases y sus alumnas, nunca las de otra.
 2. Del listado de inscritas ve nombre y poco más: **nunca RUT, dirección ni datos de contacto
    del apoderado**.
-3. El tope de 45 se muestra siempre como contexto (por ejemplo, 28/45).
+3. El tope de 22 se muestra siempre como contexto (por ejemplo, 14/22).
 
 ## 7. Criterios de aceptación
 
 - [ ] Una profesora ve solo lo suyo, comprobado también por API directa.
-- [ ] La lista de inscritas es legible en teléfono y muestra el conteo sobre 45.
+- [ ] La lista de inscritas es legible en teléfono y muestra el conteo sobre 22.
 - [ ] Una solicitud de horario llega a administración y su estado se refleja de vuelta.
 - [ ] En ninguna vista aparece un monto.
 

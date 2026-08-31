@@ -10,7 +10,6 @@ import {
   type Profesora,
   type Sede,
 } from "@/lib/catalogo";
-import { DESDE_POR_CLASE, clp } from "@/lib/planes";
 import { POR_CONFIRMAR } from "@/lib/tipos";
 
 /** Cómo se dice cada dificultad en pantalla. */
@@ -42,8 +41,8 @@ export function Cursos({
           Elige dónde quieres partir
         </h2>
         <p className="mt-5 max-w-md text-xo-blanco/70">
-          Todos parten en septiembre. Los horarios te los contamos por
-          WhatsApp; los valores están más abajo, en{" "}
+          Cada uno con sus horarios y su sala. El valor no depende del curso:
+          compras clases y las usas donde quieras, y eso está en{" "}
           <a
             href="#planes"
             className="text-xo-rosa underline-offset-4 hover:underline"
@@ -110,10 +109,6 @@ function Tarjeta({
         <Dato etiqueta="Estilo" valor={curso.estilo} />
         <Dato etiqueta="Nivel" valor={NIVEL[curso.dificultad]} />
         <Dato etiqueta="Profes" valor={nombres.join(", ")} />
-        <Dato
-          etiqueta="Valor"
-          valor={`Packs desde ${clp(DESDE_POR_CLASE)} por clase`}
-        />
         <Dato
           etiqueta="Cupos"
           valor={curso.cupos === null ? null : `${curso.cupos} disponibles`}

@@ -278,8 +278,19 @@ Todas las clases duran **1 hora**.
 | Pack de 4 ($7.000) | 5 | 3 |
 | Pack de 8 ($6.000) | 6 | 3 |
 
-Con capacidad 45, una clase llena en Los Leones deja $280.000 a tarifa de pack de 4. El techo
-sigue siendo altísimo; el piso son 5 o 6 alumnas según el pack.
+**Capacidad real: 22 personas por sala**, confirmada el 30/08/2026 en las dos sedes. Antes se
+trabajaba con un supuesto de 45, que era más del doble.
+
+| | Los Leones | Los Dominicos |
+|---|---|---|
+| Ingreso con la sala llena (22 × $7.000) | $154.000 | $154.000 |
+| Costo de la clase | –$35.000 | –$18.000 |
+| **Neto con sala llena** | **$119.000** | **$136.000** |
+
+⚠️ **El techo baja de $280.000 a $119.000: un 57% menos.** No es un ajuste cosmético del número,
+cambia el perfil de riesgo de abrir un horario. El piso sigue en 5 o 6 alumnas según el pack,
+pero eso ahora es **entre un cuarto y un tercio de la sala**, no un octavo: para que un horario
+no pierda plata hay que llenar una fracción del espacio mucho mayor que la que suponíamos.
 
 ⚠️ Hay un **variable** para las profesoras además del sueldo base, todavía sin definir. Cuando
 exista, se resta de estos márgenes.
@@ -486,6 +497,6 @@ sin caché de build · verificación real enviando el formulario desde producci�
 | ¿Por qué Los Dominicos es gratis y por cuánto tiempo? | Sin confirmar. Si es un favor, es un riesgo de concentración |
 | ¿Una alumna de Teens puede además comprar packs de Girly? | Sin definir |
 | ¿El precio de los packs es igual en ambas sedes? | Sin definir. El costo de sala no lo es |
-| Sala con capacidad 45: ¿confirmada? | El tope de 45 asume una sala mucho mayor que la actual, y ahora además más barata |
+| ~~Sala con capacidad 45~~ | ✅ **Resuelto el 30/08/2026: son 22**, en las dos sedes. El supuesto de 45 era más del doble y bajaba artificialmente el riesgo de abrir horarios |
 | Qué significa "afiliado" en el perfil de la alumna | Sin definir |
 | ¿Cómo se maneja la cuenta de una alumna menor de edad? | ✅ **Resuelto por ADR-0006 (25/08/2026).** La premisa cambió: ya no hay menores de 11. La cuenta es de la alumna, con magic link por correo porque Google exige 13. Sin dependientes ni cuentas vinculadas. Para comprar, un perfil menor de 18 registra datos del apoderado y **el apoderado confirma por correo** |
