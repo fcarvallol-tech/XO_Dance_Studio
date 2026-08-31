@@ -17,7 +17,7 @@
 | Estilos | **Tailwind CSS v4** vía `@tailwindcss/postcss` | 4 |
 | Base de datos | Supabase (Postgres) | `@supabase/supabase-js` 2.111 |
 | Auth | Supabase Auth — **Google + magic link**, vía `@supabase/ssr` 0.12 | implementado |
-| Emails | Transaccional (Resend o similar) — **a decidir** | a implementar |
+| Emails | **Resend**, con plantillas `react-email` en el repo — ADR-0007 | a implementar |
 | Pagos | **Flow** (incluye Webpay, tarjetas y transferencia) — ADR-0003 | a implementar |
 | Deploy | Vercel, proyecto `xo-dance-studio`, equipo `Unicornio` (Hobby) | en línea |
 
@@ -40,6 +40,7 @@
 
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Llave publishable `sb_publishable_...`. **Falta cargarla**: sin ella no entra nadie | No |
 | `REVALIDAR_SECRETO` | Secreto compartido con el Database Webhook que refresca el catálogo. Sin él `/api/revalidar` responde 503 y los cambios tardan hasta una hora | **Sí** |
+| `RESEND_API_KEY` | Correo transaccional (ADR-0007). Sin ella no sale el aviso de transferencia declarada | **Sí** |
 
 `NEXT_PUBLIC_WHATSAPP` es opcional: `lib/contacto.ts` cae al número correcto si falta.
 `VERCEL_PROJECT_PRODUCTION_URL` es variable de sistema y no hay que cargarla: la usa
