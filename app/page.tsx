@@ -12,6 +12,7 @@ import { QueEsXo } from "@/components/QueEsXo";
 import { Sedes } from "@/components/Sedes";
 import { SeleccionProvider } from "@/components/Seleccion";
 import { getCatalogoPublico } from "@/lib/catalogo-consultas";
+import { getPlanes } from "@/lib/planes-consultas";
 
 /**
  * La landing sigue siendo estática. El catálogo se lee con el cliente público,
@@ -24,7 +25,10 @@ import { getCatalogoPublico } from "@/lib/catalogo-consultas";
 export const revalidate = 3600;
 
 export default async function Home() {
-  const { cursos, profesoras, sedes, horarios } = await getCatalogoPublico();
+  const [{ cursos, profesoras, sedes, horarios }, planes] = await Promise.all([
+    getCatalogoPublico(),
+    getPlanes(),
+  ]);
 
   return (
     <SeleccionProvider>
@@ -46,7 +50,7 @@ export default async function Home() {
           horarios={horarios}
         />
         <Sedes sedes={sedes} />
-        <Planes />
+        <Planes planes={planes} />
         <ClaseDePrueba />
         <Formulario cursos={cursos} profesoras={profesoras} />
       </main>

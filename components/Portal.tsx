@@ -75,13 +75,18 @@ export function Portal({
 }
 
 function enlacesPara(rol: Rol) {
-  const enlaces = [{ href: "/mi-perfil", texto: "Mi perfil" }];
+  const enlaces = [
+    { href: "/mis-clases", texto: "Mis clases" },
+    { href: "/reservar", texto: "Reservar" },
+    { href: "/mi-perfil", texto: "Mi perfil" },
+  ];
 
   if (tieneNivel(rol, "profesora")) {
     enlaces.push({ href: "/profesora/mis-clases", texto: "Mis clases" });
   }
   if (tieneNivel(rol, "admin")) {
-    enlaces.push({ href: "/admin", texto: "Administración" });
+    enlaces.push({ href: "/admin/compras", texto: "Transferencias" });
+    enlaces.push({ href: "/admin", texto: "Personas" });
     enlaces.push({ href: "/admin/leads", texto: "Leads" });
   }
   if (tieneNivel(rol, "owner")) {

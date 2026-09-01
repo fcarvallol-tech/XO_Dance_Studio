@@ -36,11 +36,13 @@
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | URL base del proyecto Supabase, **sin** `/rest/v1/` | No |
 | `SUPABASE_SERVICE_ROLE_KEY` | Llave secreta, formato nuevo `sb_secret_...` | **Sí** |
-| `NEXT_PUBLIC_SITE_URL` | `https://xo-dance-studio.vercel.app` — actualizar al registrar dominio propio | No |
+| `NEXT_PUBLIC_SITE_URL` | `https://xodancestudio.cl` | No |
 
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Llave publishable `sb_publishable_...`. **Falta cargarla**: sin ella no entra nadie | No |
 | `REVALIDAR_SECRETO` | Secreto compartido con el Database Webhook que refresca el catálogo. Sin él `/api/revalidar` responde 503 y los cambios tardan hasta una hora | **Sí** |
 | `RESEND_API_KEY` | Correo transaccional (ADR-0007). Sin ella no sale el aviso de transferencia declarada | **Sí** |
+| `CORREO_DESDE` | Remitente, ej. `XO Dance Studio <hola@xodancestudio.cl>`. Opcional: cae a ese valor | No |
+| `CRON_SECRETO` | Secreto del cron que genera las clases. Sin él `/api/generar-clases` responde 503 | **Sí** |
 
 `NEXT_PUBLIC_WHATSAPP` es opcional: `lib/contacto.ts` cae al número correcto si falta.
 `VERCEL_PROJECT_PRODUCTION_URL` es variable de sistema y no hay que cargarla: la usa

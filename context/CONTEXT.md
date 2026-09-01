@@ -69,7 +69,7 @@ Todas tienen Instagram propio con seguidores y son parte activa de la campaña d
 | **Precio** | Tarifa de packs para todos los cursos. Teens deja los $45.000/mes |
 | **Costo de sala** | Los Leones: **$17.000/hora** · Los Dominicos: **$0** |
 | **Sueldo base profesoras** | **$18.000/hora**. Clases de 1 hora. Variable por definir |
-| **Sitio** | xo-dance-studio.vercel.app — **desplegado y en línea** |
+| **Sitio** | **xodancestudio.cl** — dominio propio, apuntado a Vercel y con certificado |
 | **Instagram** | @XO.dancestudioo — se abre al público en agosto 2026 |
 | **WhatsApp** | +56 9 8436 2290 |
 | **Herramientas** | Notion · Google Drive · Canva · GitHub · Supabase · Vercel |
@@ -389,8 +389,8 @@ Santiago y regiones, contenido digital como canal de adquisición, cursos online
 - **SII:** pendiente Inicio de Actividades, régimen Pro Pyme, F29 mensual.
 - **Marca:** ⚠️ pendiente. El nombre de fantasía ante el SII **no** es protección marcaria:
   requiere presentación en **INAPI**.
-- **Dominio:** ⚠️ pendiente. `xodancestudio.cl` primario, `xodance.cl` respaldo (verificar
-  nic.cl). Hoy el sitio corre en el subdominio de Vercel.
+- **Dominio:** ✅ `xodancestudio.cl` registrado, apuntado a Vercel y con certificado. El sitio corre
+  ahí. Falta verificarlo en Resend para poder mandar correo desde el dominio (ADR-0007).
 - **Datos personales:** trabajamos con menores. Ley 19.628 / Ley 21.719. La autorización de uso
   de imagen es explícita, nunca implícita. Regla vigente en el repo: no usar imágenes de menores
   identificables sin confirmación de autorización firmada.
@@ -485,7 +485,7 @@ sin caché de build · verificación real enviando el formulario desde producci�
 | Remuneración de Carla | Sin definir |
 | % de revenue share de Fase 2 | Sin cuantificar |
 | Arquetipo de marca | Pendiente decisión de Carla |
-| Dominio propio | Sin registrar. Al registrarlo hay que **actualizar `NEXT_PUBLIC_SITE_URL`** en Vercel |
+| ~~Dominio propio~~ | ✅ **Registrado y en línea:** `xodancestudio.cl`. Falta verificarlo en Resend agregando sus registros DNS en Vercel, para poder mandar correo desde el dominio (ADR-0007) |
 | Registro INAPI | Sin presentar |
 | ~~Cómo se cobran los intensivos mensuales Girly~~ | ✅ **Resuelto el 30/08/2026:** el formato intensivo desapareció con el catálogo nuevo. Créditos universales para todo, salvo Teens con suscripción |
 | ¿Un mes con 5 clases se cobra distinto que uno con 4? | Sin definir |

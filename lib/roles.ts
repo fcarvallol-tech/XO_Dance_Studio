@@ -61,6 +61,7 @@ export function inicioSegunRol(rol: Rol): string {
     case "profesora":
       return "/profesora/mis-clases";
     default:
-      return "/mi-perfil";
+      // La alumna entra a lo que vino a hacer: ver sus clases y reservar.
+      return "/mis-clases";
   }
 }

@@ -1,6 +1,14 @@
 import { BotonInscripcion } from "./BotonInscripcion";
 import { Reveal } from "./Reveal";
-import { PLANES, PROMO, clp, porClase, type Plan } from "@/lib/planes";
+import {
+  clp,
+  hastaPromo,
+  hayPromo,
+  nombrePromo,
+  porClase,
+  precioVigente,
+  type Plan,
+} from "@/lib/planes";
 
 /**
  * Los precios, publicados. Hasta agosto de 2026 decían "Por confirmar"
@@ -9,8 +17,10 @@ import { PLANES, PROMO, clp, porClase, type Plan } from "@/lib/planes";
  * Lista de filas, no tarjetas: son cuatro variantes del mismo producto y lo
  * que la visitante compara es una columna de precios, no cuatro bloques.
  */
-export function Planes() {
-  const hayPromo = PLANES.some((plan) => plan.promo !== null);
+export function Planes({ planes }: { planes: Plan[] }) {
+  const conPromo = hayPromo(planes);
+  const promo = nombrePromo(planes);
+  const hasta = hastaPromo(planes);
 
   return (
     <section
@@ -27,14 +37,12 @@ export function Planes() {
           para todos los cursos.
         </p>
 
-        {hayPromo ? (
+        {conPromo && hasta ? (
           <div className="mt-12 border border-xo-rosa/40 p-6 sm:p-8">
-            <p className="xo-eyebrow text-xo-rosa">{PROMO.nombre}</p>
+            <p className="xo-eyebrow text-xo-rosa">{promo ?? "Promoción"}</p>
             <p className="mt-3 text-lg leading-relaxed text-xo-blanco/85">
               Hasta el{" "}
-              <strong className="font-semibold text-xo-rosa-claro">
-                {PROMO.hasta}
-              </strong>
+              <strong className="font-semibold text-xo-rosa-claro">{hasta}</strong>
               , los packs de 4 y de 8 clases quedan más baratos. Después vuelven
               a su valor normal.
             </p>
@@ -42,8 +50,8 @@ export function Planes() {
         ) : null}
 
         <ul className="mt-14">
-          {PLANES.map((plan, indice) => (
-            <li key={plan.id}>
+          {planes.map((plan, indice) => (
+            <li key={plan.slug}>
               {indice > 0 ? (
                 <div
                   aria-hidden="true"
@@ -101,7 +109,7 @@ function Fila({ plan }: { plan: Plan }) {
           {enPromo ? (
             <span className="sr-only">Precio de lanzamiento: </span>
           ) : null}
-          {clp(plan.promo ?? plan.precio)}
+          {clp(precioVigente(plan))}
         </span>
       </p>
     </div>

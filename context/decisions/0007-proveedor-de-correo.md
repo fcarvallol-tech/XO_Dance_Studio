@@ -20,9 +20,8 @@ ellos el flujo no cierra.
 
 Vienen además el comprobante de reserva (PRD-0006 §3.5) y el aviso de clase cancelada.
 
-Restricciones reales: no hay equipo de infraestructura, el volumen es de decenas de correos al
-día, y hay un dominio propio pendiente de registrar (`CONTEXT.md` §12). El proyecto ya corre en
-Vercel con Next.js.
+Restricciones reales: no hay equipo de infraestructura y el volumen es de decenas de correos al
+día. El proyecto corre en Vercel con Next.js, y `xodancestudio.cl` ya está registrado y en línea.
 
 **Lo que no es este ADR:** los correos de autenticación —magic link, confirmación— los manda
 Supabase Auth con su propio SMTP. Esto es solo el correo transaccional de la aplicación. Los dos
@@ -32,10 +31,9 @@ distintas.
 ## Opciones evaluadas
 
 ### Opción A — Resend
-A favor: SDK pensado para Next.js; plantillas como componentes React con `react-email`, que es el
-mismo lenguaje del resto del proyecto y evita mantener HTML de correo a mano; plan gratuito de
-3.000 correos al mes, muy por encima de lo que este volumen necesita; configuración de dominio
-con SPF, DKIM y DMARC guiada.
+A favor: SDK pensado para Next.js; las plantillas viven en el repo, y si crecen hay `react-email`
+para escribirlas como componentes; plan gratuito de 3.000 correos al mes, muy por encima de lo que
+necesita este volumen; configuración de dominio con SPF, DKIM y DMARC guiada.
 En contra: empresa joven comparada con las otras; menos herramientas de análisis.
 
 ### Opción B — SMTP de Gmail / Google Workspace
@@ -59,15 +57,20 @@ dejó de existir.
 
 ## Decisión
 
-**Resend**, con las plantillas escritas en `react-email` y versionadas en el repo.
+**Resend**, con las plantillas versionadas en el repo (`lib/correo.ts`).
 
 ## Razón
 
 Lo que decide no es el precio —a este volumen todos son gratis o casi— sino **dónde viven las
-plantillas y quién las puede tocar**. Con `react-email` un correo es un componente más: se revisa
-en un pull request, usa los mismos tokens de `BRAND.md` que el sitio, y no hay una consola aparte
-donde alguien edita HTML sin que quede rastro. Eso es coherente con cómo está construido todo lo
-demás acá.
+plantillas y quién las puede tocar**. Acá un correo es una función del repo: se revisa en un pull
+request y usa los mismos colores de `BRAND.md` que el sitio, en vez de vivir en una consola donde
+alguien edita HTML sin que quede rastro. Eso es coherente con cómo está construido todo lo demás.
+
+⚠️ **Cómo quedaron escritas, para que no haya sorpresa:** son funciones que devuelven HTML con
+estilos en línea y una tabla de maquetación, no componentes `react-email`. No es pereza: los
+clientes de correo —Outlook sobre todo— no entienden hojas de estilo ni layout moderno, así que
+igual habría que escribir eso. `react-email` vale la pena cuando haya media docena de plantillas
+y empiece a doler la repetición; con cuatro, agregar la dependencia es más ceremonia que ayuda.
 
 SES es mejor a escala y peor ahora: pedir salida del sandbox y administrar IAM es trabajo real
 para ahorrar un dinero que a este volumen no existe. Gmail no compite: no es correo transaccional
@@ -82,12 +85,15 @@ versiones y con la identidad de marca sin duplicar.
 **Más difícil:** una dependencia externa más, con su llave (`RESEND_API_KEY`, sensible) y su
 configuración de DNS.
 
-**Consecuencia no obvia — el dominio.** Resend exige verificar un dominio propio para enviar con
-buena reputación. Hoy el sitio corre en el subdominio de Vercel y `xodancestudio.cl` **sigue sin
-registrarse** (`CONTEXT.md` §12). Se puede empezar con el dominio de prueba de Resend, pero eso
-manda desde una dirección que no es de XO, y para correos de dinero eso resta confianza.
-⚠️ **Esto convierte registrar el dominio en un requisito de PRD-0017**, no en una tarea suelta de
-marca.
+**Consecuencia operativa — verificar el dominio en Resend.** `xodancestudio.cl` **ya está
+registrado**, apuntado a Vercel y con certificado: el sitio corre ahí. Lo que falta es agregar en
+Vercel los registros DNS que pide Resend —SPF, DKIM y el subdominio de envío— para verificar el
+dominio y poder mandar desde `hola@xodancestudio.cl`.
+
+Es un trámite corto y **no bloquea el desarrollo**: se puede construir y probar con el dominio de
+prueba de Resend. Sí conviene tenerlo listo antes de que la primera alumna transfiera de verdad,
+porque un correo sobre plata que llega desde una dirección que no es de XO resta la confianza
+justo donde más hace falta.
 
 **Regla que no depende del proveedor:** el correo **nunca es parte de una transacción**. Si el
 envío falla, la compra se aprobó igual y la reserva existe igual. Se reintenta. No se revierte
@@ -99,4 +105,5 @@ plata por un problema de correo.
   tener sentido y la migración es acotada, porque el envío está detrás de un módulo propio.
 - Si la entregabilidad resulta mala tras verificar el dominio.
 - Si se decide unificar el SMTP de Supabase Auth con este proveedor, que es lo recomendable pero
-  es configuración aparte.
+  es configuración aparte. Hoy los magic links salen por el SMTP de Supabase, con sus límites de
+  envío: si el volumen de registros sube, eso se nota antes que cualquier otra cosa.

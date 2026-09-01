@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | **Aprobado** el 31/08/2026 · **parte 1 implementada** (esquema y funciones) |
+| **Estado** | **Aprobado** el 31/08/2026 · **partes 1 y 2 implementadas** |
 | **Autor** | Felipe Carvalho |
 | **Fecha** | 31 de agosto de 2026 |
 | **Hito** | Hito 2 — Venta de clases · Hito 3 — Reservas |
@@ -536,7 +536,7 @@ Aprobado el 31/08/2026 implementar esto en tres tramos, con revisión entre uno 
 | Parte | Qué | Estado |
 |---|---|---|
 | **1** | Esquema, funciones, RLS y ADR-0007 | ✅ **Hecha.** Migración escrita, **sin aplicar** |
-| **2** | Interfaz: declarar compra, bandeja de aprobación, calendario y reserva | ⏳ Siguiente |
+| **2** | Interfaz, unificación de planes y generador de clases | ✅ **Hecha.** Migración escrita, **sin aplicar** |
 | **3** | Script de importación | ⏳ **Se implementa, no se ejecuta** |
 
 **Por qué la importación se construye pero no se corre:** faltan 36 correos y hay filas que
@@ -582,3 +582,84 @@ con la llave publishable, y que dos reservas simultáneas sobre el último cupo 
 
 ⚠️ **`pg_cron` sigue por confirmar.** Sin él, las clases se generan solo al aplicar la migración y
 al apretar el botón de admin, y el calendario se va quedando corto por el final.
+
+## 16. Notas de implementación — parte 2
+
+| Pieza | Dónde |
+|---|---|
+| Promo en la base y datos de transferencia | `supabase/migrations/20260831130000_planes_promo_y_transferencia.sql` |
+| Planes desde la base | `lib/planes.ts` (tipos y formato) · `lib/planes-consultas.ts` |
+| Correo | `lib/correo.ts` |
+| Escrituras de plata y cupo | `lib/acciones.ts` |
+| Comprar | `app/(cuenta)/comprar/` · `components/FormularioCompra.tsx` |
+| Calendario y reservas | `app/(cuenta)/reservar/` · `components/Calendario.tsx` |
+| Mis clases | `app/(cuenta)/mis-clases/` · `components/MisReservas.tsx` |
+| Bandeja de aprobación | `app/(admin)/admin/compras/` · `components/BandejaCompras.tsx` |
+| Generador de clases | `app/api/generar-clases/route.ts` · `vercel.json` |
+
+### Los planes quedaron unificados: manda la base
+
+`lib/planes.ts` conserva tipos, formato de pesos y el cálculo de precio vigente. **Los precios se
+fueron a la tabla `planes`.** Era la misma forma de incoherencia que ya nos pasó con los cursos, y
+esta vez con plata de por medio.
+
+Para que la promoción no quedara como única cosa en el código, se agregaron a `planes` tres
+columnas provisionales: `precio_promocional`, `promo_hasta` y `promo_nombre`. **PRD-0012 las
+reemplaza** cuando llegue con su tabla de períodos. Gana algo de inmediato: PRD-0014 §5 advertía
+que la promo *"se apaga a mano y necesita deploy"* porque la landing es estática. Ahora se apaga
+sola al pasar la fecha, y editarla desde el Table Editor refresca el sitio por webhook.
+
+### `pg_cron` sigue sin confirmarse, así que hay camino alternativo
+
+`/api/generar-clases` con secreto en cabecera, más una entrada en `vercel.json` que lo dispara a
+diario. **Si `pg_cron` está disponible, lo correcto es agendar `select public.generar_clases()`
+ahí**: es SQL puro, sin HTTP y sin un secreto que se pueda filtrar. Que corran los dos no rompe
+nada — `generar_clases` es idempotente por índice único—, así que la decisión se puede tomar
+después sin desarmar esto.
+
+⚠️ Vercel Cron dispara **GET**, no POST. La ruta responde a los dos.
+
+### El monto no viaja en el formulario
+
+Se envía el slug del plan y **el servidor calcula cuánto vale**, promoción incluida. Si el precio
+viniera del cliente, cualquiera podría declarar que pagó $1 y esperar que el admin no se fijara.
+
+### Un defecto de la parte 1, encontrado al construir esta
+
+`parametros` quedó sin grant para `service_role`: la migración revocó todo y lo devolvió a `anon`
+y `authenticated`, olvidando al rol del servidor. Postgres lo dice literal —
+*"GRANT SELECT ON public.parametros TO service_role"*— y es **el mismo descuido que hubo con
+`perfiles`**. No se notaba porque `parametro_int` es `security definer` y corre como su dueño.
+Corregido en la migración de esta parte.
+
+### Otras decisiones
+
+- **El conteo de cupos ajenos va con la service role key**, y es lo único de `compras-consultas.ts`
+  que no usa la sesión. Una alumna no puede leer las reservas de otra —RLS se lo impide, y está
+  bien— pero sí necesita saber cuántos lugares quedan. Lo que se devuelve es un número, nunca
+  quién reservó.
+- **A los correos `.invalid` no se les escribe.** Son las alumnas importadas sin correo real;
+  mandarles algo sería un rebote garantizado.
+- **El filtro del calendario atenúa en vez de esconder**, como pide `BRAND.md` §6, y no baja de
+  55% de opacidad por lo que ese mismo documento advierte: una clase atenuada sigue siendo
+  información.
+- **Las fechas se formatean a mano** contra `America/Santiago`, no con `Intl` a secas, para que
+  servidor y navegador escriban lo mismo. Una diferencia ahí es un error de hidratación.
+- **`inicioSegunRol` para `alumna` pasa de `/mi-perfil` a `/mis-clases`**: ahora hay algo que hacer
+  al entrar.
+
+⚠️ **Los datos de transferencia se siembran vacíos**, y es a propósito: no los conozco y no se
+inventan datos bancarios. Mientras estén vacíos, `/comprar` muestra que faltan y **no deja
+declarar** — es mejor eso que mandar a alguien a transferir a ninguna parte. Se cargan desde el
+Table Editor, en `parametros`.
+
+⚠️ **Migración de la parte 2 sin aplicar.** La de la parte 1 **sí está aplicada** (verificado: 73
+clases generadas, las siete tablas creadas). Hasta que corra la segunda, `npm run build` falla a
+propósito con `column planes.precio_promocional does not exist`. Compilación y TypeScript pasan.
+
+### Al aplicar, conviene verificar
+
+- Que `/` vuelve a salir `○` y muestra los precios desde la base.
+- Que `authenticated` no puede insertar en `creditos` ni `reservas` con la llave publishable.
+- Que dos reservas simultáneas sobre el último cupo dejan pasar una sola.
+- Que `service_role` ya puede leer `parametros`.

@@ -13,7 +13,7 @@ export type Grupo = "cuenta" | "profesora" | "admin" | "owner";
 
 /** Las rutas que cubre el layout de cada grupo. */
 export const RUTAS_DE_GRUPO: Record<Grupo, string[]> = {
-  cuenta: ["/mi-perfil"],
+  cuenta: ["/mi-perfil", "/comprar", "/reservar", "/mis-clases"],
   profesora: ["/profesora"],
   admin: ["/admin"],
   owner: ["/owner"],

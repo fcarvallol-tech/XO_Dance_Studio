@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/generar-clases",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}
