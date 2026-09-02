@@ -114,7 +114,7 @@ function gruposPara(rol: Rol): Grupo[] {
       // Lo que hace cualquiera con cuenta. Sin etiqueta: es lo de base.
       de: null,
       enlaces: [
-        { href: "/mis-clases", texto: "Mis clases" },
+        { href: "/mis-clases", texto: "Mis reservas" },
         { href: "/reservar", texto: "Reservar" },
         { href: "/mi-perfil", texto: "Mi perfil" },
       ],

@@ -14,7 +14,7 @@ import {
 } from "@/lib/compras-consultas";
 
 export const metadata: Metadata = {
-  title: "Mis clases — XO Dance Studio",
+  title: "Mis reservas — XO Dance Studio",
   robots: { index: false, follow: false },
 };
 
@@ -38,7 +38,7 @@ export default async function MisClases() {
     <>
       <TituloPortal
         eyebrow="Tu cuenta"
-        titulo="Mis clases"
+        titulo="Mis reservas"
         bajada="Tu saldo, lo que tienes reservado y el estado de tus compras."
       />
 

@@ -56,7 +56,11 @@ export default async function DetalleClase({ params }: Props) {
         />
       </div>
 
-      <ErrorDeLectura que="esta clase" error={clase.error} />
+      <ErrorDeLectura
+        que="esta clase"
+        error={clase.error}
+        denegado="Esta clase no te corresponde."
+      />
 
       {clase.datos?.cancelada ? (
         <p className="mb-8 border-l-2 border-xo-negro py-3 pl-5 text-xo-negro">
@@ -86,7 +90,11 @@ export default async function DetalleClase({ params }: Props) {
       ) : null}
 
       <h2 className="xo-eyebrow text-xo-gris">Quiénes vienen</h2>
-      <ErrorDeLectura que="la lista de inscritas" error={inscritas.error} />
+      <ErrorDeLectura
+        que="la lista de inscritas"
+        error={inscritas.error}
+        denegado="Esta clase no es tuya, así que no puedes ver quiénes están inscritas. Si crees que debería serlo, avísale a administración."
+      />
 
       {inscritas.error ? null : inscritas.datos.length === 0 ? (
         <p className="mt-3 text-xo-gris">Todavía no hay nadie inscrita.</p>

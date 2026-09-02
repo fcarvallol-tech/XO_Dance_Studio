@@ -38,7 +38,46 @@ create policy parametros_con_sesion on public.parametros
   using (true);
 
 comment on table public.parametros is
-  'Ajustes que cambian sin desplegar. Incluye los datos de transferencia: NO es legible por anon.';
+  $c$NO dar acceso de lectura a `anon`, y no es una preferencia: acá viven los datos de
+transferencia —nombre completo, RUT, número de cuenta y correo de una persona— que son datos
+personales bajo la Ley 19.628. La llave publishable viaja en el bundle del navegador, así que
+`to anon` equivale a publicarlos. Estuvieron legibles sin sesión entre el 31/08 y el 03/09/2026.
+Si alguien necesita un parámetro en una página pública, la respuesta no es reabrir la tabla: es
+leerlo en el servidor o pasar solo esa clave. Ver PRD-0008 §13.$c$;
+
+-- ---------------------------------------------------------------------------
+-- 1.b La función dejaba la puerta abierta igual
+-- ---------------------------------------------------------------------------
+-- Revocar la tabla no alcanzaba. `parametros_como_json` es **security definer**
+-- —salta RLS— y tenía `grant execute to anon`, así que cualquiera sin sesión
+-- podía pedir `POST /rest/v1/rpc/parametros_como_json` y recibir los diez
+-- parámetros, RUT y número de cuenta incluidos. Verificado antes de escribir
+-- esto: devolvía todo.
+--
+-- Es el mismo error de fondo que las políticas permisivas: cerrar un camino no
+-- sirve si queda otro abierto. **Una tabla protegida y una función definer que
+-- la expone es una tabla desprotegida.**
+--
+-- Nadie la llama desde el código. Se le revoca a `anon` en vez de borrarla,
+-- porque con sesión sigue siendo útil para leer varios parámetros de una.
+
+revoke execute on function public.parametros_como_json() from public, anon;
+
+-- Y de paso el resto de las funciones que `anon` podía ejecutar sin
+-- necesitarlas. Ninguna página pública llama una RPC: la landing lee tablas, y
+-- los leads se guardan desde el servidor con la service role key.
+--
+-- Verificado que ninguna política `to anon` llama funciones —todas comparan
+-- columnas— así que revocar no rompe la lectura pública del catálogo.
+
+revoke execute on function public.parametro_int(text, int) from public, anon;
+revoke execute on function public.mi_rol() from public, anon;
+revoke execute on function public.mi_profesora_id() from public, anon;
+revoke execute on function public.tiene_nivel(text) from public, anon;
+revoke execute on function public.dicta_la_clase(uuid) from public, anon;
+revoke execute on function public.conflictos_de_solicitud(uuid) from public, anon;
+revoke execute on function public.normalizar_nombre(text) from public, anon;
+revoke execute on function public.nivel_rol(text) from public, anon;
 
 -- ---------------------------------------------------------------------------
 -- 2. clases: la política de profesora no restringía nada

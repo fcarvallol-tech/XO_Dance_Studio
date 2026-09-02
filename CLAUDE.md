@@ -125,6 +125,11 @@ ERP: rutas bajo `app/(erp)/`, todas autenticadas. No existe todavía.
   - Cuando el dato tiene que ser público para unos y limitado para otros, muchas veces la
     respuesta no es una política sino **una función `security definer`** cuyo tipo de retorno sea
     el contrato de columnas. RLS filtra filas, nunca columnas.
+  - **Una función `security definer` con grant a `anon` anula el RLS de las tablas que lee.**
+    Cerrar una tabla no sirve si una función la expone igual. Al revisar qué es público hay que
+    mirar las funciones, no solo las tablas: `GET /rest/v1/` lista todo lo que la API expone.
+  - **Público es una decisión, no un resto.** Se abre lo que una página pública necesita, y se
+    abre esa cosa y no la tabla entera.
 - Dinero: enteros CLP. Sin decimales, sin floats.
 - Fechas: `timestamptz` en UTC, se renderizan en `America/Santiago`.
 - RUT normalizado `12345678-9`, DV en minúscula, validado en servidor.

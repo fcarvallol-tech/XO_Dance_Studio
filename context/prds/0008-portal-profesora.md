@@ -231,8 +231,11 @@ responden correcto—, pero conviene repetir la prueba en cuanto exista la prime
 
 ### La auditoría completa
 
-Se revisaron las **quince tablas** con tres identidades, buscando el mismo error en PRD-0004,
-PRD-0015, PRD-0016 y PRD-0017. Estaba en dos lugares:
+Se revisó **todo lo que la API expone**, no solo lo que sospechaba: la lista salió del OpenAPI de
+PostgREST —17 tablas y vistas, 20 funciones— para no depender de acordarme de alguna. El
+inventario completo está en §14.
+
+El error estaba en dos lugares:
 
 1. `clases` — lo de arriba.
 2. **`parametros` — y este era peor.** Ver §13.
@@ -263,8 +266,72 @@ se cargaron el 31/08:
 No es la cuenta de la SpA: es una cuenta personal. Nombre y RUT de una persona identificada son
 datos personales bajo la Ley 19.628, y estaban legibles sin sesión.
 
-**Arreglado:** `revoke all on public.parametros from anon`. Con sesión sí se leen —quien va a
-transferir necesita ver a dónde— y ninguna página pública los usa, así que no rompe nada.
+**Y revocar la tabla no alcanzaba.** `parametros_como_json` es `security definer` —salta RLS— y
+tenía `grant execute to anon`: cualquiera sin sesión podía pedir
+`POST /rest/v1/rpc/parametros_como_json` y recibir los diez parámetros igual. Lo verifiqué después
+de escribir el primer arreglo, y devolvía todo.
+
+> **Una tabla protegida con una función `security definer` que la expone es una tabla
+> desprotegida.** Es el mismo error de fondo que las políticas permisivas: cerrar un camino no
+> sirve si queda otro abierto. Por eso la auditoría de §14 se hizo sobre *todo* lo que la API
+> expone, funciones incluidas, y no solo sobre las tablas.
+
+**Arreglado:** `revoke all on public.parametros from anon` **más** revocar la función. Con sesión
+se sigue leyendo —quien va a transferir necesita ver a dónde— y ninguna página pública los usa.
 
 ⚠️ **Esto estuvo expuesto desde el 31/08.** No hay forma de saber si alguien lo leyó. Vale la pena
 que Carla lo sepa, y decidir si conviene mover el cobro a una cuenta de la SpA cuando exista.
+
+## 14. Inventario: qué es público hoy
+
+Verificado sin sesión, con la llave publishable —la que viaja en el bundle del navegador—, contra
+**todo** lo que expone la API. La lista se sacó del OpenAPI de PostgREST, no de memoria.
+
+### Tablas y vistas
+
+| Recurso | Sin sesión | ¿Correcto? |
+|---|---|---|
+| `cursos` | 4 de 8 filas | ✅ los activos. El catálogo es público |
+| `profesoras` | 4 de 5 | ✅ las activas |
+| `sedes` | 2 | ✅ con dirección, desde PRD-0016 |
+| `horarios` | 7 | ✅ la parrilla es pública |
+| `planes` | 4 | ✅ los precios se publican |
+| `clases` | 73 | ✅ **a propósito**: las alumnas necesitan la parrilla para reservar |
+| `parametros` | 10 | 🔴 **NO.** Ver §13 — corregido |
+| `perfiles` | bloqueada | ✅ |
+| `leads` | bloqueada | ✅ |
+| `cambios_rol` | bloqueada | ✅ |
+| `compras` | bloqueada | ✅ |
+| `creditos` | bloqueada | ✅ |
+| `movimientos_credito` | bloqueada | ✅ |
+| `reservas` | bloqueada | ✅ |
+| `solicitudes_horario` | bloqueada | ✅ |
+| `duplicados_probables` | bloqueada | ✅ la vista respeta el RLS de `perfiles` |
+| `perfiles_sin_actividad` | bloqueada | ✅ ídem |
+
+Las dos vistas no las había auditado antes y salieron acá: `security_invoker = true` hizo lo suyo.
+
+### Funciones
+
+Las que `anon` **podía ejecutar** antes de este arreglo:
+
+| Función | Devolvía | ¿Correcto? |
+|---|---|---|
+| `parametros_como_json` | **los diez parámetros, RUT y cuenta incluidos** | 🔴 **NO.** Ver §13 |
+| `parametro_int` | valores de configuración | ⚠️ innecesario |
+| `mi_rol`, `mi_profesora_id` | `null` | ⚠️ inofensivo pero innecesario |
+| `tiene_nivel`, `dicta_la_clase` | `false` | ⚠️ ídem |
+| `conflictos_de_solicitud` | `[]` | ⚠️ ídem |
+| `nivel_rol`, `normalizar_nombre` | funciones puras | ⚠️ ídem |
+| `saldo_creditos`, `inscritas_de_clase`, `generar_clases` | `42501` | ✅ bloqueadas |
+| `crear_lead`, `reservar`, `cancelar_reserva`, `acreditar_compra`, `rechazar_compra`, `cambiar_rol`, `resolver_solicitud` | no existen para `anon` | ✅ |
+
+**Todas se le revocaron a `anon`.** Ninguna página pública llama una RPC —la landing lee tablas y
+los leads se guardan desde el servidor— y se verificó que ninguna política `to anon` invoca
+funciones, así que revocar no rompe la lectura del catálogo.
+
+### La regla que deja este inventario
+
+**Público debe ser una decisión, no un resto.** Lo que está abierto hoy —catálogo, parrilla,
+precios— lo está porque la landing lo necesita. Todo lo demás se cierra, y si mañana algo público
+hace falta, se abre esa cosa y no la tabla entera.

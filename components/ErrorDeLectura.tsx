@@ -12,12 +12,34 @@
 export function ErrorDeLectura({
   que,
   error,
+  denegado,
 }: {
   /** Qué no se pudo leer, en una palabra: "las transferencias", "tu saldo". */
   que: string;
   error: string | null;
+  /**
+   * Qué decir si la base respondió **42501**. Ese código no es un fallo: es la
+   * respuesta correcta a pedir algo que no corresponde —una clase de otra
+   * profesora, por ejemplo—. Sugerirle recargar a alguien que pidió algo ajeno
+   * lo manda a intentarlo de nuevo para nada, y de paso esconde que el sistema
+   * funcionó bien.
+   */
+  denegado?: string;
 }) {
   if (!error) return null;
+
+  if (error.includes("42501")) {
+    return (
+      <div
+        role="status"
+        className="mb-8 border-l-2 border-xo-negro/40 py-4 pl-5"
+      >
+        <p className="text-xo-negro">
+          {denegado ?? `No tienes acceso a ${que}.`}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div
