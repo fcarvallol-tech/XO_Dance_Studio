@@ -144,7 +144,9 @@ export async function getCatalogoPublico(): Promise<Catalogo> {
  * así que solo devuelve todo si esa persona es admin o superior: es lo que
  * hace falta para mostrar un lead histórico que apunta a XO Kids sin huecos.
  */
-export async function getCatalogoCompleto(): Promise<Catalogo> {
+export async function getCatalogoCompleto(): Promise<
+  Catalogo & { error: string | null }
+> {
   const supabase = await clienteServidor();
 
   const [cursos, profesoras, sedes, horarios] = await Promise.all([
@@ -154,5 +156,15 @@ export async function getCatalogoCompleto(): Promise<Catalogo> {
     supabase.from("horarios").select(CAMPOS_HORARIO).order("dia_semana"),
   ]);
 
-  return armar({ cursos, profesoras, sedes, horarios }, false);
+  // No lanza como la pública —una página de admin a medias sigue sirviendo—
+  // pero el error viaja para que se pueda mostrar en vez de parecer un
+  // catálogo vacío. Mismo criterio que `Lectura<T>` en compras-consultas.
+  const fallo =
+    cursos.error ?? profesoras.error ?? sedes.error ?? horarios.error ?? null;
+  if (fallo) console.error("Error leyendo el catálogo completo:", fallo);
+
+  return {
+    ...armar({ cursos, profesoras, sedes, horarios }, false),
+    error: fallo ? `${fallo.message} (${fallo.code ?? "sin código"})` : null,
+  };
 }

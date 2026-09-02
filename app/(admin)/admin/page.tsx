@@ -4,6 +4,7 @@ import { CambiarRol } from "@/components/CambiarRol";
 import { NOMBRE_ROL, esRol, type Rol } from "@/lib/roles";
 import { nombreDe } from "@/lib/catalogo";
 import { getCatalogoCompleto } from "@/lib/catalogo-consultas";
+import { ErrorDeLectura } from "@/components/ErrorDeLectura";
 import { requiereNivel } from "@/lib/sesion";
 import { clienteServidor } from "@/lib/supabase/servidor";
 
@@ -33,7 +34,7 @@ export default async function Admin() {
   const actor = await requiereNivel("admin", "admin");
   const supabase = await clienteServidor();
   // Completo, no público: un admin tiene que poder ver también lo desactivado.
-  const { profesoras } = await getCatalogoCompleto();
+  const { profesoras, error: errorCatalogo } = await getCatalogoCompleto();
   const activas = profesoras.filter((p) => p.activa);
 
   const { data, error } = await supabase
@@ -53,11 +54,11 @@ export default async function Admin() {
         bajada="Cada cambio de rol queda registrado con quién lo hizo y cuándo. No puedes cambiar el tuyo ni repartir un rol más alto que el tuyo. Dejar a alguien como profesora obliga a decir cuál del catálogo es: si no, entra al portal y no ve ninguna clase."
       />
 
-      {error ? (
-        <p role="alert" className="text-xo-negro">
-          No pudimos leer los perfiles: {error.message}
-        </p>
-      ) : null}
+      <ErrorDeLectura
+        que="los perfiles"
+        error={error ? `${error.message} (${error.code})` : null}
+      />
+      <ErrorDeLectura que="el catálogo de profesoras" error={errorCatalogo} />
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[52rem] border-collapse text-left">

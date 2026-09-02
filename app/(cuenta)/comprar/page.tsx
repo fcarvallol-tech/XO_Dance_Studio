@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { TituloPortal } from "@/components/Portal";
 import { FormularioCompra } from "@/components/FormularioCompra";
+import { ErrorDeLectura } from "@/components/ErrorDeLectura";
 import { requiereSesion } from "@/lib/sesion";
 import { getPlanes } from "@/lib/planes-consultas";
 import { getDatosTransferencia } from "@/lib/compras-consultas";
@@ -20,7 +21,10 @@ export const metadata: Metadata = {
  */
 export default async function Comprar() {
   await requiereSesion("cuenta");
-  const [planes, datos] = await Promise.all([getPlanes(), getDatosTransferencia()]);
+  const [planes, transferencia] = await Promise.all([
+    getPlanes(),
+    getDatosTransferencia(),
+  ]);
 
   return (
     <>
@@ -30,8 +34,13 @@ export default async function Comprar() {
         bajada="Transfieres desde tu banco y nos avisas acá. Cuando confirmemos el pago te acreditamos las clases y puedes reservar."
       />
 
-      {datos.completos ? (
-        <FormularioCompra planes={planes} datos={datos} />
+      <ErrorDeLectura
+        que="los datos de transferencia"
+        error={transferencia.error}
+      />
+
+      {transferencia.error ? null : transferencia.datos.completos ? (
+        <FormularioCompra planes={planes} datos={transferencia.datos} />
       ) : (
         <div className="max-w-xl border-l-2 border-xo-negro pl-5">
           <p className="text-lg leading-relaxed text-xo-negro">

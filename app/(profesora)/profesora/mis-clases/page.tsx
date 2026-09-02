@@ -16,6 +16,7 @@ export default async function MisClases() {
   // `perfiles_profesora_con_identidad`. Un admin o un owner sí llegan acá sin
   // profesora_id, porque entran por jerarquía sin hacer clases.
   const { profesoras } = await getCatalogoCompleto();
+  // Acá el catálogo solo resuelve un nombre: si falla, el slug alcanza.
   const enElCatalogo = nombreDe(profesoras, perfil.profesoraId);
 
   return (

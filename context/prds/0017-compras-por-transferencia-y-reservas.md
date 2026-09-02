@@ -663,3 +663,59 @@ propósito con `column planes.precio_promocional does not exist`. Compilación y
 - Que `authenticated` no puede insertar en `creditos` ni `reservas` con la llave publishable.
 - Que dos reservas simultáneas sobre el último cupo dejan pasar una sola.
 - Que `service_role` ya puede leer `parametros`.
+
+## 17. Nota de implementación — la bandeja vacía del 02/09/2026
+
+**Síntoma:** `/admin/compras` decía "No hay transferencias esperando" con **cinco compras en
+estado `pendiente`** en la base. El correo de aviso sí llegaba, así que declarar funcionaba.
+
+**Lo que NO era: RLS.** La política existe y es correcta —
+`compras_admin_lee ... using (public.tiene_nivel('admin'))` — y es la misma forma que
+`leads_admin_lee` de PRD-0004, que funciona. Los grants también estaban.
+
+### La causa: el embed a `perfiles` era ambiguo
+
+`compras` tiene **dos llaves foráneas a `perfiles`**: `perfil_id` (de quién es la compra) y
+`aprobada_por` (quién la revisó). Pedir `perfiles ( nombre, email )` a secas no le dice a
+PostgREST cuál usar:
+
+```
+PGRST201: Could not embed because more than one relationship was found
+          for 'compras' and 'perfiles'
+```
+
+El error ocurre **al parsear la consulta, antes de aplicar RLS**, y no devuelve ninguna fila.
+Verificado con cuatro variantes: la desambiguada resuelve, la de `getMisCompras` —que no embebe
+`perfiles`— nunca falló, y por eso la alumna sí veía sus compras.
+
+`movimientos_credito` tenía **la misma ambigüedad latente**, por `perfil_id` y `creado_por`.
+Quedó desambiguada también, aunque todavía no haya consulta que la use: los cuatro nombres de
+llave están verificados contra la base y exportados como constantes.
+
+### La causa de fondo: el error se convertía en lista vacía
+
+Las ocho consultas de `lib/compras-consultas.ts` desestructuraban solo `data` y hacían
+`data ?? []`. **Un fallo de lectura se volvía indistinguible del caso normal**, y "no hay
+transferencias esperando" es exactamente la pantalla que se espera ver cuando de verdad no hay
+ninguna. Por eso nadie lo notó.
+
+PRD-0004 sí había hecho esto bien: la página de leads captura `error` y lo muestra. Al construir
+la bandeja se copió la política de RLS pero no ese cuidado.
+
+**Ahora toda consulta devuelve `Lectura<T> = { datos, error }`**, y las páginas muestran el error
+con `<ErrorDeLectura>` — que dice explícitamente *"esto no significa que no haya nada: significa
+que la consulta falló y no sabemos qué hay"*. La regla que impone el componente:
+
+> Donde haya un estado vacío, primero se pregunta si hubo error. El vacío se muestra **solo si no
+> lo hubo**.
+
+Se extendió a `getCatalogoCompleto`, que tenía el mismo defecto y alimenta `/admin`,
+`/admin/leads` y el portal de profesora. Auditado: no queda ninguna consulta que se trague un
+error, salvo la lectura de `calendario_dias`, que es una preferencia con un valor por defecto
+sensato y está comentada como excepción deliberada.
+
+### Lo que esto deja como regla
+
+Un fallo de lectura que se ve como ausencia de datos es **peor que el bug que lo causó**: no se
+puede distinguir del caso normal, así que no se reporta y no se busca. Cualquier consulta nueva
+va con su error a la vista.

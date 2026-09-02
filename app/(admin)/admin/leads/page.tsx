@@ -4,6 +4,7 @@ import { requiereNivel } from "@/lib/sesion";
 import { clienteServidor } from "@/lib/supabase/servidor";
 import { nombreDe } from "@/lib/catalogo";
 import { getCatalogoCompleto } from "@/lib/catalogo-consultas";
+import { ErrorDeLectura } from "@/components/ErrorDeLectura";
 
 export const metadata: Metadata = {
   title: "Leads — XO Dance Studio",
@@ -41,7 +42,7 @@ const FECHA = new Intl.DateTimeFormat("es-CL", {
 export default async function Leads() {
   await requiereNivel("admin", "admin");
   const supabase = await clienteServidor();
-  const { cursos, profesoras } = await getCatalogoCompleto();
+  const { cursos, profesoras, error: errorCatalogo } = await getCatalogoCompleto();
 
   const { data, error } = await supabase
     .from("leads")
@@ -59,11 +60,11 @@ export default async function Leads() {
         bajada="Quienes dejaron sus datos en la web. Ordenados por más reciente."
       />
 
-      {error ? (
-        <p role="alert" className="text-xo-negro">
-          No pudimos leer los leads: {error.message}
-        </p>
-      ) : null}
+      <ErrorDeLectura
+        que="los leads"
+        error={error ? `${error.message} (${error.code})` : null}
+      />
+      <ErrorDeLectura que="el catálogo" error={errorCatalogo} />
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[48rem] border-collapse text-left">
