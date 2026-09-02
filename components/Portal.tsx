@@ -20,7 +20,7 @@ export function Portal({
   perfil: Perfil;
   children: React.ReactNode;
 }) {
-  const enlaces = enlacesPara(perfil.rol);
+  const grupos = gruposPara(perfil.rol);
 
   return (
     <div className="min-h-dvh bg-xo-blanco text-xo-negro">
@@ -34,19 +34,40 @@ export function Portal({
               XO
             </Link>
 
-            <nav aria-label="Portal">
-              <ul className="flex flex-wrap items-center gap-x-5 gap-y-2">
-                {enlaces.map((enlace) => (
-                  <li key={enlace.href}>
-                    <Link
-                      href={enlace.href}
-                      className="xo-eyebrow text-xo-gris underline-offset-4 transition-colors hover:text-xo-negro hover:underline"
-                    >
-                      {enlace.texto}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+            <nav aria-label="Portal" className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              {grupos.map((grupo, indice) => (
+                <div key={grupo.de ?? indice} className="flex items-center gap-x-5">
+                  {indice > 0 ? (
+                    <span aria-hidden="true" className="text-xo-negro/20">
+                      /
+                    </span>
+                  ) : null}
+
+                  <ul className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                    {/* El rótulo del grupo va como texto, no como enlace: dice
+                        desde qué rol se entra a lo que sigue. */}
+                    {grupo.de ? (
+                      <li
+                        aria-hidden="true"
+                        className="xo-eyebrow text-xo-negro/35"
+                      >
+                        {grupo.de}
+                      </li>
+                    ) : null}
+
+                    {grupo.enlaces.map((enlace) => (
+                      <li key={enlace.href}>
+                        <Link
+                          href={enlace.href}
+                          className="xo-eyebrow text-xo-gris underline-offset-4 transition-colors hover:text-xo-negro hover:underline"
+                        >
+                          {enlace.texto}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </nav>
           </div>
 
@@ -74,28 +95,61 @@ export function Portal({
   );
 }
 
-function enlacesPara(rol: Rol) {
-  const enlaces = [
-    { href: "/mis-clases", texto: "Mis clases" },
-    { href: "/reservar", texto: "Reservar" },
-    { href: "/mi-perfil", texto: "Mi perfil" },
+type Grupo = { de: string | null; enlaces: { href: string; texto: string }[] };
+
+/**
+ * La navegación, **agrupada por en calidad de qué se entra**.
+ *
+ * Con más de un rol la barra mezclaba contextos y había dos pestañas llamadas
+ * "Mis clases": la de la alumna y la de la profesora. Los roles son
+ * acumulativos —una profesora también toma clases, y `owner` es `admin` más
+ * cosas— así que la barra de alguien con tres roles llega a nueve enlaces.
+ *
+ * Dos arreglos: los nombres dicen **en calidad de qué** es cada cosa, y los
+ * grupos van separados para que se lean como bloques y no como una lista larga.
+ */
+function gruposPara(rol: Rol): Grupo[] {
+  const grupos: Grupo[] = [
+    {
+      // Lo que hace cualquiera con cuenta. Sin etiqueta: es lo de base.
+      de: null,
+      enlaces: [
+        { href: "/mis-clases", texto: "Mis clases" },
+        { href: "/reservar", texto: "Reservar" },
+        { href: "/mi-perfil", texto: "Mi perfil" },
+      ],
+    },
   ];
 
   if (tieneNivel(rol, "profesora")) {
-    enlaces.push({ href: "/profesora/mis-clases", texto: "Mis clases" });
-    enlaces.push({ href: "/profesora/solicitudes", texto: "Pedir horario" });
-  }
-  if (tieneNivel(rol, "admin")) {
-    enlaces.push({ href: "/admin/compras", texto: "Transferencias" });
-    enlaces.push({ href: "/admin/solicitudes", texto: "Solicitudes" });
-    enlaces.push({ href: "/admin", texto: "Personas" });
-    enlaces.push({ href: "/admin/leads", texto: "Leads" });
-  }
-  if (tieneNivel(rol, "owner")) {
-    enlaces.push({ href: "/owner/metricas", texto: "Métricas" });
+    grupos.push({
+      de: "Como profe",
+      enlaces: [
+        // "Clases que dicto" y no "Mis clases": ella también tiene las suyas
+        // como alumna, y las dos aparecen en la misma barra.
+        { href: "/profesora/mis-clases", texto: "Clases que dicto" },
+        { href: "/profesora/solicitudes", texto: "Pedir horario" },
+      ],
+    });
   }
 
-  return enlaces;
+  if (tieneNivel(rol, "admin")) {
+    grupos.push({
+      de: "Administración",
+      enlaces: [
+        { href: "/admin/compras", texto: "Transferencias" },
+        { href: "/admin/solicitudes", texto: "Horarios pedidos" },
+        { href: "/admin", texto: "Personas" },
+        { href: "/admin/leads", texto: "Leads" },
+      ],
+    });
+  }
+
+  if (tieneNivel(rol, "owner")) {
+    grupos.push({ de: null, enlaces: [{ href: "/owner/metricas", texto: "Métricas" }] });
+  }
+
+  return grupos;
 }
 
 /** Encabezado de página dentro del portal. */

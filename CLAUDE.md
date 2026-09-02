@@ -112,6 +112,19 @@ ERP: rutas bajo `app/(erp)/`, todas autenticadas. No existe todavía.
   `updated_at`, `deleted_at`. Borrado lógico, nunca `DELETE` sobre alumnas, pagos o asistencia.
 - RLS activo en todas las tablas, con políticas explícitas. Nunca dar grants a `anon` por
   comodidad.
+- **Las políticas permisivas de Postgres se combinan con OR: agregar una nunca restringe.** Una
+  política nueva *suma* un camino de acceso al que ya existía. Si una tabla tiene una política
+  pública y se le agrega otra "solo lo suyo", el resultado es que se sigue viendo todo.
+  - Antes de escribir una política que pretenda limitar, mirar **qué otras políticas tiene esa
+    tabla**. Si hay una más amplia, la nueva no hace nada.
+  - **La consulta filtra igual**, como defensa en profundidad. Confiar solo en RLS deja el sistema
+    a merced de haber razonado bien sobre la composición de políticas; confiar solo en la consulta
+    deja la API abierta. Van las dos.
+  - Una política que no restringe es **peor que ninguna**: hace creer que la protección existe.
+    Ya pasó una vez — ver PRD-0008 §12.
+  - Cuando el dato tiene que ser público para unos y limitado para otros, muchas veces la
+    respuesta no es una política sino **una función `security definer`** cuyo tipo de retorno sea
+    el contrato de columnas. RLS filtra filas, nunca columnas.
 - Dinero: enteros CLP. Sin decimales, sin floats.
 - Fechas: `timestamptz` en UTC, se renderizan en `America/Santiago`.
 - RUT normalizado `12345678-9`, DV en minúscula, validado en servidor.

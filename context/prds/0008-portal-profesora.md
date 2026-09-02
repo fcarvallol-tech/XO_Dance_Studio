@@ -59,8 +59,10 @@ vive desde PRD-0016.
 
 ## 6. Reglas de negocio
 
-1. Una profesora ve solo sus clases y sus alumnas, nunca las de otra. **Verificado por RLS**, no
-   por la interfaz.
+1. Una profesora ve solo sus clases y sus alumnas, nunca las de otra.
+   ⚠️ **Corregido el 03/09/2026:** de estas dos cosas, solo la segunda es de seguridad. Las
+   clases son públicas por diseño y no pueden dejar de serlo; mostrarle solo las suyas es
+   presentación. Lo que sí vive en la base es quién está inscrito. Ver §12.
 2. **Del listado de inscritas ve el nombre y nada más.** Ni RUT, ni correo, ni teléfono, ni fecha
    de nacimiento, ni datos del apoderado. **Tampoco para clases pasadas.** Si necesita contactar a
    una alumna, pasa por administración.
@@ -70,7 +72,8 @@ vive desde PRD-0016.
 
 ## 7. Criterios de aceptación
 
-- [x] Una profesora ve solo lo suyo, comprobado también por API directa.
+- [x] Una profesora ve solo **a sus alumnas**, comprobado por API directa.
+- [x] En el portal ve solo sus clases (filtrado en la consulta; las clases son públicas).
 - [x] La lista de inscritas es legible en teléfono y muestra el conteo sobre 22.
 - [x] Una solicitud de horario llega a administración y su estado se refleja de vuelta.
 - [x] En ninguna vista aparece un monto.
@@ -169,3 +172,99 @@ profesora real —tres de las cuatro ya tienen cuenta—:
 - Que `select` sobre `perfiles` le devuelve **solo su propia fila**.
 - Que `saldo_creditos` le responde `42501` a cualquier perfil.
 - Que la vista `duplicados_probables` sigue funcionando para admin.
+
+## 12. Nota de implementación — la política que no restringía (03/09/2026)
+
+**Síntoma:** una profesora reportó que veía horarios de clases que no eran suyos.
+
+**Confirmado con una sesión real.** Lina tiene 10 clases de 73; `/rest/v1/clases` con su sesión
+devolvía **73**, repartidas entre las cuatro profesoras.
+
+### La causa: las políticas permisivas se suman
+
+`clases_de_la_profesora` se escribió creyendo que limitaba. No hacía nada:
+
+```sql
+-- ya existía desde PRD-0017
+create policy clases_lectura_publica on public.clases
+  for select to anon, authenticated using (estado = 'programada');
+```
+
+**Las políticas permisivas de Postgres se combinan con OR.** La nueva no restaba: sumaba un
+camino al que ya existía. Sin ninguna sesión, `anon` también ve las 73 — que es lo correcto y lo
+que necesita la landing.
+
+Y lo agravé en el código: `getMisClases` **no filtraba a propósito**, con un comentario que decía
+que lo hacía RLS. Quité la única defensa que sí funcionaba para apoyarme en una que solo lo
+parecía.
+
+### No se arregla restringiendo: se arregla entendiendo qué es público
+
+`clases` **tiene que** ser pública. Las alumnas necesitan la parrilla completa para reservar, y
+una profesora que además toma clases —el caso borde de §5— también: una política que la limitara
+a sus clases le rompería `/reservar`.
+
+Así que la conclusión honesta es que **"solo sus clases" es presentación, no seguridad**. La
+restricción de seguridad de este PRD siempre fue sobre las **inscritas**, y esa sí está en la
+base y funciona.
+
+Se borró la política en vez de dejarla: **una que no restringe es peor que ninguna**, porque la
+próxima persona que lea el esquema va a creer que la protección existe. Y la consulta ahora
+filtra con `mi_profesora_id()`.
+
+### Lo que NO estaba expuesto, verificado con sesión real
+
+| Prueba | Resultado |
+|---|---|
+| `inscritas_de_clase` de una clase ajena | 🟢 `42501: Esa clase no es tuya` |
+| `select` sobre `perfiles` | 🟢 1 fila, la suya |
+| `saldo_creditos` de otro perfil | 🟢 `42501` |
+| `creditos`, `compras` | 🟢 sin acceso |
+
+**Ninguna alumna quedó expuesta.** Fue la decisión correcta resolver los nombres con una función
+`security definer` en vez de una política sobre `perfiles`: con una política, este mismo error de
+OR habría filtrado datos de menores.
+
+⚠️ `reservas` no tenía datos al auditar (0 filas), así que su política no está probada **con
+datos**. Sí se verificó la expresión que la gobierna —`mi_profesora_id()` y `dicta_la_clase()`
+responden correcto—, pero conviene repetir la prueba en cuanto exista la primera reserva real.
+
+### La auditoría completa
+
+Se revisaron las **quince tablas** con tres identidades, buscando el mismo error en PRD-0004,
+PRD-0015, PRD-0016 y PRD-0017. Estaba en dos lugares:
+
+1. `clases` — lo de arriba.
+2. **`parametros` — y este era peor.** Ver §13.
+
+Todo lo demás está bien: las tablas privadas no tienen política pública debajo, y en el catálogo
+(`cursos`, `profesoras`, `sedes`, `horarios`, `planes`) el OR es justo lo que se quiere, porque
+admin ve lo público **más** lo inactivo.
+
+## 13. Hallazgo aparte: los datos bancarios estaban expuestos
+
+Buscando el error de OR apareció otro del mismo tipo, más serio, en una tabla que no tiene nada
+que ver con este PRD:
+
+```sql
+create policy parametros_lectura on public.parametros
+  for select to anon, authenticated using (true);
+```
+
+Con la llave publishable —que viaja en el bundle del navegador, o sea que es pública de hecho—
+**cualquiera sin cuenta podía leer la tabla entera**, y ahí viven los datos de transferencia que
+se cargaron el 31/08:
+
+- nombre completo del titular
+- **su RUT**
+- el número de cuenta
+- su correo personal
+
+No es la cuenta de la SpA: es una cuenta personal. Nombre y RUT de una persona identificada son
+datos personales bajo la Ley 19.628, y estaban legibles sin sesión.
+
+**Arreglado:** `revoke all on public.parametros from anon`. Con sesión sí se leen —quien va a
+transferir necesita ver a dónde— y ninguna página pública los usa, así que no rompe nada.
+
+⚠️ **Esto estuvo expuesto desde el 31/08.** No hay forma de saber si alguien lo leyó. Vale la pena
+que Carla lo sepa, y decidir si conviene mover el cobro a una cuenta de la SpA cuando exista.

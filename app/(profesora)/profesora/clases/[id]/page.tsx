@@ -8,7 +8,7 @@ import { cuandoLegible } from "@/lib/compras";
 import { getClase, getInscritas } from "@/lib/profesora-consultas";
 
 export const metadata: Metadata = {
-  title: "La clase — XO Dance Studio",
+  title: "Una clase que dicto — XO Dance Studio",
   robots: { index: false, follow: false },
 };
 

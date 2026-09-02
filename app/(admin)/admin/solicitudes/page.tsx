@@ -13,7 +13,7 @@ import {
 } from "@/lib/profesora-consultas";
 
 export const metadata: Metadata = {
-  title: "Solicitudes de horario — XO Dance Studio",
+  title: "Horarios pedidos — XO Dance Studio",
   robots: { index: false, follow: false },
 };
 
@@ -45,7 +45,7 @@ export default async function Solicitudes() {
     <>
       <TituloPortal
         eyebrow="Administración"
-        titulo="Solicitudes de horario"
+        titulo="Horarios que pidieron las profes"
         bajada="Las profesoras piden bloques nuevos. Contesta siempre algo: lo que escribas es lo que ella va a leer."
       />
 

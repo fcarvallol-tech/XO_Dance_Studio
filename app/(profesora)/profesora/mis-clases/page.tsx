@@ -7,7 +7,9 @@ import { claveDia, diaLegible, horaLegible } from "@/lib/compras";
 import { getMisClases } from "@/lib/profesora-consultas";
 
 export const metadata: Metadata = {
-  title: "Mis clases — XO Dance Studio",
+  // "Clases que dicto" y no "Mis clases": la alumna ya tiene una página con
+  // ese nombre, y una profesora puede ser las dos cosas.
+  title: "Clases que dicto — XO Dance Studio",
   robots: { index: false, follow: false },
 };
 
@@ -42,7 +44,7 @@ export default async function MisClases() {
     <>
       <TituloPortal
         eyebrow="Portal de profesora"
-        titulo="Mis clases"
+        titulo="Clases que dicto"
         bajada="Tus clases de las próximas semanas, con cuántas alumnas van inscritas. Toca una para ver quiénes son."
       />
 

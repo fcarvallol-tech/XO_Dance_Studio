@@ -91,13 +91,30 @@ export async function getMisClases(
   const desde = new Date(ahora + desdeDias * 86_400_000).toISOString();
   const hasta = new Date(ahora + hastaDias * 86_400_000).toISOString();
 
-  // Sin filtro por profesora: lo hace `clases_de_la_profesora` en la base. Si
-  // se filtrara acá y la política faltara, el bug sería invisible.
+  // **Acá se filtra, y tiene que ser acá.** La primera versión no filtraba,
+  // confiando en una política de RLS que no restringía nada: `clases` es
+  // pública a propósito —las alumnas necesitan la parrilla completa para
+  // reservar— y las políticas permisivas se suman con OR, así que agregar una
+  // "de la profesora" no quitaba nada. Resultado: veía las 73 clases en vez de
+  // sus 10.
+  //
+  // `mi_profesora_id()` resuelve el salto de slug a uuid en la base, con la
+  // sesión de quien pregunta: no se puede falsear pasando otro id.
+  const { data: miId, error: errorId } = await supabase.rpc("mi_profesora_id");
+  if (errorId) return { datos: [], error: comoTexto(errorId) };
+  if (!miId) {
+    return {
+      datos: [],
+      error: "Tu cuenta no está enlazada a una profesora del catálogo.",
+    };
+  }
+
   const { data, error } = await supabase
     .from("clases")
     .select(
       "id, inicio, cupo_maximo, estado, motivo_cancelacion, profesora_id, cursos ( nombre ), sedes ( nombre, comuna ), profesoras ( nombre ), horarios ( profesora_id, profesoras ( nombre ) )",
     )
+    .eq("profesora_id", miId as string)
     .gte("inicio", desde)
     .lte("inicio", hasta)
     .order("inicio");
