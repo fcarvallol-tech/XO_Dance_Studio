@@ -245,3 +245,88 @@ export async function cancelarReserva(reservaId: string): Promise<Resultado> {
   revalidatePath("/mis-clases");
   return { ok: true };
 }
+
+/**
+ * Una profesora pide un bloque nuevo.
+ *
+ * Se inserta con **su** sesión, no con la service role key: la política
+ * `solicitudes_crea_la_suya` exige que `profesora_id` sea el suyo, así que no
+ * puede pedir a nombre de otra ni aunque manipule el formulario.
+ */
+export async function pedirHorario(datos: FormData): Promise<Resultado> {
+  const perfil = await perfilActual();
+  if (!perfil) return { ok: false, mensaje: "Necesitas iniciar sesión." };
+
+  const supabase = await clienteServidor();
+
+  const { data: profesora } = await supabase
+    .from("profesoras")
+    .select("id")
+    .eq("slug", perfil.profesoraId ?? "")
+    .maybeSingle();
+
+  if (!profesora) {
+    return { ok: false, mensaje: "Tu cuenta no está enlazada a una profesora." };
+  }
+
+  const dia = Number(datos.get("dia"));
+  const hora = String(datos.get("hora") ?? "");
+  const cursoId = String(datos.get("curso") ?? "").trim() || null;
+  const propuesto = String(datos.get("propuesto") ?? "").trim() || null;
+  const sedeId = String(datos.get("sede") ?? "").trim() || null;
+  const mensaje = String(datos.get("mensaje") ?? "").trim() || null;
+
+  if (!Number.isInteger(dia) || dia < 1 || dia > 7) {
+    return { ok: false, mensaje: "Elige un día de la semana." };
+  }
+  if (!/^\d{2}:\d{2}$/.test(hora)) {
+    return { ok: false, mensaje: "Escribe la hora como 20:00." };
+  }
+  if (!cursoId && !propuesto) {
+    return { ok: false, mensaje: "Dinos qué curso quieres hacer, o proponnos uno." };
+  }
+
+  const { error } = await supabase.from("solicitudes_horario").insert({
+    profesora_id: profesora.id,
+    dia_semana: dia,
+    hora,
+    curso_id: cursoId,
+    curso_propuesto: propuesto,
+    sede_id: sedeId,
+    mensaje,
+  });
+
+  if (error) return { ok: false, mensaje: comoMensaje(error) };
+
+  revalidatePath("/profesora/solicitudes");
+  revalidatePath("/admin/solicitudes");
+  return { ok: true };
+}
+
+/** Admin responde una solicitud. La respuesta es obligatoria: ella la lee. */
+export async function resolverSolicitud(
+  solicitudId: string,
+  estado: "aprobada" | "rechazada",
+  respuesta: string,
+): Promise<Resultado> {
+  const actor = await perfilActual();
+  if (!actor || !tieneNivel(actor.rol, "admin")) {
+    return { ok: false, mensaje: "No tienes permiso." };
+  }
+  if (!respuesta.trim()) {
+    return { ok: false, mensaje: "Contéstale algo: va a leer esto." };
+  }
+
+  const { error } = await clienteAdmin().rpc("resolver_solicitud", {
+    p_solicitud_id: solicitudId,
+    p_actor_user_id: actor.userId,
+    p_estado: estado,
+    p_respuesta: respuesta,
+  });
+
+  if (error) return { ok: false, mensaje: comoMensaje(error) };
+
+  revalidatePath("/admin/solicitudes");
+  revalidatePath("/profesora/solicitudes");
+  return { ok: true };
+}

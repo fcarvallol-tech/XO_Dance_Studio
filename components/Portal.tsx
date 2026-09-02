@@ -83,9 +83,11 @@ function enlacesPara(rol: Rol) {
 
   if (tieneNivel(rol, "profesora")) {
     enlaces.push({ href: "/profesora/mis-clases", texto: "Mis clases" });
+    enlaces.push({ href: "/profesora/solicitudes", texto: "Pedir horario" });
   }
   if (tieneNivel(rol, "admin")) {
     enlaces.push({ href: "/admin/compras", texto: "Transferencias" });
+    enlaces.push({ href: "/admin/solicitudes", texto: "Solicitudes" });
     enlaces.push({ href: "/admin", texto: "Personas" });
     enlaces.push({ href: "/admin/leads", texto: "Leads" });
   }

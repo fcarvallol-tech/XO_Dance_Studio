@@ -26,6 +26,11 @@ quién está inscrita y resolver las solicitudes. Hoy eso es Felipe con planilla
    alguien.
 7. **Solicitudes de horario:** bandeja con aprobar o rechazar y respuesta escrita.
 8. **Otorgar créditos** a una alumna, con motivo obligatorio. Disponible para admin y owner.
+9. ✅ **Solicitudes de horario: adelantado en PRD-0008** (02/09/2026). La bandeja para aprobar
+   o rechazar con respuesta obligatoria vive en `/admin/solicitudes`, con los conflictos de
+   sala y horario a la vista. Se adelantó porque sin ella una solicitud caía en un buzón que
+   nadie abre. **Lo que sigue siendo de este PRD:** crear el bloque en la parrilla al aprobar,
+   que toca cupos y el calendario de las alumnas.
 
 ## 2.b Datos iniciales
 

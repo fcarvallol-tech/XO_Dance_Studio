@@ -154,6 +154,13 @@ permisos que se van a desincronizar.
   `perfiles` desde una política sobre `perfiles`.
 - El perfil lo crea un trigger sobre `auth.users`, con `rol` en `alumna` por defecto. Nadie elige
   su rol al insertarlo.
+- **Portal de profesora (PRD-0008):** `mi_profesora_id()` resuelve el salto de tipo entre
+  `perfiles.profesora_id` (slug) y `clases.profesora_id` (uuid); `dicta_la_clase()` y
+  `inscritas_de_clase()` gobiernan qué ve de sus alumnas. **`inscritas_de_clase` devuelve solo
+  `reserva_id, nombre, estado`**, y esa firma es el contrato: RLS filtra filas, no columnas, así
+  que a la profesora no se le da ningún acceso a `perfiles`.
+- **`saldo_creditos` ya no está concedida a `authenticated`** (02/09/2026): era `security definer`
+  y dejaba consultar el saldo de cualquier perfil conocido. Solo `service_role`.
 - **`cambios_rol`** — libro de cambios de rol: `perfil_id, rol_anterior, rol_nuevo, cambiado_por,
   motivo`. Solo se agrega, y el `revoke update, delete ... from service_role` lo garantiza: la
   service role key salta RLS pero no salta los grants. Sin `deleted_at`, excepción deliberada a la
@@ -216,9 +223,15 @@ estado (programada|realizada|cancelada), motivo_cancelacion`
 vigente_hasta, activo`
 Un proceso genera las `clases` de las próximas N semanas desde estas plantillas.
 
-**`solicitudes_horario`** — una profesora pide un bloque nuevo.
-`profesora_id, dia_semana, hora_inicio, hora_fin, curso_propuesto, mensaje,
+**`solicitudes_horario`** — ✅ construida el 02/09/2026 (PRD-0008).
+`profesora_id, dia_semana, hora, curso_id?, curso_propuesto?, sede_id?, mensaje,
 estado (pendiente|aprobada|rechazada), resuelta_por, resuelta_at, respuesta`
+
+- `profesora_id` apunta a **`profesoras`** y `resuelta_por` a **`perfiles`**, a tablas distintas
+  a propósito: dos FK a la misma tabla vuelven ambiguo el embed de PostgREST. Ver PRD-0017 §17.
+- Puede pedir un curso del catálogo **o** proponer uno nuevo; un check exige al menos uno.
+- Resolver pasa por `resolver_solicitud`, con respuesta obligatoria. Aprobar **no crea el
+  horario**: eso queda en el portal de administración, porque toca cupos y calendario.
 
 ### 5.3.b Suscripciones (rama Teens)
 
