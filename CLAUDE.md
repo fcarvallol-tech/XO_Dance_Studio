@@ -130,6 +130,16 @@ ERP: rutas bajo `app/(erp)/`, todas autenticadas. No existe todavía.
     mirar las funciones, no solo las tablas: `GET /rest/v1/` lista todo lo que la API expone.
   - **Público es una decisión, no un resto.** Se abre lo que una página pública necesita, y se
     abre esa cosa y no la tabla entera.
+- **`revoke ... from public` NO es `revoke ... from anon`.** `PUBLIC` es el pseudo-rol que cubre a
+  **todos** los roles, `authenticated` incluido. Y las funciones nacen con `EXECUTE` para `PUBLIC`,
+  así que muchas funcionan sin grant explícito: revocar `PUBLIC` se lo quita a todo el mundo.
+  - Para cerrarle una función a quien no tiene sesión: `revoke ... from public, anon` **y a
+    continuación** `grant execute ... to authenticated, service_role`.
+  - Toda función que alguien vaya a ejecutar debe tener su **grant explícito escrito**, aunque hoy
+    funcione por el default. Lo que funciona por defecto se rompe silenciosamente al primer
+    `revoke`. Ya rompió el login una vez — ver PRD-0008 §15.
+  - `tiene_nivel` es el caso crítico: la llaman las políticas RLS de casi todas las tablas, así
+    que sin ella **cualquier consulta con sesión falla**, no solo las de admin.
 - Dinero: enteros CLP. Sin decimales, sin floats.
 - Fechas: `timestamptz` en UTC, se renderizan en `America/Santiago`.
 - RUT normalizado `12345678-9`, DV en minúscula, validado en servidor.

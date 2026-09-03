@@ -335,3 +335,75 @@ funciones, así que revocar no rompe la lectura del catálogo.
 **Público debe ser una decisión, no un resto.** Lo que está abierto hoy —catálogo, parrilla,
 precios— lo está porque la landing lo necesita. Todo lo demás se cierra, y si mañana algo público
 hace falta, se abre esa cosa y no la tabla entera.
+
+## 15. El login roto del 03/09/2026: `PUBLIC` no es `anon`
+
+**Síntoma:** después de aplicar el arreglo de §13, nadie podía entrar. Ni con Google ni con magic
+link.
+
+**La causa no fue revocarle las funciones a `anon`.** Fue esta línea, repetida nueve veces:
+
+```sql
+revoke execute on function public.tiene_nivel(text) from public, anon;
+```
+
+**`PUBLIC` en Postgres no significa "el público": es el pseudo-rol que cubre a todos los roles**,
+`authenticated` incluido. Y las funciones nacen con `EXECUTE` para `PUBLIC` por defecto, así que
+`tiene_nivel`, `mi_rol` y `nivel_rol` **nunca tuvieron un grant explícito a `authenticated`** —
+funcionaban por ese default. Revocar `PUBLIC` se lo quitó a todo el mundo.
+
+Las otras seis funciones no se rompieron porque sí tenían su grant escrito. Solo faltaban esas
+tres, y bastaron.
+
+### Por qué se cayó todo y no solo el portal de admin
+
+`tiene_nivel` la llaman las políticas RLS de casi todas las tablas. Cualquier `select` de un
+usuario con sesión evalúa también la política de admin —aunque no sea admin— y esa política llama
+a la función. Verificado con una sesión real:
+
+```
+select perfiles              42501: permission denied for function tiene_nivel
+select clases                42501
+select compras               42501
+select solicitudes_horario   42501
+rpc mi_rol                   42501
+rpc tiene_nivel              42501
+rpc nivel_rol                42501
+```
+
+7 de 14 operaciones rotas para cualquiera con sesión.
+
+**De ahí el login.** `perfilActual()` no podía leer `perfiles`, devolvía `null`, `requiereSesion`
+mandaba a `/entrar`, y `/entrar` veía `null` y volvía a mostrar la puerta. Entrar y quedar afuera.
+La autenticación en sí nunca falló: `verifyOtp` y `getClaims` respondían bien. Lo que fallaba era
+el paso siguiente.
+
+### El arreglo no devuelve nada a `anon`
+
+No hizo falta, y no se hizo:
+
+- Ninguna política `for select to anon` llama funciones — todas comparan columnas.
+- Verificado empíricamente: con las nueve revocadas, `anon` seguía leyendo `cursos`, `profesoras`,
+  `sedes`, `horarios`, `planes` y `clases` sin problema.
+
+Se restauró solo el acceso de quien tiene sesión, con `grant execute ... to authenticated,
+service_role`. **Los datos de transferencia siguen cerrados para `anon`**, que era el punto de §13.
+
+De paso se escribieron los grants explícitos de las otras seis y de tres funciones más que también
+dependían del default: lo que funciona por defecto se rompe silencioso al primer `revoke`.
+
+### Hallazgo aparte: el SMTP de Supabase tiene límite
+
+Reproduciendo el flujo apareció otro problema, independiente de este:
+
+```
+signInWithOtp -> 429 over_email_send_rate_limit · email rate limit exceeded
+```
+
+Los magic links salen por el SMTP por defecto de Supabase, que tiene un límite de envíos bajo.
+**ADR-0007 lo anticipó**: *"Hoy los magic links salen por el SMTP de Supabase, con sus límites de
+envío: si el volumen de registros sube, eso se nota antes que cualquier otra cosa."*
+
+⚠️ Esto no lo arregla esta migración. Aunque el `42501` esté resuelto, **pedir un magic link puede
+seguir fallando con 429** hasta que se configure el SMTP de Supabase Auth apuntando a Resend, que
+es justamente lo que ese ADR dejó anotado en "cuándo revisar". Google OAuth no se ve afectado.
