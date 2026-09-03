@@ -29,8 +29,13 @@ export default async function MisClases() {
   ]);
 
   const ahora = new Date().toISOString();
+  // Una clase que la academia canceló va arriba aunque la reserva figure como
+  // cancelada: es una noticia que ella todavía no vio y que cambia su semana.
+  // Antes caía entre las pasadas, o directamente no aparecía.
   const proximas = reservas.datos.filter(
-    (r) => r.estado === "confirmada" && r.inicio > ahora,
+    (r) =>
+      r.inicio > ahora &&
+      (r.estado === "confirmada" || (r.claseCancelada && r.creditoDevuelto)),
   );
   const pasadas = reservas.datos.filter((r) => !proximas.includes(r));
 
