@@ -351,3 +351,111 @@ en la misma tabla se rechaza con `42501`. Los grants por columna hacen su trabaj
 ⚠️ **La migración ya está aplicada en Supabase**, contra lo que decía §11: se verificó que
 `cambios_rol.profesora_id` y la firma de cinco argumentos de `cambiar_rol` están en la base. El
 `grant select` nuevo **no toma efecto hasta volver a aplicarla**.
+
+## 13. El magic link roto desde el principio (03/09/2026)
+
+**Estuvo roto desde que se implementó este PRD y nadie lo notó hasta hoy**, porque el correo antes
+ni siquiera llegaba: el SMTP de Supabase respondía `429 over_email_send_rate_limit`. Al configurar
+Resend el correo empezó a salir, y recién ahí se vio que el enlace llevaba a
+*"ese enlace ya no sirve"*.
+
+### La causa: el enlace nunca traía lo que la ruta espera
+
+El template del correo usa `{{ .ConfirmationURL }}`, el valor por defecto, que apunta al
+verificador de Supabase y no al sitio:
+
+```
+https://<proyecto>.supabase.co/auth/v1/verify
+  ?token=…&type=magiclink&redirect_to=https://xodancestudio.cl/auth/confirmar
+```
+
+Al abrirlo, Supabase **consume el token** y redirige:
+
+```
+303 → https://xodancestudio.cl/auth/confirmar?volver=…#access_token=eyJ…
+```
+
+`/auth/confirmar` leía `token_hash` de la query. No venía, así que redirigía a
+`/entrar?error=enlace`, cuyo texto era *"Ese enlace ya no sirve: vencen y se usan una sola vez"*.
+**Ese mensaje era nuestro, no de Supabase.** El enlace no había expirado: nunca se llegó a leer.
+
+Y hay un segundo muro: la sesión volvía en el **fragmento** (`#access_token=…`), que el navegador
+**nunca envía al servidor**. Una Route Handler no puede verlo aunque quiera.
+
+### Lo que NO era
+
+- **No era que algo pre-abriera el enlace.** Lo consumía el propio recorrido, en
+  `/auth/v1/verify`. Verificado: el mismo token después responde
+  *"Email link is invalid or has expired"*, y uno nuevo sin abrir funciona.
+- **No era el proxy.** `/auth/confirmar` no está en `RUTAS_CON_SESION`, así que no lo toca.
+- **No fue el cambio de SMTP.** El formato lo define el *template*, no el proveedor. Cambiar a
+  Resend solo hizo visible un bug que ya estaba.
+
+### El arreglo, en dos partes
+
+**A · El template del correo** pasa a apuntar directo a la ruta con el token. Es **configuración
+del panel**, no código, y es la única forma que funciona **entre dispositivos**.
+
+**B · `/auth/confirmar` acepta las dos formas de llegar**: `?token_hash=…&type=…` (camino A) y
+`?code=…` (PKCE, que es el flujo por defecto de `createBrowserClient` y solo sirve en el mismo
+navegador que pidió el enlace).
+
+Y cuando no llega ninguna, **deja de mentir**: antes decía que el enlace había expirado; ahora
+distingue tres casos con mensajes distintos —enlace usado, abierto en otro navegador, y problema
+de configuración nuestro—, y este último no manda a pedir otro enlace, porque chocaría con lo
+mismo.
+
+### Qué cambiar en el panel de Supabase (parte A)
+
+1. **Authentication → Emails → Templates → Magic Link.**
+2. Reemplazar el cuerpo por un enlace que apunte al sitio con el token:
+
+   ```html
+   <h2>Entra a XO Dance Studio</h2>
+   <p>Toca el botón y quedas dentro. Sirve una sola vez.</p>
+   <p>
+     <a href="{{ .SiteURL }}/auth/confirmar?token_hash={{ .TokenHash }}&type=magiclink">
+       Entrar a XO
+     </a>
+   </p>
+   ```
+
+   La clave es usar **`{{ .TokenHash }}`** y no `{{ .ConfirmationURL }}`.
+3. **Authentication → URL Configuration:** que **Site URL** sea `https://xodancestudio.cl`, porque
+   `{{ .SiteURL }}` sale de ahí. Y que `https://xodancestudio.cl/**` esté en **Redirect URLs**.
+4. Conviene hacer lo mismo en el template de **Confirm signup**, que tiene el mismo problema.
+
+Mientras el template no se cambie, quien abra el correo **en otro dispositivo** va a seguir sin
+poder entrar, aunque el resto ya esté arreglado.
+
+### Criterio de aceptación nuevo
+
+- [ ] **Pedir el enlace en un dispositivo y abrirlo en otro funciona.** Pedirlo en el computador y
+      abrirlo en el teléfono es lo que van a hacer las alumnas, no un caso borde. Es lo único que
+      distingue el camino A del B, y la razón por la que A no es opcional.
+- [x] El enlace real del correo abre sesión y deja entrar, verificado de punta a punta contra un
+      servidor corriendo — no llamando `verifyOtp()` por el SDK.
+- [x] El mismo enlace usado dos veces falla, y dice que es de un solo uso.
+- [x] Un enlace sin token no dice "expiró": dice que hay un problema de configuración.
+
+### Verificación de punta a punta
+
+Contra un servidor real, abriendo la URL exacta que produce el template nuevo. El cliente que
+abrió el enlace **no compartía ningún estado** con quien lo pidió, que es justamente la prueba
+entre dispositivos:
+
+```
+CAMINO A
+  GET /auth/confirmar?token_hash=f584be2bc31e…&type=magiclink
+  HTTP 307 -> /mis-clases          · Set-Cookie de sesion: SI
+  GET /mis-clases con esa cookie   · HTTP 307 -> /completar-perfil  (entró; le falta el perfil)
+
+EL MISMO ENLACE, SEGUNDA VEZ
+  HTTP 307 -> /entrar?error=enlace
+
+SIN TOKEN NI CODE  (el caso que antes mentía)
+  HTTP 307 -> /entrar?error=configuracion
+
+CON UN CODE INVÁLIDO  (PKCE abierto en otro navegador)
+  HTTP 307 -> /entrar?error=otro-navegador
+```

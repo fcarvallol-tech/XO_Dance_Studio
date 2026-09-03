@@ -51,6 +51,17 @@ Fuentes vía `next/font/google`.
 - Todo el copy en español de Chile. Nunca traducir desde inglés.
 - Mobile-first: el diseño se piensa desde 375px hacia arriba.
 - Correr `npm run build` antes de dar por terminada una fase.
+- **Verificar la ruta de datos no es verificar el flujo.** Una prueba que se salta el camino real
+  de la persona puede dar por bueno algo que está roto de punta a punta.
+  - El magic link estuvo roto **desde PRD-0004 hasta el 03/09/2026** sin que nadie lo notara: cada
+    verificación llamaba `verifyOtp()` por el SDK con el token en la mano, y nunca abría el enlace
+    del correo. El SDK respondía `ok` y el enlace real llevaba a "este enlace ya no sirve".
+  - La regla: **probar el artefacto que toca el usuario** —el enlace que llega, el formulario que
+    se envía, el botón que se aprieta— y no la función que ese artefacto termina llamando. Si la
+    prueba no puede fallar por lo mismo que falla en producción, no es una prueba del flujo.
+  - Cuando el flujo cruza sistemas (correo, pasarela, OAuth), el punto de falla suele estar
+    **entre** ellos: en el formato del enlace, en el parámetro que no llega, en el redirect
+    intermedio. Ahí es donde hay que mirar, no en los extremos.
 - **No inventar datos.** Los precios están definidos y publicados: viven en `lib/planes.ts` y en
   ningún otro lado. Horarios y cupos siguen en `lib/cursos.ts` marcados `TODO` y se muestran como
   "Por confirmar". Lo mismo aplica a cualquier dato de negocio que no esté en

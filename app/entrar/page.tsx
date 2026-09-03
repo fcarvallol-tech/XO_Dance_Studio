@@ -19,6 +19,14 @@ type Props = { searchParams: Promise<{ volver?: string; error?: string }> };
 
 const ERRORES: Record<string, string> = {
   enlace: "Ese enlace ya no sirve: vencen y se usan una sola vez. Pide otro.",
+  // Un enlace de PKCE abierto en otro navegador. No es culpa suya ni del
+  // enlace, así que se le dice qué hacer en vez de mandarla a reintentar.
+  "otro-navegador":
+    "Ese enlace hay que abrirlo en el mismo teléfono o computador donde lo pediste. Pide uno nuevo desde el aparato que vayas a usar.",
+  // El servidor no recibió nada utilizable. Es configuración nuestra: mandarla
+  // a pedir otro enlace la haría chocar con lo mismo.
+  configuracion:
+    "Algo está mal configurado de nuestro lado y no pudimos abrirte la sesión. Entra con Google mientras lo arreglamos, o escríbenos.",
   codigo: "No pudimos completar la entrada con Google. Prueba de nuevo.",
   "sin-codigo": "Google no nos devolvió nada. Prueba de nuevo.",
 };
