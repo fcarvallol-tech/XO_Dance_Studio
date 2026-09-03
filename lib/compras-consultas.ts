@@ -246,6 +246,9 @@ export async function getCalendario(
     .select(
       "id, inicio, cupo_maximo, cursos ( slug, nombre ), profesoras ( slug, nombre ), sedes ( nombre, comuna )",
     )
+    // Explícito acá y no solo en RLS: desde que `clases` expone también las
+    // canceladas, filtrar es responsabilidad de quien consulta. La alumna no
+    // reserva una clase cancelada, así que no la ve en el calendario.
     .eq("estado", "programada")
     .gt("inicio", desde.toISOString())
     .lt("inicio", hasta.toISOString())

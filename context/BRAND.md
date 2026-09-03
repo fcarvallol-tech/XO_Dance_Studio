@@ -132,12 +132,25 @@ La escala completa está en `.claude/rules/estilo.md`. Un solo `h1` por página.
 ### Calendario — patrón visual propio
 
 El calendario aparece en los cuatro portales y es la pieza de interfaz más importante del
-producto. Al filtrar por profesora, las clases de esa profesora **ganan protagonismo** (color
-sólido de marca, mayor peso) y el resto **retrocede** (opacidad reducida), en vez de
-desaparecer. Se mantiene el contexto completo de la semana y se destaca lo relevante.
+producto. Lo relevante **gana protagonismo** —color sólido de marca, mayor peso— y el resto
+**retrocede** en vez de desaparecer. Se mantiene el contexto completo de la semana y se destaca
+lo que importa.
 
-⚠️ Cuidado con el contraste: al bajar opacidad, el texto debe seguir siendo legible. Una clase
-atenuada no puede volverse ilegible — es información, no decoración.
+**Retroceder es perder el color, no la nitidez** (corregido el 04/09/2026). Antes esta regla
+decía "opacidad reducida", y es lo que no hay que hacer: sobre fondo claro, bajar la opacidad
+degrada el texto justo cuando la propia regla advertía que tenía que seguir legible. Las dos
+mitades peleaban.
+
+La forma correcta:
+
+| | Fondo | Texto |
+|---|---|---|
+| **Destacado** | `xo-rosa` sólido | `xo-negro` — es el patrón de botón primario |
+| **Retrocedido** | sin fondo, borde tenue | `xo-negro` y `xo-gris`, a contraste pleno |
+
+Lo retrocedido se lee al 100%: pierde la jerarquía visual, no la información. **Una clase de otra
+profesora es información, no decoración**, y quien la mira la necesita para saber qué está
+ocupado.
 
 ---
 

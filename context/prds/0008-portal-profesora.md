@@ -407,3 +407,73 @@ envío: si el volumen de registros sube, eso se nota antes que cualquier otra co
 ⚠️ Esto no lo arregla esta migración. Aunque el `42501` esté resuelto, **pedir un magic link puede
 seguir fallando con 429** hasta que se configure el SMTP de Supabase Auth apuntando a Resend, que
 es justamente lo que ese ADR dejó anotado en "cuándo revisar". Google OAuth no se ve afectado.
+
+## 16. La grilla semanal (04/09/2026)
+
+`/profesora/mis-clases` era una lista de sus clases. Pasa a ser **la parrilla completa de la
+semana**, con los días como columnas y flechas para moverse.
+
+### Por qué muestra las clases de las otras
+
+**Una profesora que va a pedir un horario necesita saber qué está ocupado y en qué sede. Sin la
+parrilla completa pide a ciegas.** Ese es el motivo, y es el mismo que hace que
+`solicitudes_horario` exista: sin contexto, una solicitud es una adivinanza que admin tiene que
+rechazar.
+
+### Esto no reabre el bug de septiembre
+
+Conviene dejarlo escrito porque la distinción costó entenderla:
+
+- `clases` y `horarios` **ya eran públicos**, y deben serlo: `anon` los lee desde la landing y las
+  alumnas necesitan la parrilla para reservar.
+- Lo que estaba mal **no era que la profesora viera la parrilla**: era que su lista personal
+  mezclaba clases ajenas sin distinguirlas, presentándolas como propias.
+- Lo que sigue protegido, y **no se toca**, son las inscritas.
+
+Un detalle que sostiene solo la restricción: **el conteo de las ajenas no se oculta en la
+interfaz — RLS simplemente no lo devuelve.** `reservas_de_mis_clases` limita las reservas a sus
+clases, así que `inscritas` llega `null` para las demás. Si alguien se equivocara al pintar, no
+habría nada que filtrar.
+
+### Lo que se ve de cada una
+
+| | Suyas | De otras |
+|---|---|---|
+| Datos | hora · curso · sede · `14/22` | hora · curso · profesora · sede |
+| Inscritas | sí, en el detalle | **nunca**, ni el conteo |
+| Al tocarla | va al detalle | no hace nada, y no parece tocable |
+
+Las canceladas se muestran **tachadas** y no ocultas: un bloque cancelado significa que esa sala
+está libre a esa hora, que es justo lo que busca al pedir horario. Eso obligó a un cambio de RLS
+—`clases_lectura_publica` exponía solo `estado = 'programada'`— documentado en
+`20260904120000_clases_canceladas_visibles.sql`. De paso arregla algo que estaba mal para las
+alumnas: una clase cancelada **desaparecía** del calendario en vez de mostrarse como cancelada.
+
+### Contraste: saturación, no opacidad
+
+`BRAND.md` pedía "opacidad reducida" y a la vez advertía que el texto debía seguir legible. Son
+dos cosas que pelean sobre fondo claro. Se resolvió con **saturación**: lo suyo lleva `xo-rosa`
+sólido con texto `xo-negro`; lo ajeno se queda sin fondo, con borde tenue y texto a contraste
+pleno. Retrocede por no tener color, no por estar a medio borrar.
+
+Se corrigió esa línea de `BRAND.md` y también el `opacity-55` del calendario de la alumna, que
+tenía el mismo defecto.
+
+### Decisiones de forma
+
+- **Siete columnas siempre**, con los días vacíos marcados "Libre". Ver los huecos es el punto: si
+  va a pedir un horario, el martes libre importa tanto como el lunes ocupado.
+- **Scroll horizontal en móvil.** Siete columnas en 375px darían 53px cada una, ilegible. El
+  scroll conserva la grilla en vez de degradarla otra vez a lista.
+- **Las clases se apilan por hora dentro del día**, sin filas de horario alineadas: con una o dos
+  clases diarias, una grilla hora-por-hora sería casi toda espacio muerto.
+- **La navegación es `?semana=YYYY-MM-DD`, resuelta en el servidor.** Cada flecha es un enlace, no
+  hay estado en el cliente, funciona sin JS y cada semana queda con URL propia — útil para mandar
+  "mira el 15 de septiembre" por WhatsApp.
+- **Las semanas se calculan en `America/Santiago`**, no en UTC, o el lunes se corre de día en la
+  madrugada. `lib/semana.ts` resuelve el desfase real de cada fecha, porque Chile cambia de hora.
+  Verificado contra junio (−04) y septiembre (−03).
+- **Más allá de los 70 días** que materializa `generar_clases`, la grilla dice "todavía no están
+  generadas" y no "no hay clases", que sería mentira.
+- **La tira de arriba con su próxima clase se conserva**, porque el caso de PRD-0008 §2 —mirar el
+  teléfono antes de entrar a la sala— se resuelve mejor con una línea que con una grilla.

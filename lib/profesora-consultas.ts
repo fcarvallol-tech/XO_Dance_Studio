@@ -295,3 +295,146 @@ export async function getConflictos(
   });
   return ((data ?? []) as Conflicto[]) ?? [];
 }
+
+/** Una clase en la grilla semanal. `inscritas` es null si no es suya. */
+export type ClaseDeGrilla = {
+  id: string;
+  inicio: string;
+  hora: string;
+  cursoNombre: string;
+  profesoraNombre: string;
+  sedeNombre: string;
+  sedeComuna: string;
+  cupoMaximo: number;
+  cancelada: boolean;
+  mia: boolean;
+  /** Solo para las suyas. RLS no devuelve reservas de clases ajenas. */
+  inscritas: number | null;
+};
+
+export type DiaDeGrilla = { dia: string; clases: ClaseDeGrilla[] };
+
+/**
+ * La parrilla completa de una semana: **todas** las clases, no solo las suyas.
+ *
+ * No reabre el bug de septiembre. `clases` y `horarios` ya eran públicos —la
+ * landing los muestra sin cuenta— y lo que estaba mal era que su lista personal
+ * mezclara clases ajenas sin distinguirlas. Acá se distinguen: `mia` marca
+ * cuáles son suyas y la grilla las pinta distinto.
+ *
+ * Lo que sigue protegido son **las inscritas**, y no se toca:
+ *
+ *   · el conteo sale de `reservas`, que `reservas_de_mis_clases` limita a sus
+ *     clases — por eso `inscritas` viene `null` en las ajenas sin que la
+ *     interfaz tenga que acordarse de ocultarlo;
+ *   · los nombres siguen saliendo solo de `inscritas_de_clase`, que rechaza una
+ *     clase ajena con 42501.
+ */
+export async function getSemana(
+  lunes: string,
+): Promise<Lectura<{ dias: DiaDeGrilla[]; hayClases: boolean }>> {
+  const { diasDeLaSemana, inicioDelDia, sumarDias, diaEnSantiago } = await import("./semana");
+  const supabase = await clienteServidor();
+
+  const desde = inicioDelDia(lunes);
+  const hasta = inicioDelDia(sumarDias(lunes, 7));
+
+  const [{ data: miId }, clases] = await Promise.all([
+    supabase.rpc("mi_profesora_id"),
+    supabase
+      .from("clases")
+      .select(
+        "id, inicio, cupo_maximo, estado, profesora_id, cursos ( nombre ), profesoras ( nombre ), sedes ( nombre, comuna )",
+      )
+      .gte("inicio", desde.toISOString())
+      .lt("inicio", hasta.toISOString())
+      .order("inicio"),
+  ]);
+
+  if (clases.error) {
+    return { datos: { dias: [], hayClases: false }, error: comoTexto(clases.error) };
+  }
+
+  type Fila = {
+    id: string;
+    inicio: string;
+    cupo_maximo: number;
+    estado: string;
+    profesora_id: string;
+    cursos: { nombre: string } | null;
+    profesoras: { nombre: string } | null;
+    sedes: { nombre: string; comuna: string } | null;
+  };
+
+  const filas = ((clases.data ?? []) as unknown as Fila[]).filter(
+    (c) => c.cursos && c.profesoras && c.sedes,
+  );
+
+  const mias = filas.filter((c) => c.profesora_id === miId).map((c) => c.id);
+  const inscritas = new Map<string, number>();
+
+  if (mias.length > 0) {
+    const { data: reservas } = await supabase
+      .from("reservas")
+      .select("clase_id")
+      .in("clase_id", mias)
+      .in("estado", ["confirmada", "asistio"]);
+
+    for (const r of (reservas ?? []) as { clase_id: string }[]) {
+      inscritas.set(r.clase_id, (inscritas.get(r.clase_id) ?? 0) + 1);
+    }
+  }
+
+  const hora = (iso: string) =>
+    new Intl.DateTimeFormat("es-CL", {
+      timeZone: "America/Santiago",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date(iso));
+
+  const porDia = new Map<string, ClaseDeGrilla[]>();
+  for (const c of filas) {
+    const mia = c.profesora_id === miId;
+    const dia = diaEnSantiago(new Date(c.inicio));
+    porDia.set(dia, [
+      ...(porDia.get(dia) ?? []),
+      {
+        id: c.id,
+        inicio: c.inicio,
+        hora: hora(c.inicio),
+        cursoNombre: c.cursos!.nombre,
+        profesoraNombre: c.profesoras!.nombre,
+        sedeNombre: c.sedes!.nombre,
+        sedeComuna: c.sedes!.comuna,
+        cupoMaximo: c.cupo_maximo,
+        cancelada: c.estado === "cancelada",
+        mia,
+        inscritas: mia ? (inscritas.get(c.id) ?? 0) : null,
+      },
+    ]);
+  }
+
+  return {
+    datos: {
+      dias: diasDeLaSemana(lunes).map((dia) => ({ dia, clases: porDia.get(dia) ?? [] })),
+      hayClases: filas.length > 0,
+    },
+    error: null,
+  };
+}
+
+/**
+ * Su próxima clase. Es lo que mira en el teléfono minutos antes de entrar a la
+ * sala, que es el caso de uso con el que se escribió PRD-0008 §2 — y para eso
+ * una línea sirve más que una grilla.
+ */
+export async function getProximaClase(): Promise<Lectura<ClaseDeProfesora | null>> {
+  const { datos, error } = await getMisClases(0, 30);
+  if (error) return { datos: null, error };
+  const ahora = new Date().toISOString();
+  return {
+    datos: datos.find((c) => c.inicio >= ahora && !c.cancelada) ?? null,
+    error: null,
+  };
+}

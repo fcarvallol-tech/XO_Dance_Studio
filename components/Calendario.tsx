@@ -14,9 +14,13 @@ import {
  * Las clases de los próximos 60 días, agrupadas por día.
  *
  * El filtro por profesora **atenúa en vez de esconder**, como pide BRAND.md §6:
- * se mantiene el contexto de la semana completa y se destaca lo relevante. La
- * opacidad no baja de 55% justamente por lo que ese mismo documento advierte:
- * una clase atenuada sigue siendo información, no decoración.
+ * se mantiene el contexto de la semana completa y se destaca lo relevante.
+ *
+ * **La jerarquía va por saturación, no por opacidad.** Bajar la opacidad
+ * degrada el texto justo cuando el fondo es claro, que es lo que ese mismo
+ * documento advierte que no puede pasar. Lo que retrocede pierde el color de
+ * marca y el peso, no la legibilidad: sigue en `xo-negro` y `xo-gris`, que son
+ * los contrastes que BRAND.md §4 aprueba.
  */
 export function Calendario({
   clases,
@@ -97,12 +101,12 @@ export function Calendario({
                 return (
                   <li
                     key={clase.id}
-                    className={`flex flex-wrap items-center justify-between gap-4 rounded-lg border px-5 py-4 transition-opacity ${
+                    className={`flex flex-wrap items-center justify-between gap-4 rounded-lg border px-5 py-4 transition-colors ${
                       mia ? "border-xo-negro bg-xo-negro/5" : "border-xo-negro/20"
-                    } ${atenuada ? "opacity-55" : ""}`}
+                    } ${atenuada ? "border-xo-negro/10 bg-transparent" : ""}`}
                   >
                     <div>
-                      <p className="text-xo-negro">
+                      <p className={atenuada ? "text-xo-gris" : "text-xo-negro"}>
                         <span className="font-semibold">
                           {horaLegible(clase.inicio)}
                         </span>{" "}
