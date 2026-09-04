@@ -20,6 +20,7 @@
 | Emails | **Resend**, con plantillas `react-email` en el repo — ADR-0007 | a implementar |
 | Pagos | **Flow** (incluye Webpay, tarjetas y transferencia) — ADR-0003 | a implementar |
 | Deploy | Vercel, proyecto `xo-dance-studio`, equipo `Unicornio` (Hobby) | en línea |
+| Migraciones | CLI de Supabase 2.116, como devDependency del repo | instalada 04/09/2026 |
 
 ⚠️ **Dos supuestos que rompen a cualquier IA entrenada antes:**
 

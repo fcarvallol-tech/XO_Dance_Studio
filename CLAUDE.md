@@ -155,6 +155,15 @@ ERP: rutas bajo `app/(erp)/`, todas autenticadas. No existe todavía.
 - Fechas: `timestamptz` en UTC, se renderizan en `America/Santiago`.
 - RUT normalizado `12345678-9`, DV en minúscula, validado en servidor.
 - Migraciones versionadas en `supabase/migrations/`. Nunca cambios manuales en producción.
+- **NUNCA ejecutar `supabase db push` sin que Felipe lo apruebe en ese mismo mensaje.** Escribir la
+  migración es del asistente; aplicarla a producción lo autoriza él, caso a caso.
+  - Una aprobación no se hereda del mensaje anterior ni de un "dale con esto". Tiene que decirlo
+    para **esa** migración.
+  - Lo mismo vale para cualquier comando que escriba en la base remota: `db reset`, `db pull`,
+    `migration repair`, o SQL suelto contra producción.
+  - Sin aprobación, el trabajo termina en: migración escrita, `npm run build` corrido, y avisar que
+    queda lista para aplicar.
+  - El procedimiento completo está en `supabase/README.md`.
 
 ## Datos sensibles
 
@@ -178,6 +187,10 @@ Las alumnas son mayoritariamente **menores de edad**. Aplica Ley 19.628 / Ley 21
 npm run dev
 npm run build
 npm run lint
+
+npx supabase migration list      # qué migraciones faltan aplicar
+npx supabase db push --dry-run   # qué haría, sin tocar nada
+npx supabase db push             # ⚠️ solo con aprobación explícita de Felipe
 ```
 
 ## Pendientes de Carla
