@@ -115,6 +115,25 @@ ERP: rutas bajo `app/(erp)/`, todas autenticadas. No existe todavía.
 - Los cuatro roles son `alumna`, `profesora`, `admin`, `owner`. `owner` es superconjunto de
   `admin`: implementar como jerarquía, no como listas paralelas.
 
+## Rendimiento en el servidor
+
+Cada consulta del portal es una llamada HTTP a Supabase. No hay pool que las abarate: se cuentan
+de a una, y una página que hace ocho tarda el doble que una que hace cuatro.
+
+- **Toda función que resuelve identidad va envuelta en `cache()` de React.** `perfilActual()`,
+  `clienteServidor()`, `miProfesoraId()`. El layout del grupo y la página piden lo mismo por
+  separado, y sin memoizar cada una abre su cliente y repite la consulta. `cache()` dura lo que
+  dura la petición: no cruza personas ni navegaciones, así que no puede devolver la sesión de otra.
+- **Un cliente de Supabase por petición, no uno por llamada.** Crearlo lee cookies, arma su propio
+  GoTrue y, la primera vez del proceso, descarga el JWKS. Medido: la primera verificación de token
+  de un proceso cuesta ~174 ms más que las siguientes. En Vercel cada arranque en frío lo paga de
+  nuevo.
+- **El recorte va en la consulta, no en memoria.** Traer un año de clases para mostrar una no es
+  solo lento: arrastra una consulta de reservas proporcional a lo que se va a descartar.
+- Antes de optimizar, **contar las llamadas**. Se instrumenta pasándole un `fetch` propio a
+  `createServerClient` que registre cada URL, se mide, y se saca. La instrumentación no se
+  commitea.
+
 ## Convenciones del ERP
 
 - Dominio en español (`alumna`, `apoderado`, `inscripcion`, `seccion`), infraestructura en

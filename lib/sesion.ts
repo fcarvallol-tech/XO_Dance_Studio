@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { clienteServidor } from "./supabase/servidor";
 import { esRol, inicioSegunRol, tieneNivel, type Rol } from "./roles";
@@ -18,6 +19,16 @@ export type Perfil = {
 /**
  * Quién está pidiendo esta página, verificado contra el servidor.
  *
+ * **Memoizada por petición con `cache()` de React, y no es un lujo.** Cada
+ * página del portal la llama dos veces —una en el layout del grupo y otra en la
+ * página misma, las dos vía `requiereSesion`— y sin esto cada llamada creaba su
+ * propio cliente, descargaba el JWKS y consultaba `perfiles` de nuevo. Medido:
+ * dos ejecuciones por petición, y la primera de cada cliente paga ~174 ms de
+ * JWKS antes de la consulta.
+ *
+ * `cache()` dura lo que dura la petición: no es un caché entre visitantes ni
+ * entre navegaciones, así que no puede servir el perfil de otra persona.
+ *
  * `getClaims()` y no `getSession()`: la sesión sale de una cookie que el
  * navegador puede haber escrito, y Supabase advierte explícitamente que no se
  * confíe en ella dentro de código de servidor. `getClaims` valida la firma.
@@ -25,7 +36,7 @@ export type Perfil = {
  * Devuelve `null` sin sesión. No redirige: eso lo deciden `requiereSesion` y
  * `requiereNivel`, para que también se pueda preguntar sin echar a nadie.
  */
-export async function perfilActual(): Promise<Perfil | null> {
+export const perfilActual = cache(async function perfilActual(): Promise<Perfil | null> {
   const supabase = await clienteServidor();
 
   const { data, error } = await supabase.auth.getClaims();
@@ -57,7 +68,7 @@ export async function perfilActual(): Promise<Perfil | null> {
     profesoraId: fila.profesora_id,
     perfilCompleto: Boolean(fila.perfil_completo_at),
   };
-}
+});
 
 /**
  * Un guard **nunca** puede mandar a una ruta cubierta por el layout que lo está

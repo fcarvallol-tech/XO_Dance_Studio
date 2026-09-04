@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { clienteServidor } from "./supabase/servidor";
 import type { Lectura } from "./compras-consultas";
 
@@ -76,32 +77,64 @@ type FilaClase = {
 };
 
 /**
- * Sus clases de la ventana pedida.
+ * Su id de profesora, **memoizado por petición**.
  *
- * `dias` negativo mira hacia atrás. Las clases pasadas se muestran igual —saber
- * quién vino la semana pasada es legítimo— pero **con las mismas columnas**:
- * nombre y nada más, tampoco ahí.
+ * `mi_profesora_id()` resuelve el salto de slug a uuid en la base, con la sesión
+ * de quien pregunta: no se puede falsear pasando otro id. Lo que cambia acá es
+ * cuántas veces se pregunta. `/profesora/mis-clases` hace dos lecturas
+ * independientes —la grilla y la próxima clase— y cada una lo pedía por su
+ * cuenta: dos viajes para una respuesta que no puede cambiar dentro de la misma
+ * petición.
+ *
+ * `cache()` vive lo que vive la petición. No es un caché entre visitantes ni
+ * entre navegaciones, así que no puede devolver el id de otra profesora.
  */
-export async function getMisClases(
-  desdeDias: number,
-  hastaDias: number,
+const miProfesoraId = cache(async function miProfesoraId(): Promise<{
+  id: string | null;
+  error: string | null;
+}> {
+  const supabase = await clienteServidor();
+  const { data, error } = await supabase.rpc("mi_profesora_id");
+  if (error) return { id: null, error: comoTexto(error) };
+  return { id: (data as string | null) ?? null, error: null };
+});
+
+const CAMPOS_CLASE =
+  "id, inicio, cupo_maximo, estado, motivo_cancelacion, profesora_id, cursos ( nombre ), sedes ( nombre, comuna ), profesoras ( nombre ), horarios ( profesora_id, profesoras ( nombre ) )";
+
+/** Qué recorte de sus clases se quiere. Todo opcional; se combinan. */
+type Recorte = {
+  /** ISO. Desde cuándo, inclusive. */
+  desde?: string;
+  /** ISO. Hasta cuándo, inclusive. */
+  hasta?: string;
+  /** Una clase puntual. Sigue acotado a las suyas. */
+  id?: string;
+  /** Deja fuera las canceladas. */
+  soloActivas?: boolean;
+  limite?: number;
+};
+
+/**
+ * Sus clases, recortadas por quien pregunta.
+ *
+ * **El recorte se hace en la consulta, no en memoria.** Antes esto traía una
+ * ventana fija y cada uso filtraba después: el detalle de una clase pedía un año
+ * entero de clases con todas sus reservas para mostrar una, y la tira de "tu
+ * próxima clase" pedía treinta días para mostrar la primera. Traer de más no es
+ * solo lento: es una consulta de reservas proporcional a lo que se descartó.
+ *
+ * El `eq("profesora_id")` es lo que la acota a las suyas, y tiene que estar acá.
+ * `clases` es pública a propósito —las alumnas necesitan la parrilla para
+ * reservar— y las políticas permisivas se suman con OR, así que agregar una
+ * política "de la profesora" no quitaría nada.
+ */
+async function traerMisClases(
+  recorte: Recorte,
 ): Promise<Lectura<ClaseDeProfesora[]>> {
   const supabase = await clienteServidor();
-  const ahora = Date.now();
-  const desde = new Date(ahora + desdeDias * 86_400_000).toISOString();
-  const hasta = new Date(ahora + hastaDias * 86_400_000).toISOString();
-
-  // **Acá se filtra, y tiene que ser acá.** La primera versión no filtraba,
-  // confiando en una política de RLS que no restringía nada: `clases` es
-  // pública a propósito —las alumnas necesitan la parrilla completa para
-  // reservar— y las políticas permisivas se suman con OR, así que agregar una
-  // "de la profesora" no quitaba nada. Resultado: veía las 73 clases en vez de
-  // sus 10.
-  //
-  // `mi_profesora_id()` resuelve el salto de slug a uuid en la base, con la
-  // sesión de quien pregunta: no se puede falsear pasando otro id.
-  const { data: miId, error: errorId } = await supabase.rpc("mi_profesora_id");
-  if (errorId) return { datos: [], error: comoTexto(errorId) };
+  const { id: miId, error: errorId } = await miProfesoraId();
+  if (errorId) return { datos: [], error: errorId };
   if (!miId) {
     return {
       datos: [],
@@ -109,15 +142,20 @@ export async function getMisClases(
     };
   }
 
-  const { data, error } = await supabase
+  let filtro = supabase
     .from("clases")
-    .select(
-      "id, inicio, cupo_maximo, estado, motivo_cancelacion, profesora_id, cursos ( nombre ), sedes ( nombre, comuna ), profesoras ( nombre ), horarios ( profesora_id, profesoras ( nombre ) )",
-    )
-    .eq("profesora_id", miId as string)
-    .gte("inicio", desde)
-    .lte("inicio", hasta)
-    .order("inicio");
+    .select(CAMPOS_CLASE)
+    .eq("profesora_id", miId);
+
+  if (recorte.id) filtro = filtro.eq("id", recorte.id);
+  if (recorte.desde) filtro = filtro.gte("inicio", recorte.desde);
+  if (recorte.hasta) filtro = filtro.lte("inicio", recorte.hasta);
+  if (recorte.soloActivas) filtro = filtro.neq("estado", "cancelada");
+
+  const ordenada = filtro.order("inicio");
+  const { data, error } = await (recorte.limite
+    ? ordenada.limit(recorte.limite)
+    : ordenada);
 
   if (error) return { datos: [], error: comoTexto(error) };
 
@@ -172,13 +210,18 @@ export async function getMisClases(
   };
 }
 
-/** Una clase suya, para el detalle. */
+/**
+ * Una clase suya, para el detalle.
+ *
+ * El `id` va en la consulta junto al `profesora_id`: una clase ajena sale vacía,
+ * igual que antes, pero sin traer el año completo para descartarlo.
+ */
 export async function getClase(
   claseId: string,
 ): Promise<Lectura<ClaseDeProfesora | null>> {
-  const { datos, error } = await getMisClases(-365, 365);
+  const { datos, error } = await traerMisClases({ id: claseId, limite: 1 });
   if (error) return { datos: null, error };
-  return { datos: datos.find((c) => c.id === claseId) ?? null, error: null };
+  return { datos: datos[0] ?? null, error: null };
 }
 
 /**
@@ -339,8 +382,8 @@ export async function getSemana(
   const desde = inicioDelDia(lunes);
   const hasta = inicioDelDia(sumarDias(lunes, 7));
 
-  const [{ data: miId }, clases] = await Promise.all([
-    supabase.rpc("mi_profesora_id"),
+  const [{ id: miId }, clases] = await Promise.all([
+    miProfesoraId(),
     supabase
       .from("clases")
       .select(
@@ -428,13 +471,16 @@ export async function getSemana(
  * Su próxima clase. Es lo que mira en el teléfono minutos antes de entrar a la
  * sala, que es el caso de uso con el que se escribió PRD-0008 §2 — y para eso
  * una línea sirve más que una grilla.
+ *
+ * Pide **una** fila. Antes pedía treinta días de clases con sus reservas para
+ * mostrar la primera que no estuviera cancelada.
  */
 export async function getProximaClase(): Promise<Lectura<ClaseDeProfesora | null>> {
-  const { datos, error } = await getMisClases(0, 30);
+  const { datos, error } = await traerMisClases({
+    desde: new Date().toISOString(),
+    soloActivas: true,
+    limite: 1,
+  });
   if (error) return { datos: null, error };
-  const ahora = new Date().toISOString();
-  return {
-    datos: datos.find((c) => c.inicio >= ahora && !c.cancelada) ?? null,
-    error: null,
-  };
+  return { datos: datos[0] ?? null, error: null };
 }
