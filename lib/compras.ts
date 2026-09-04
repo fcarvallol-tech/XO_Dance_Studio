@@ -47,6 +47,9 @@ export type ReservaPropia = {
   sedeDireccion: string;
   estado: string;
   creditoDevuelto: boolean;
+  /** La academia canceló la clase. Distinto de que la haya cancelado ella. */
+  claseCancelada: boolean;
+  motivoCancelacion: string | null;
 };
 
 export const NOMBRE_ESTADO: Record<EstadoCompra, string> = {

@@ -92,3 +92,62 @@ no una constante en el código, para poder ajustarlo sin desplegar.
 ## 9. Métrica de éxito
 
 **≥ 90% de las reservas se hacen desde la web** y no por WhatsApp, a 30 días de lanzado.
+
+## 10. La clase cancelada que desaparecía (04/09/2026)
+
+§5 de este PRD decía, desde agosto:
+
+> **Clase cancelada por XO.** Se devuelve el crédito a todas las reservas, siempre, sin importar
+> la ventana de cancelación, y se avisa por email.
+
+**Nada de eso existía.** Había `cancelar_reserva` —la que usa la alumna para soltar su cupo— y
+ninguna función para cancelar una clase. Cancelar significaba poner `estado = 'cancelada'` en el
+Table Editor, que es como se hace hoy porque el portal de administración no existe. Eso dejaba:
+
+| | Qué pasaba |
+|---|---|
+| La clase | fuera del calendario: RLS solo exponía `estado = 'programada'` |
+| **La reserva** | **fuera también**, porque la consulta descartaba las reservas cuya clase no venía |
+| El estado de la reserva | seguía en `confirmada`, como si la clase estuviera en pie |
+| **El crédito** | **sin devolver** |
+| La alumna | sin enterarse de nada |
+
+A alguien que pagó le desaparecía de la pantalla una clase reservada, y se quedaba sin el crédito.
+Que la clase se esfumara era el síntoma visible; **lo caro era el crédito**.
+
+### El arreglo
+
+**Un trigger, no solo una función.** Es la decisión que hace que esto sirva: mientras no exista el
+portal de administración, cancelar se hace editando la fila a mano, y una función que hay que
+acordarse de llamar no se llamaría nunca. Con `clases_al_cancelar`, la devolución ocurre **se
+cancele como se cancele** — desde la función, desde el Table Editor o desde una consulta suelta.
+
+Devuelve **siempre**, sin mirar la ventana de cancelación —la alumna no tuvo nada que ver— y **al
+lote original**, para no estirarle el vencimiento por algo que canceló la academia. Es idempotente:
+solo toca reservas que sigan `confirmada`.
+
+`cancelar_clase(clase, actor, motivo)` queda para cuando exista la interfaz, y agrega lo que el
+trigger no puede saber: que quien cancela sea admin, y **el motivo, que es obligatorio** porque la
+alumna lo va a leer.
+
+### Lo que ve ella
+
+La reserva **aparece arriba, entre las próximas**, aunque figure como cancelada: es una noticia que
+todavía no vio y que le cambia la semana. Tachada, con el motivo, y con el aviso de que le
+devolvieron la clase a su saldo. Sin botón de cancelar, que ya no tiene nada que soltar.
+
+En el historial se distingue **quién canceló**: "La cancelamos nosotras · clase devuelta" no es lo
+mismo que "Cancelaste fuera de plazo", y antes las dos decían "Cancelada".
+
+### ⚠️ Lo que sigue sin hacerse
+
+**El correo.** Un trigger de base de datos no puede mandarlo, y la interfaz desde donde saldría no
+existe. Por ahora ella se entera al entrar. Cuando llegue PRD-0009, cancelar desde el portal debe
+además avisar por correo — `lib/correo.ts` ya tiene dónde colgarlo.
+
+### ⚠️ Sin probar con datos
+
+Al escribir esto había **0 reservas** en la base, así que el flujo completo —reservar, cancelar la
+clase, ver el crédito de vuelta— no se pudo reproducir con datos reales. Conviene hacerlo con la
+primera reserva de verdad, o con una de prueba, antes de confiar en él. Es el mismo pendiente que
+ya arrastra la política `reservas_de_mis_clases`.

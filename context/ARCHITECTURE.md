@@ -447,6 +447,8 @@ cliente. Todo pasa por Route Handler o función de base de datos, en transacció
 
 | Item | Detalle |
 |---|---|
+| Cancelar una clase no avisa por correo | El trigger devuelve los créditos pero no puede mandar correo, y PRD-0006 §5 lo promete. Cuando exista el portal de administración (PRD-0009), cancelar desde ahí debe avisar |
+| Flujo de cancelación sin probar con datos | Reservar → cancelar la clase → ver el crédito de vuelta no se pudo reproducir: 0 reservas en la base al escribirlo |
 | `reservas` sin prueba con datos | Su política de profesora se verificó por la expresión que la gobierna, no con filas: al auditar había 0 reservas. Repetir la prueba con la primera reserva real |
 | Build acoplado a Supabase | Desde PRD-0015 el catálogo se lee en `next build`. Si el proyecto está pausado o la migración no se aplicó, **el deploy falla**. Es deliberado —un sitio sin catálogo no debe publicarse— y el error dice qué hacer, pero sube la apuesta de la fila sobre el plan gratuito |
 | Sin alerta de caída | Nadie se entera si el formulario deja de guardar leads. Con Supabase pausándose solo en plan gratuito, es un agujero real |

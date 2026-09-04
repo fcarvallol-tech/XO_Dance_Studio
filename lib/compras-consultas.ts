@@ -320,6 +320,8 @@ type FilaReserva = {
   credito_devuelto: boolean;
   clases: {
     inicio: string;
+    estado: string;
+    motivo_cancelacion: string | null;
     cursos: { nombre: string } | null;
     profesoras: { nombre: string } | null;
     sedes: { nombre: string; direccion: string } | null;
@@ -333,13 +335,17 @@ export async function getMisReservas(
   const { data, error } = await supabase
     .from("reservas")
     .select(
-      "id, clase_id, estado, credito_devuelto, clases ( inicio, cursos ( nombre ), profesoras ( nombre ), sedes ( nombre, direccion ) )",
+      "id, clase_id, estado, credito_devuelto, clases ( inicio, estado, motivo_cancelacion, cursos ( nombre ), profesoras ( nombre ), sedes ( nombre, direccion ) )",
     )
     .eq("perfil_id", perfilId)
     .order("created_at", { ascending: false });
 
   return {
     datos: ((data ?? []) as unknown as FilaReserva[])
+      // Sin la clase no hay nada que mostrar, pero **esto ya no debería
+      // descartar nada**: antes se llevaba por delante las reservas de clases
+      // canceladas, porque RLS ocultaba la clase y el embed venía null. A la
+      // alumna le desaparecía la reserva de algo que había pagado.
       .filter((r) => r.clases)
       .map((r) => ({
         id: r.id,
@@ -351,6 +357,8 @@ export async function getMisReservas(
         sedeDireccion: r.clases!.sedes?.direccion ?? "",
         estado: r.estado,
         creditoDevuelto: r.credito_devuelto,
+        claseCancelada: r.clases!.estado === "cancelada",
+        motivoCancelacion: r.clases!.motivo_cancelacion,
       }))
       .sort((a, b) => a.inicio.localeCompare(b.inicio)),
     error: comoTexto(error),
