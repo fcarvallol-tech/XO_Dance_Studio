@@ -31,29 +31,45 @@ npx supabase link --project-ref wpjiwqeirdsspdfwwumv
 
 El `project-ref` sale de `NEXT_PUBLIC_SUPABASE_URL`: es el subdominio.
 
-## ⚠️ El primer `db push` necesita un paso previo
+## El registro de migraciones ya está al día
 
-Las doce migraciones que existían al instalar la CLI **ya estaban aplicadas a mano**, y la base no
-lo sabe: la CLI lleva su propio registro en `supabase_migrations.schema_migrations`, que está
-vacío. Sin avisarle, el primer `db push` intentaría **re-ejecutarlas todas**.
+> **No hace falta correr `migration repair`.** Esta sección decía lo contrario hasta el
+> 08/09/2026 y podía llevar a que alguien lo corriera sin necesidad.
 
-La mayoría son idempotentes —`create table if not exists`, `drop policy if exists`,
-`on conflict do nothing`— así que probablemente no romperían nada. Pero "probablemente" no es la
-palabra que uno quiere sobre la tabla de créditos.
+Las doce migraciones que existían al instalar la CLI se habían aplicado a mano, y la CLI lleva su
+propio registro en `supabase_migrations.schema_migrations`, que estaba vacío. Sin avisarle, el
+primer `db push` habría intentado reejecutarlas todas.
 
-Antes del primer push hay que marcarlas como aplicadas:
+Eso **ya se resolvió**: al 08/09/2026 `npx supabase migration list` muestra las dieciséis
+migraciones con `local` y `remote` alineados. El primer `db push` real ocurrió ese día, con las
+tres de PRD-0010, y aplicó solo esas tres.
+
+Si alguna vez `migration list` muestra una migración aplicada a mano sin su fila en `remote`, ahí
+sí corresponde marcarla:
 
 ```bash
-npx supabase migration repair --status applied \
-  20260801000000 20260821120000 20260825120000 20260828120000 \
-  20260830120000 20260830130000 20260831120000 20260831130000 \
-  20260902120000 20260903120000 20260903140000 20260904120000
+npx supabase migration repair --status applied 20260101000000
 ```
 
-Esas doce se verificaron una por una contra la base el 04/09/2026, buscando un artefacto propio de
-cada una —una tabla, una columna, un `comment`— y las doce estaban aplicadas.
+Es un comando que escribe en la base remota, así que necesita la aprobación de Felipe como
+cualquier otro.
 
-Después, `npx supabase migration list` debería mostrar local y remoto alineados.
+## ⚠️ Verificar contra qué base se está trabajando
+
+Desde el 08/09/2026 hay **dos** proyectos, y la CLI apunta a uno solo a la vez:
+
+| Proyecto | `project_ref` | Para qué |
+|---|---|---|
+| Producción | `wpjiwqeirdsspdfwwumv` | La base real. Cada `db push` necesita aprobación |
+| Staging | `ybopuahlzbjkkwumkllk` | Pruebas. Se siembra y se borra sin cuidado |
+
+`cat supabase/.temp/project-ref` dice a cuál está enlazada ahora mismo. **Mirarlo antes de
+cualquier comando que escriba**, porque `db push` no pregunta a qué base le está escribiendo.
+
+Las credenciales de staging viven en `.env.staging`, fuera del repo. El escenario de prueba se
+siembra con `node scripts/sembrar-escenario.mjs` y se verifica con
+`node scripts/verificar-metricas.mjs`; los dos se niegan a correr si el `project_ref` no es el de
+staging.
 
 ## El día a día
 

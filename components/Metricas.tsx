@@ -81,6 +81,8 @@ export function Rejilla({ children }: { children: React.ReactNode }) {
 }
 
 export type Comparado = {
+  /** El valor del período anterior. Sirve para no mostrar "+$0" contra un cero. */
+  anterior: number | null;
   absoluta: number | null;
   relativa: number | null;
 };
@@ -129,10 +131,15 @@ export function Indicador({
         <p className="mt-2 text-sm text-xo-gris">{denominador}</p>
       ) : null}
 
-      {comparacion ? (
+      {/* Cuando los dos meses están en cero, la comparación es ruido: "+$0 · el
+          mes anterior fue cero" no agrega nada sobre la línea que ya explica
+          desde cuándo no pasa nada. */}
+      {comparacion && !(comparacion.absoluta === 0 && comparacion.anterior === 0) ? (
         <p className="mt-3 text-sm text-xo-gris">
           {comparacion.absoluta === null ? (
             "Sin período anterior con que comparar"
+          ) : comparacion.absoluta === 0 ? (
+            "Igual que el mes anterior"
           ) : (
             <>
               <span className={baja || sube ? "font-medium text-xo-negro" : ""}>
