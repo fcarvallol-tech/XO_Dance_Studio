@@ -64,7 +64,8 @@ enunciadas y se detallan cuando la 1 esté cerrada.
 
 10. Tabla `liquidaciones_profesoras`: clases dictadas, monto y estado de pago.
 11. **Registrar que una clase no se dictó, con causa y autor**, y descontarla de la liquidación.
-    Requisito del 07/09/2026; lo que hace falta antes está en §8.5.
+12. **Cancelar una clase o asignar un reemplazo** desde el sistema.
+    Requisitos del 07–08/09/2026; lo que hace falta antes está en §8.5.
 
 ## 4. Fuera de alcance
 
@@ -294,40 +295,71 @@ API expone, y que no le abren a `anon` ninguna tabla que hoy esté cerrada. Una 
 comision_clp, monto_neto_clp, estado`) · los costos por hora de sala y de profesora.
 Con RLS de solo `owner` en las dos, que es la primera vez que el proyecto tiene una tabla así.
 
-### 8.5 Parte 3 — la liquidación necesita saber si la clase se dictó
+### 8.5 Parte 3 — la liquidación de profesoras
 
-Requisito de Felipe, 07/09/2026: **el día 1 de cada mes hay que ver cuánto se le debe a cada
-profesora por el mes anterior**, y hay que poder registrar que una profesora **no dictó** una
-clase, con el motivo, para que se descuente.
+Requisito de Felipe, 07–08/09/2026: **el día 1 de cada mes hay que ver cuánto se le debe a cada
+profesora por el mes anterior**, poder registrar que una clase no se dictó y por qué, y poder
+cancelar una clase o asignar un reemplazo desde el sistema.
 
-Hoy el sistema no lo sabe. `clases.estado` es `programada | cancelada`, así que una clase pasada
-que sigue en `programada` es ambigua: puede que se haya dictado, o puede que nadie la haya
-tocado nunca. Liquidar sobre esa ambigüedad es pagarle a alguien por una clase que quizá no dio.
+#### 8.5.a Las tres reglas de pago
 
-#### 8.5.a Son dos hechos distintos, y la liquidación necesita solo uno
+Pago por clase = **base por hora + variable**. Base $18.000/hora (`CONTEXT.md` §5.b),
+**variable $250 por crédito consumido**.
 
-| Hecho | De qué es atributo | Para qué sirve |
+| Situación | Qué se le paga |
+|---|---|
+| **Dictó la clase** | Base + variable |
+| **No dictó, y la causa es suya** — enferma, no llegó | **Nada.** El motivo no cambia el monto |
+| **No dictó, y la causa es de XO** — sala no disponible, decisión nuestra | **Base, sin variable.** Le hicimos perder el tiempo |
+| **Dictó como reemplazo** | Base + variable, a quien dictó. Ver §8.5.d |
+
+**La causa fina no gobierna el monto; el responsable sí.** Que se haya enfermado o que no haya
+llegado paga lo mismo: cero. Lo que cambia el monto es de quién fue la causa, XO o ella. La
+causa detallada se registra igual, porque es un hecho de gestión —no es lo mismo una profesora
+enferma que una que no aparece— y porque es lo que permite ver un patrón antes de que sea un
+problema.
+
+#### 8.5.b El variable sale de las reservas, no de la asistencia
+
+> **Corrección del 08/09/2026.** El variable se definió primero como "$250 por alumna presente",
+> lo que habría hecho de la toma de asistencia un prerrequisito de la liquidación. La definición
+> correcta es **$250 por crédito consumido**: si el crédito se usó, se le paga, aunque la alumna
+> no se haya presentado.
+
+Eso deja la liquidación **sin ninguna dependencia nueva de datos**: el crédito consumido ya está
+en `reservas`, y quién lo recuperó también.
+
+| Caso | ¿Consumió crédito? | ¿Paga variable? |
 |---|---|---|
-| **¿Ocurrió la clase?** | De la **clase** | Liquidación de la profesora |
-| **¿Vino la alumna?** | De la **reserva** | No-shows, y nada más |
+| Reserva confirmada, la alumna fue | Sí | **Sí** |
+| Reserva confirmada, la alumna no llegó | Sí | **Sí.** El crédito se gastó igual |
+| Cancelada **a tiempo** | No, se devolvió | **No** |
+| Cancelada **tarde** | Sí, lo perdió | **Sí** |
+| Clase cancelada por XO | No, se devuelve siempre | **No.** Se paga la base por §8.5.a |
 
-**El registro de asistencia que se dejó fuera en §6.1 NO es prerrequisito de la liquidación.**
-A la profesora se le paga por dictar, no por cuántas alumnas llegaron: una clase con dos
-alumnas se dictó igual y se paga igual. Las dos cosas se pueden construir en cualquier orden, o
-solo una.
+⚠️ **Es el mismo predicado de la regla §7.1.3**, el que decide si una reserva atribuye ingreso a
+la profesora: *consumió un crédito y no lo recuperó*. No es coincidencia y conviene que no se
+desacople: lo que le entra a XO por una reserva y lo que se le paga a la profesora por esa misma
+reserva se miden sobre el mismo hecho. En la base es una sola condición —
+`reservas.credito_devuelto = false`— y en el código debe ser **una sola función**, usada dos
+veces, no dos definiciones que alguien va a tener que mantener iguales.
 
-#### 8.5.b Lo que sí hace falta: estado nuevo y causa estructurada
+Se sigue **sin** registro de asistencia: no-shows queda fuera (§6.1) y ahora es lo único que
+depende de esa deuda.
 
-Ambas cosas, y no son la misma:
+#### 8.5.c Lo que sí hace falta: estado y causa en `clases`
+
+Hoy `clases.estado` es `programada | cancelada`, así que una clase pasada que sigue en
+`programada` es ambigua: puede que se haya dictado, o que nadie la haya tocado nunca. Liquidar
+sobre esa ambigüedad es pagarle a alguien por una clase que quizá no dio.
 
 - **El estado** responde *¿ocurrió?* → `clases.estado` gana `dictada` y `no_dictada`.
-- **La causa** responde *¿por qué no?* → columna nueva, con valores acotados.
+- **La causa** responde *¿de quién fue?* y *¿qué pasó?* → columna acotada.
 
-`no_dictada` no es lo mismo que `cancelada`. Cancelada es que se avisó antes: el cupo se liberó
-y el trigger le devolvió el crédito a cada alumna. `no_dictada` es que llegó la hora y no hubo
-clase. Para la alumna el efecto debe ser el mismo —no recibió el servicio, se le devuelve el
+`no_dictada` no es lo mismo que `cancelada`. Cancelada es que se avisó antes: el cupo se liberó y
+el trigger le devolvió el crédito a cada alumna. `no_dictada` es que llegó la hora y no hubo
+clase. Para la alumna el efecto tiene que ser el mismo —no recibió el servicio, se le devuelve el
 crédito— pero **el trigger de hoy solo reacciona a `cancelada`**, así que hay que extenderlo.
-Para la profesora son casos distintos, y de ahí sale el descuento.
 
 ```sql
 alter table public.clases
@@ -339,41 +371,65 @@ alter table public.clases
   add column registrada_at timestamptz;
 ```
 
-La causa acotada es lo que separa **que se enferme de que no llegue**, que era el requisito
-explícito, y es lo que la liquidación puede leer para decidir. El texto libre acompaña, no
-reemplaza: una columna de texto no se puede sumar.
+De quién es la causa —lo único que mueve el monto— se deriva del valor: `profesora_*` no paga,
+el resto paga la base. Se deriva y no se guarda aparte, para que no haya dos columnas que puedan
+contradecirse.
 
-`registrada_por` y `registrada_at` no son adorno. Esto mueve plata, igual que regalar créditos,
-y ahí el proyecto ya decidió que el autor queda registrado (`movimientos_credito.creado_por`,
-`cambios_rol.cambiado_por`). Mismo criterio.
+`registrada_por` y `registrada_at` no son adorno: esto mueve plata, igual que regalar créditos, y
+ahí el proyecto ya decidió que el autor queda registrado (`movimientos_credito.creado_por`,
+`cambios_rol.cambiado_por`).
 
-#### 8.5.c Quién marca, y qué pasa con lo que nadie marca
+#### 8.5.d Un reemplazo no necesita un rol nuevo
 
-Propuesta: **el default es "dictada"** —clase pasada, no cancelada, se dictó— y lo que se
-registra explícitamente es **la excepción**. Nadie tiene que confirmar 30 clases al mes para que
-la liquidación salga; solo las que fallaron.
+`clases.profesora_id` **se copia del horario al generar la clase, no se lee por join** —está
+escrito así en la migración `20260831120000` y era para que cambiar un horario no moviera clases
+ya reservadas. La consecuencia sirve acá: la profesora de una clase **ya puede diferir** de la
+del horario.
 
-Quién registra la excepción: **admin u owner, no la profesora.** No por desconfianza, sino
-porque la profesora es parte interesada en el resultado. Puede reportarla, que es otra cosa.
+Un reemplazo es entonces un `update` de `clases.profesora_id`, y nada más. No hace falta un rol,
+ni una tabla de asignaciones, ni un estado "reemplazada":
 
-#### 8.5.d Lo que no se puede resolver programando
+- **A quien se le paga es a quien dictó**, y esa es la que quedó en `clases.profesora_id`.
+- La titular del horario no cobra esa clase, porque no la dictó: sale de su liquidación sola, sin
+  descuento ni excepción que calcular.
+- El ingreso atribuido de §7.1 sigue el mismo camino, porque también va por `clases.profesora_id`.
 
-Tres decisiones que son de Felipe y que bloquean el cálculo, no el esquema:
+Lo único que hay que agregar es que el cambio quede registrado —quién reasignó y cuándo— por la
+misma razón que en §8.5.c. La operación es lo que falta, no el modelo.
 
-1. **Si la profesora avisa que está enferma, ¿se le paga la clase?** Sin esa regla, `causa` no
-   sabe cuánto descontar. Es la pregunta de verdad detrás del requisito.
-2. **Si la clase no se dictó por causa de XO** —sala no disponible, se canceló por decisión de
-   la academia—, ¿se le paga igual a la profesora que tenía el horario tomado?
-3. **El variable de las profesoras**, que `CONTEXT.md` §5.b declara sin definir desde agosto.
+#### 8.5.e Quién registra la excepción
 
-#### 8.5.e El cierre mensual congela
+**El default es "dictada"** —clase pasada, no cancelada, se dictó— y lo que se registra
+explícitamente es la excepción. Nadie tiene que confirmar 30 clases al mes para que la
+liquidación salga; solo las que fallaron.
 
-"El día 1 veo lo del mes anterior" implica que el mes **se cierra**. Propuesta: al cerrarlo, la
-fila de `liquidaciones_profesoras` guarda los montos calculados y **no se recalcula nunca más**.
-Si el día 3 aparece una clase mal marcada, se corrige con un **ajuste en el mes siguiente**, no
-editando lo ya pagado. Es el mismo principio que gobierna `movimientos_credito`: un libro que se
+Quién la registra: **admin u owner, no la profesora.** No por desconfianza, sino porque es parte
+interesada en el resultado. Puede reportarla, que es otra cosa.
+
+#### 8.5.f El cierre mensual congela
+
+"El día 1 veo lo del mes anterior" implica que el mes **se cierra**. Al cerrarlo,
+`liquidaciones_profesoras` guarda los montos calculados y **no se recalcula nunca más**. Si el
+día 3 aparece una clase mal marcada, se corrige con un **ajuste en el mes siguiente**, no
+editando lo ya pagado. Es el principio que ya gobierna `movimientos_credito`: un libro que se
 agrega y no se edita. Una liquidación que cambia sola después de pagada no se puede conciliar
 contra la transferencia que se hizo.
+
+#### 8.5.g Lo que queda por definir
+
+1. **Si la clase se cae por falta de alumnas** (`sin_alumnas`), ¿de quién es la causa? No es de
+   la profesora ni exactamente de XO. Con la regla de §8.5.a tal como está, hoy caería en "paga
+   la base".
+2. **La base cuando el reemplazo dura menos de una hora**, o cuando una profesora cubre media
+   clase. Probablemente no vale la pena modelarlo.
+3. ✅ **La economía unitaria de `CONTEXT.md` §5.b quedó actualizada** el 08/09/2026, con Felipe
+   pidiéndolo explícitamente. Una clase llena cuesta $18.000 + 22 × $250 = **$23.500** de
+   profesora, el neto con sala llena en Los Leones baja de $119.000 a **$113.500**, y el piso
+   sube en tres de los seis casos: con packs de 8 en Los Leones hacen falta **7** alumnas, no 6.
+4. ⚠️ **El variable de Teens no está definido.** Teens es suscripción mensual y **no consume
+   créditos** (`ARCHITECTURE.md` §5.3.b), así que "$250 por crédito consumido" no le aplica tal
+   cual. `CONTEXT.md` §5.b quedó calculado con el equivalente —$250 por alumna inscrita y por
+   clase— **marcado como supuesto**. La alternativa es que Teens no lleve variable. Decide Felipe.
 
 ---
 
@@ -426,7 +482,13 @@ No se usa Docker: no está instalado en la máquina de trabajo, así que `supaba
 opción. No se siembra en producción: `movimientos_credito` tiene `revoke delete ... from
 service_role`, o sea que **sembrar en el libro es irreversible incluso con la service role key**.
 
-⚠️ **La siembra inserta las filas directamente, no llama a `acreditar_compra`.** Esa función
+**Tres cosas corren de verdad, no se fingen:** `reservar()` para las dos reservas de la clase
+futura, `cancelar_reserva()` para la cancelación a tiempo de Bea, y el **trigger de clase
+cancelada**, disparado con un `update` sobre CL5 —que es exactamente como se cancela hoy desde el
+Table Editor—. Las tres eran deuda anotada en `ARCHITECTURE.md` §10: el flujo de cancelación
+nunca se había podido probar porque había 0 reservas en la base.
+
+⚠️ **El resto de la siembra inserta las filas directamente, no llama a `acreditar_compra`.** Esa función
 calcula el vencimiento como `now() + vigencia_dias`, así que todas las compras del escenario
 —incluidas las de hace dos meses— quedarían venciendo dentro de 60 días y el escenario perdería
 justamente el lote vencido. La consecuencia hay que tenerla clara: **la siembra prueba las
@@ -468,7 +530,10 @@ C0 queda fuera de los dos períodos a propósito: prueba que el corte del perío
 
 - **Ana** reserva CL1, CL2, CL3, CL4 y CL5. Consume C1 completo (vence primero) y una de C3.
   La de CL5 se devuelve sola, por el trigger de clase cancelada.
-- **Bea** reserva CL1, y CL3 que **cancela a tiempo** — crédito devuelto.
+- **Bea** reserva CL1, y CL4 que **cancela a tiempo** — crédito devuelto. Va en la clase
+  **futura** a propósito: es la única manera de que esa cancelación la haga `cancelar_reserva()`
+  de verdad, y no un `insert` que finge el resultado. Ningún valor esperado cambia: una reserva
+  cancelada a tiempo no cuenta en la ocupación de ninguna clase ni atribuye ingreso.
 - **Cata** reserva CL3 con su clase suelta, y CL2 con un crédito de **regalo** que
   **cancela tarde** — crédito perdido. Este caso prueba la regla 7.1.2: atribuye $0.
 - **Emi** compra y nunca reserva. **Dani** declara y no se le aprueba.
@@ -539,7 +604,8 @@ intuición.
    archivos de `public/`. **Ninguna es alcanzable en producción.** El fix es un minor de Next,
    que arrastra las tres parchadas, y va **como cambio aparte** con su propia verificación de
    que el build sigue leyendo el catálogo desde Supabase.
-2. **Toma de asistencia**, para que no-shows y margen por clase dictada existan (§6.1).
+2. **Toma de asistencia.** Lo único que la necesita son los no-shows (§6.1): con el variable
+   definido por crédito consumido, ni la liquidación ni el margen por clase dependen de ella.
 3. **`leads.perfil_id`**, para cerrar el tramo lead → cuenta del embudo (§6.2).
 4. **Confirmar el mapeo de sedes y los costos** antes de la parte 2: se asume Los Leones =
    Seducción Latina Experience (Providencia, $17.000/hora) y Los Dominicos = Centro Comunitario

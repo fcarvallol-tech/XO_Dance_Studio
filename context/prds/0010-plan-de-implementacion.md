@@ -72,11 +72,10 @@ más los bordes de §10 (denominador cero, empate, período anterior vacío).
 staging y para producción, cada vez. Y antes del primer push a producción hay que correr el
 `migration repair` de las 13 migraciones ya aplicadas a mano, según `supabase/README.md`.
 
-**Checkpoint:** ⚠️ **no se pudo hacer como estaba escrito.** El `--dry-run` necesita el proyecto
-enlazado y `SUPABASE_DB_PASSWORD`, que no está en `.env.local`. Sin Docker ni base a mano, **el
-SQL de esta migración no se ha ejecutado en ninguna parte**: está revisado a mano contra el
-esquema, no validado por un Postgres. La primera vez que corra será contra staging, en la fase 3,
-y ahí puede aparecer un error de sintaxis. Se asume ese riesgo a cambio de no tocar producción.
+**Checkpoint:** ✅ **resuelto en la fase 3.** El `--dry-run` no se pudo correr —necesitaba el
+proyecto enlazado y `SUPABASE_DB_PASSWORD`, que no estaban— así que la migración quedó revisada a
+mano y sin validar por ningún Postgres. La validó el `db push` contra staging del 08/09: aplicó
+sin error a la primera. **La de producción sigue sin aplicarse.**
 
 ---
 

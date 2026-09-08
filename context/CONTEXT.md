@@ -264,36 +264,50 @@ corresponda y no obliga a construir un flujo de aprobación ni a custodiar certi
 
 Todas las clases duran **1 hora**.
 
+**El costo de una clase ya no es un número fijo: sube con cuánta gente va.** Desde el 08/09/2026
+la profesora cobra un sueldo base por hora **más $250 por crédito consumido** en esa clase.
+
 | Concepto | Los Leones | Los Dominicos |
 |---|---|---|
 | Arriendo de sala (por hora) | $17.000 | $0 |
 | Sueldo base de la profesora (por hora) | $18.000 | $18.000 |
-| **Costo total por clase** | **$35.000** | **$18.000** |
+| **Costo fijo por clase** | **$35.000** | **$18.000** |
+| Variable de la profesora | $250 × créditos consumidos | $250 × créditos consumidos |
+
+El variable se cuenta por **crédito consumido y no devuelto**, no por alumna presente: si la
+alumna reservó y no llegó, el crédito se gastó y se paga igual. Una cancelada a tiempo devuelve
+el crédito y no cuenta; una cancelada tarde sí. Es exactamente el mismo hecho con el que se le
+atribuye ingreso a la profesora — ver PRD-0010 §7.1 y §8.5.b.
 
 **Alumnas necesarias para cubrir el costo de una clase:**
 
-| Tarifa | Los Leones | Los Dominicos |
-|---|---|---|
-| Clase suelta ($8.500) | 5 | 3 |
-| Pack de 4 ($7.000) | 5 | 3 |
-| Pack de 8 ($6.000) | 6 | 3 |
+Cada alumna aporta su tarifa menos los $250 que se lleva la profesora por ella.
 
-**Capacidad real: 22 personas por sala**, confirmada el 30/08/2026 en las dos sedes. Antes se
-trabajaba con un supuesto de 45, que era más del doble.
+| Tarifa | Aporta neto | Los Leones | Los Dominicos |
+|---|---|---|---|
+| Clase suelta ($8.500) | $8.250 | 5 | 3 |
+| Pack de 4 ($7.000) | $6.750 | **6** | 3 |
+| Pack de 8 ($6.000) | $5.750 | **7** | **4** |
+
+⚠️ **El piso sube en tres de los seis casos.** Con packs de 8 en Los Leones ahora hacen falta
+**7** alumnas para no perder plata, no 6.
+
+**Capacidad real: 22 personas por sala**, confirmada el 30/08/2026 en las dos sedes.
 
 | | Los Leones | Los Dominicos |
 |---|---|---|
 | Ingreso con la sala llena (22 × $7.000) | $154.000 | $154.000 |
-| Costo de la clase | –$35.000 | –$18.000 |
-| **Neto con sala llena** | **$119.000** | **$136.000** |
+| Arriendo | –$17.000 | $0 |
+| Profesora: base + 22 × $250 | –$23.500 | –$23.500 |
+| **Neto con sala llena** | **$113.500** | **$130.500** |
 
-⚠️ **El techo baja de $280.000 a $119.000: un 57% menos.** No es un ajuste cosmético del número,
-cambia el perfil de riesgo de abrir un horario. El piso sigue en 5 o 6 alumnas según el pack,
-pero eso ahora es **entre un cuarto y un tercio de la sala**, no un octavo: para que un horario
-no pierda plata hay que llenar una fracción del espacio mucho mayor que la que suponíamos.
-
-⚠️ Hay un **variable** para las profesoras además del sueldo base, todavía sin definir. Cuando
-exista, se resta de estos márgenes.
+⚠️ **El techo bajó dos veces.** Primero de $280.000 a $119.000 cuando la capacidad real resultó
+ser 22 y no 45 (30/08). Ahora de $119.000 a **$113.500** con el variable (08/09). El segundo
+ajuste es chico comparado con el primero, pero tiene una propiedad distinta que conviene
+entender: **el variable no baja el techo, aplana la pendiente.** Cada alumna adicional deja $250
+menos que antes, así que llenar la sala rinde algo menos y el piso se corre hacia arriba. A
+cambio, el costo de un horario vacío no cambia: una clase a la que no va nadie sigue costando
+$35.000 en Los Leones, no más.
 
 ### El cambio de precio de Teens, con los números reales
 
@@ -304,18 +318,26 @@ alumna**, y ahora además la profesora cobra:
 |---|---|---|---|
 | Ingreso mensual (8 alumnas) | $360.000 | $224.000 | $224.000 |
 | Arriendo (4 clases) | –$240.000 | –$68.000 | $0 |
-| Profesora (4 clases) | $0 | –$72.000 | –$72.000 |
-| **Neto** | **$120.000** | **$84.000** | **$152.000** |
+| Profesora, base (4 clases) | $0 | –$72.000 | –$72.000 |
+| Profesora, variable (32 asistencias) | $0 | –$8.000 | –$8.000 |
+| **Neto** | **$120.000** | **$76.000** | **$144.000** |
 
-Antes quedaban $120.000 pero **nadie le pagaba a Carla**. Ahora la profesora cobra $72.000 al mes
+Antes quedaban $120.000 pero **nadie le pagaba a Carla**. Ahora la profesora cobra $80.000 al mes
 por ese curso, y ahí está el cambio de fondo.
 
+⚠️ **Supuesto que hay que confirmar.** Teens se vende como **suscripción mensual y no consume
+créditos** (`ARCHITECTURE.md` §5.3.b), así que la regla "$250 por crédito consumido" no le aplica
+tal cual: no hay créditos que contar. Acá se calculó con el equivalente natural —$250 por alumna
+inscrita y por clase— pero **eso no está decidido**. Las dos alternativas razonables son esa, o
+que Teens no lleve variable y la profesora cobre solo la base. Con la segunda, los netos vuelven
+a $84.000 y $152.000.
+
 ⚠️ **Con el precio de $28.000 la comparación ya no es "igual o mejor" en las dos sedes.** En Los
-Dominicos queda mejor que antes ($152.000). En **Los Leones queda por debajo** ($84.000): el
+Dominicos queda mejor que antes ($144.000). En **Los Leones queda por debajo** ($76.000): el
 curso paga a la profesora y cubre la sala, pero con 8 alumnas deja menos caja que el modelo viejo
-que no le pagaba a nadie. La diferencia se cierra con volumen —cada alumna adicional suma $28.000
-sin agregar costo, así que a 10 alumnas Los Leones vuelve a superar los $120.000—, pero conviene
-tenerlo a la vista al programar horarios en esa sede.
+que no le pagaba a nadie. La diferencia se cierra con volumen —a **10 alumnas** Los Leones deja
+$130.000 y vuelve a superar los $120.000— pero conviene tenerlo a la vista al programar horarios
+en esa sede.
 
 Detalle técnico en `ARCHITECTURE.md` §5. Fundamento en `decisions/0002-modelo-creditos.md`.
 
