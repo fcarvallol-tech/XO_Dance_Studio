@@ -6,6 +6,9 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+    // Node ejecuta los tests con su stripping de tipos y exige la extension
+    // explicita en el import. Solo afecta el chequeo de tipos: no se emite nada.
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
