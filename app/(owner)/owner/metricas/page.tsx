@@ -11,7 +11,9 @@ import {
   SinDato,
   Tabla,
   fechaCorta,
+  hora24,
   pct,
+  plural,
 } from "@/components/Metricas";
 import { requiereNivel } from "@/lib/sesion";
 import { clp } from "@/lib/planes";
@@ -61,13 +63,7 @@ export default async function Metricas() {
   const R = resumen.datos;
   const D = demanda.datos;
 
-  const leidoA = R
-    ? new Intl.DateTimeFormat("es-CL", {
-        timeZone: "America/Santiago",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(new Date(R.meta.generado_at))
-    : "";
+  const leidoA = R ? hora24(R.meta.generado_at) : "";
 
   return (
     <>
@@ -203,7 +199,7 @@ function BloqueVenta({ R }: { R: Datos }) {
         <Indicador
           rotulo="Ingresos del mes"
           valor={clp(R.venta.ingresos_clp)}
-          denominador={`${R.venta.compras} ${R.venta.compras === 1 ? "compra pagada" : "compras pagadas"}`}
+          denominador={plural(R.venta.compras, "compra pagada", "compras pagadas")}
           comparacion={comparar(R.venta.ingresos_clp, R.venta_anterior.ingresos_clp)}
           comparacionEnPesos
           sinDatoDesde={desdeCuando(
@@ -236,8 +232,9 @@ function BloqueVenta({ R }: { R: Datos }) {
           <strong className="font-medium text-xo-negro">
             {clp(R.venta.pendientes.monto_clp)}
           </strong>{" "}
-          declarados en {R.venta.pendientes.compras} transferencias sin aprobar. No cuentan como
-          ingreso hasta que se confirme el pago.
+          declarados en{" "}
+          {plural(R.venta.pendientes.compras, "transferencia", "transferencias")} sin aprobar. No
+          cuentan como ingreso hasta que se confirme el pago.
         </p>
       ) : null}
     </Bloque>
@@ -277,7 +274,7 @@ function BloqueDemanda({ D }: { D: DatosDemanda }) {
         <Indicador
           rotulo="Ocupación promedio"
           valor={pct(ocup.tasa)}
-          denominador={`${ocup.reservas} reservas sobre ${ocup.cupos} cupos, en ${ocup.clases} clases dictadas`}
+          denominador={`${plural(ocup.reservas, "reserva", "reservas")} sobre ${ocup.cupos} cupos, en ${plural(ocup.clases, "clase dictada", "clases dictadas")}`}
           sinDatoDesde={
             ocup.clases === 0 ? "Todavía no se ha dictado ninguna clase este mes." : undefined
           }
@@ -411,7 +408,9 @@ function BloqueOperacion({ R }: { R: Datos }) {
           denominador={`${R.operacion.con_devolucion} devolvieron el crédito · ${R.operacion.sin_devolucion} no`}
           nota={
             R.operacion.por_clase_cancelada > 0
-              ? `${R.operacion.por_clase_cancelada} son de clases que canceló XO, donde el crédito vuelve siempre.`
+              ? R.operacion.por_clase_cancelada === 1
+                ? "Una es de una clase que canceló XO, donde el crédito vuelve siempre."
+                : `${R.operacion.por_clase_cancelada} son de clases que canceló XO, donde el crédito vuelve siempre.`
               : undefined
           }
           sinDatoDesde={desdeCuando(

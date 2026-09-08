@@ -18,7 +18,31 @@ export function pct(tasa: number | null): string {
   return tasa === null ? "—" : `${(tasa * 100).toFixed(1).replace(".", ",")}%`;
 }
 
+/** "1 clase dictada" y no "1 clases dictadas". */
+export function plural(n: number, singular: string, plural: string): string {
+  return `${n} ${n === 1 ? singular : plural}`;
+}
+
+/**
+ * Plata con el signo por fuera del peso.
+ *
+ * `clp(-55500)` da "$-55.500", que se lee como un precio raro y no como una
+ * caída. El signo va antes del símbolo.
+ */
+export function clpConSigno(monto: number): string {
+  return `${monto < 0 ? "-" : "+"}${clp(Math.abs(monto))}`;
+}
+
 /** Una fecha corta en la zona de la academia. Nunca en UTC. */
+export function hora24(iso: string): string {
+  return new Intl.DateTimeFormat("es-CL", {
+    timeZone: "America/Santiago",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(iso));
+}
+
 export function fechaCorta(iso: string | null): string | null {
   if (!iso) return null;
   return new Intl.DateTimeFormat("es-CL", {
@@ -112,10 +136,9 @@ export function Indicador({
           ) : (
             <>
               <span className={baja || sube ? "font-medium text-xo-negro" : ""}>
-                {signo}
                 {comparacionEnPesos
-                  ? clp(comparacion.absoluta)
-                  : comparacion.absoluta}
+                  ? clpConSigno(comparacion.absoluta)
+                  : `${signo}${comparacion.absoluta}`}
               </span>{" "}
               {comparacion.relativa === null
                 ? "· el mes anterior fue cero"

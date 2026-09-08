@@ -110,7 +110,14 @@ placeholder) · componentes de tarjeta.
 - Colores solo desde los tokens `xo-*`. Rosa XO nunca en texto. Mobile-first desde 375px.
   `.claude/rules/estilo.md` se carga solo al editar `.tsx`.
 
-**Checkpoint:** capturas de la página con datos y de los tres estados vacíos.
+**Checkpoint:** ✅ hecho el 08/09. La página se levantó contra staging en un **worktree
+aparte**, para no pisarle el `.next` al `next dev` que Felipe tenía corriendo contra producción.
+Se entró con el **enlace de magic link de verdad**, generado por la API de admin: owner recibe
+200, admin rebota a `/admin`.
+
+Mirarla encontró cinco defectos que ni el compilador ni el SQL podían ver: `$-55.500` en vez de
+`-$55.500`, "1 clases dictadas", "1 transferencias", "1 son de clases" y la hora en "12:53 a. m."
+en vez de 00:53. Ninguno rompe un número; los cinco hacen que el tablero se lea como descuidado.
 
 ---
 
@@ -120,7 +127,12 @@ La fase que el magic link enseñó a no saltarse. Con el escenario sembrado en s
 
 1. Entrar a `/owner/metricas` **con sesión owner real** y contrastar los 22 números en pantalla.
    No basta que la función los devuelva bien: el defecto puede estar en el render.
-2. Entrar **con sesión admin** y pedir `/owner/metricas` por URL directa → tiene que rebotar.
+   ⚠️ **Falta un paso previo.** El escenario está anclado a `now()` con desplazamientos en días,
+   así que la ventana de 30 días con la que se verificó en la fase 3 **no coincide con el mes
+   calendario** que muestra la página: hoy la página dice $36.500 de ingresos y el escenario
+   espera $112.500, y las dos cifras están bien. Para contrastar los 22 valores en pantalla hay
+   que anclar la siembra al **mes en curso** en vez de a los últimos 30 días.
+2. ✅ Entrar **con sesión admin** y pedir `/owner/metricas` por URL directa → rebota a `/admin`.
 3. **Con el token de ese admin**, llamar `/rest/v1/rpc/metricas_resumen` a mano → tiene que
    responder `42501`. Este es el camino que el layout no cubre y donde estaría el agujero real.
 4. `GET /rest/v1/` y confirmar que lo único nuevo que expone la API son esas dos funciones.

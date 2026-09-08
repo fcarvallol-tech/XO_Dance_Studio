@@ -134,6 +134,34 @@ try {
     );
   }
 
+  // ⚠️ GoTrue escanea las columnas de token de `auth.users` como texto y no
+  // como texto nullable. Insertando a mano quedan en NULL y **cualquier
+  // consulta suya falla** con "Database error finding user": el magic link no
+  // se puede ni generar. Insertando por la API de admin no pasa, porque las
+  // escribe vacías. Se replica eso acá.
+  await q(
+    `update auth.users set
+       confirmation_token = coalesce(confirmation_token, ''),
+       recovery_token = coalesce(recovery_token, ''),
+       email_change = coalesce(email_change, ''),
+       email_change_token_new = coalesce(email_change_token_new, ''),
+       email_change_token_current = coalesce(email_change_token_current, ''),
+       phone_change = coalesce(phone_change, ''),
+       phone_change_token = coalesce(phone_change_token, ''),
+       reauthentication_token = coalesce(reauthentication_token, '')
+     where id = any($1)`,
+    [usuarios],
+  );
+
+  // El perfil completo, con telefono: sin `perfil_completo_at` los layouts
+  // mandan a /completar-perfil y no se llega a ninguna pagina del portal.
+  await q(
+    `update public.perfiles
+     set telefono = '+56900000000', perfil_completo_at = now()
+     where user_id = any($1)`,
+    [usuarios],
+  );
+
   // Los roles se ponen a mano porque `cambiar_rol` exige un actor que ya sea
   // admin, y en una base recién creada no hay ninguno. Es la única escritura
   // del escenario que se salta el camino real, y solo afecta a las dos cuentas
