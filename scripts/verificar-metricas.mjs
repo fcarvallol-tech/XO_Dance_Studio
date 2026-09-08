@@ -49,11 +49,16 @@ const pct = (t) => (t === null ? null : Math.round(t * 1000) / 10);
 
 const hasta = new Date();
 const desde = new Date(hasta.getTime() - 30 * 24 * 3600 * 1000);
+// El período anterior se pasa explícito: el SQL ya no lo deduce del largo del
+// actual, porque los meses no duran todos lo mismo. Ver la migración
+// 20260908120000.
+const hastaAnt = desde;
+const desdeAnt = new Date(desde.getTime() - 30 * 24 * 3600 * 1000);
 
 const [{ metricas_resumen: R }] = await comoUsuario(
   OWNER,
-  `select public.metricas_resumen($1, $2)`,
-  [desde.toISOString(), hasta.toISOString()],
+  `select public.metricas_resumen($1, $2, $3, $4)`,
+  [desde.toISOString(), hasta.toISOString(), desdeAnt.toISOString(), hastaAnt.toISOString()],
 );
 const [{ metricas_demanda: D }] = await comoUsuario(
   OWNER,
@@ -138,9 +143,9 @@ console.log(`${casos.length - fallas} de ${casos.length} coinciden.`);
 console.log("\nControl de acceso:");
 for (const [quien, id] of [["admin", ADMIN], ["owner", OWNER]]) {
   try {
-    await comoUsuario(id, `select public.metricas_resumen($1, $2)`, [
-      desde.toISOString(),
-      hasta.toISOString(),
+    await comoUsuario(id, `select public.metricas_resumen($1, $2, $3, $4)`, [
+      desde.toISOString(), hasta.toISOString(),
+      desdeAnt.toISOString(), hastaAnt.toISOString(),
     ]);
     console.log(`  ${quien.padEnd(6)} → pasa${quien === "admin" ? "  ✗ NO DEBERÍA" : "  ✓"}`);
   } catch (e) {
@@ -152,13 +157,36 @@ for (const [quien, id] of [["admin", ADMIN], ["owner", OWNER]]) {
 try {
   await q("begin");
   await q("set local role anon");
-  await q(`select public.metricas_resumen($1, $2)`, [desde.toISOString(), hasta.toISOString()]);
+  await q(`select public.metricas_resumen($1, $2, $3, $4)`, [
+    desde.toISOString(), hasta.toISOString(),
+    desdeAnt.toISOString(), hastaAnt.toISOString(),
+  ]);
   console.log("  anon   → pasa  ✗ NO DEBERÍA");
   fallas++;
 } catch (e) {
   console.log(`  anon   → ${e.code} ${e.message.slice(0, 60)}  ${e.code === "42501" ? "✓" : "✗"}`);
 } finally {
   await q("rollback").catch(() => {});
+}
+
+// --- El período anterior es el que se manda, no uno deducido -----------------
+// Este caso habría cazado el defecto que arregló la migración 20260908120000:
+// con un mes de 30 días, deducir "el mismo largo pegado antes" daba el 2 de
+// agosto en vez del 1.
+{
+  const sep = { desde: "2026-09-01T03:00:00Z", hasta: "2026-10-01T03:00:00Z" };
+  const ago = { desde: "2026-08-01T04:00:00Z", hasta: "2026-09-01T03:00:00Z" };
+  const [{ metricas_resumen: M }] = await comoUsuario(
+    OWNER,
+    `select public.metricas_resumen($1, $2, $3, $4)`,
+    [sep.desde, sep.hasta, ago.desde, ago.hasta],
+  );
+  const devuelto = new Date(M.meta.desde_anterior).toISOString();
+  const ok = devuelto === new Date(ago.desde).toISOString();
+  console.log("\nPeríodo anterior:");
+  console.log(`  mandado  ${new Date(ago.desde).toISOString()}`);
+  console.log(`  usado    ${devuelto}  ${ok ? "✓" : "✗ lo dedujo por su cuenta"}`);
+  if (!ok) fallas++;
 }
 
 await cliente.end();

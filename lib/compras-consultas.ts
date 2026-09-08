@@ -32,7 +32,7 @@ import type {
 export type Lectura<T> = { datos: T; error: string | null };
 
 /** Mensaje mostrable. El código de Postgres va incluido: es lo que se busca. */
-function comoTexto(error: { message: string; code?: string } | null): string | null {
+export function comoTexto(error: { message: string; code?: string } | null): string | null {
   if (!error) return null;
   console.error("Error leyendo datos:", error);
   return error.code ? `${error.message} (${error.code})` : error.message;
