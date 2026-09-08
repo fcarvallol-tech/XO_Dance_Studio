@@ -22,6 +22,7 @@ import {
   tasa,
   ticketPromedio,
 } from "../lib/dominio/metricas.ts";
+import { mesAnterior, mesEnCurso, nombreDelMes } from "../lib/dominio/periodo.ts";
 
 const OWNER = "11111111-1111-4111-8111-000000000009";
 const ADMIN = "11111111-1111-4111-8111-000000000008";
@@ -47,13 +48,15 @@ async function comoUsuario(userId, sql, params) {
 
 const pct = (t) => (t === null ? null : Math.round(t * 1000) / 10);
 
-const hasta = new Date();
-const desde = new Date(hasta.getTime() - 30 * 24 * 3600 * 1000);
-// El período anterior se pasa explícito: el SQL ya no lo deduce del largo del
-// actual, porque los meses no duran todos lo mismo. Ver la migración
-// 20260908120000.
-const hastaAnt = desde;
-const desdeAnt = new Date(desde.getTime() - 30 * 24 * 3600 * 1000);
+// El mismo período que pide la página, con el mismo código: si el verificador
+// usara una ventana propia, los números que confirma no serían los que alguien
+// va a ver en pantalla. El período anterior se pasa explícito porque el SQL ya
+// no lo deduce del largo del actual — los meses no duran todos lo mismo.
+const periodo = mesEnCurso();
+const anterior = mesAnterior(periodo);
+const { desde, hasta } = periodo;
+const { desde: desdeAnt, hasta: hastaAnt } = anterior;
+console.log(`\nPeríodo: ${nombreDelMes(periodo)} · contra ${nombreDelMes(anterior)}`);
 
 const [{ metricas_resumen: R }] = await comoUsuario(
   OWNER,

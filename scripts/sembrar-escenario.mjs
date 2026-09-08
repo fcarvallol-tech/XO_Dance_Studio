@@ -71,6 +71,28 @@ const RE = {
   anaCl5: "55555555-5555-4555-8555-000000000007",
 };
 
+/**
+ * CUÁNDO PASA CADA COSA
+ *
+ * El escenario se ancla al **mes calendario**, no a los últimos 30 días, porque
+ * es lo que muestra la página: si la siembra usa una ventana corrida y el
+ * tablero un mes, los 22 valores esperados no se pueden contrastar contra la
+ * pantalla, que es el punto de la fase 5.
+ *
+ * Los hechos del mes en curso se ubican en **fracciones del mes ya
+ * transcurrido**, así que la siembra corre igual el día 3 que el 28. Los
+ * vencimientos, en cambio, van relativos a `now()`: son los que tienen que caer
+ * dentro o fuera de la ventana de 30 días y no dependen del calendario.
+ */
+const enEsteMes = (f) =>
+  `(date_trunc('month', now()) + (now() - date_trunc('month', now())) * ${f})`;
+const enElMesAnterior = (f) =>
+  `(date_trunc('month', now() - interval '1 month') + ` +
+  `(date_trunc('month', now()) - date_trunc('month', now() - interval '1 month')) * ${f})`;
+const desdeAhora = (dias) => `(now() + interval '${dias} days')`;
+/** Antes del mes anterior: queda fuera de los dos períodos, a propósito. */
+const antesDeTodo = `(date_trunc('month', now() - interval '1 month') - interval '20 days')`;
+
 const cliente = await conectar();
 const q = (sql, params) => cliente.query(sql, params);
 
@@ -194,20 +216,19 @@ try {
   const [hA, hB, hC] = horarios;
 
   const clases = [
-    [CL[1], hA, -18],
-    [CL[2], hB, -11],
-    [CL[3], hC, -4],
-    [CL[4], hA, +3],
-    [CL[5], hB, -7],
+    [CL[1], hA, enEsteMes(0.25)],
+    [CL[2], hB, enEsteMes(0.45)],
+    [CL[3], hC, enEsteMes(0.65)],
+    [CL[4], hA, desdeAhora(3)], // la única futura
+    [CL[5], hB, enEsteMes(0.35)], // la que XO va a cancelar
   ];
-  for (const [id, h, dias] of clases) {
+  for (const [id, h, cuando] of clases) {
     await q(
       `insert into public.clases
          (id, horario_id, fecha, inicio, curso_id, profesora_id, sede_id,
           cupo_maximo, estado)
-       values ($1, $2, (now() + make_interval(days => $3))::date,
-               now() + make_interval(days => $3), $4, $5, $6, 22, 'programada')`,
-      [id, h.id, dias, h.curso_id, h.profesora_id, h.sede_id],
+       values ($1, $2, ${cuando}::date, ${cuando}, $3, $4, $5, 22, 'programada')`,
+      [id, h.id, h.curso_id, h.profesora_id, h.sede_id],
     );
   }
 
@@ -217,44 +238,40 @@ try {
   const planId = async (slug) =>
     (await q(`select id from public.planes where slug = $1`, [slug])).rows[0].id;
 
-  //  id  alumna  plan       monto  dias aprobada  clases  vence (dias)
+  //  id  alumna  plan  monto  cuándo se aprobó  clases  cuándo vence
   const compras = [
-    [CO.C0, "ana", "pack-2", 16000, -75, 2, -15],
-    [CO.C1, "ana", "pack-4", 28000, -45, 4, +15],
-    [CO.C2, "bea", "pack-2", 16000, -35, 2, +25],
-    [CO.C3, "ana", "pack-8", 48000, -20, 8, +40],
-    [CO.C4, "bea", "pack-4", 28000, -12, 4, +48],
-    [CO.C5, "cata", "suelta", 8500, -5, 1, +55],
-    [CO.C6, "emi", "pack-4", 28000, -3, 4, +57],
+    [CO.C0, "ana", "pack-2", 16000, antesDeTodo, 2, desdeAhora(-20)], // vencido
+    [CO.C1, "ana", "pack-4", 28000, enElMesAnterior(0.3), 4, desdeAhora(33)],
+    [CO.C2, "bea", "pack-2", 16000, enElMesAnterior(0.15), 2, desdeAhora(25)], // por vencer
+    [CO.C3, "ana", "pack-8", 48000, enEsteMes(0.2), 8, desdeAhora(54)],
+    [CO.C4, "bea", "pack-4", 28000, enEsteMes(0.3), 4, desdeAhora(55)],
+    [CO.C5, "cata", "suelta", 8500, enEsteMes(0.5), 1, desdeAhora(56)],
+    [CO.C6, "emi", "pack-4", 28000, enEsteMes(0.6), 4, desdeAhora(57)],
   ];
   const loteDe = { [CO.C0]: CR.C0, [CO.C1]: CR.C1, [CO.C2]: CR.C2, [CO.C3]: CR.C3,
                    [CO.C4]: CR.C4, [CO.C5]: CR.C5, [CO.C6]: CR.C6 };
 
-  for (const [id, quien, slug, monto, dias, clases_, vence] of compras) {
+  for (const [id, quien, slug, monto, cuando, clases_, vence] of compras) {
     await q(
       `insert into public.compras
          (id, perfil_id, plan_id, cantidad_clases, monto_clp, estado, medio_pago,
           declarada_at, aprobada_por, aprobada_at, created_at)
        values ($1, $2, $3, $4, $5, 'pagada', 'transferencia',
-               now() + make_interval(days => $6), $7,
-               now() + make_interval(days => $6),
-               now() + make_interval(days => $6))`,
-      [id, perfil[quien], await planId(slug), clases_, monto, dias, perfil.owner],
+               ${cuando}, $6, ${cuando}, ${cuando})`,
+      [id, perfil[quien], await planId(slug), clases_, monto, perfil.owner],
     );
     await q(
       `insert into public.creditos
          (id, perfil_id, compra_id, cantidad_inicial, cantidad_disponible,
           fecha_vencimiento, created_at)
-       values ($1, $2, $3, $4, $4, now() + make_interval(days => $5),
-               now() + make_interval(days => $6))`,
-      [loteDe[id], perfil[quien], id, clases_, vence, dias],
+       values ($1, $2, $3, $4, $4, ${vence}, ${cuando})`,
+      [loteDe[id], perfil[quien], id, clases_],
     );
     await q(
       `insert into public.movimientos_credito
          (perfil_id, credito_id, tipo, cantidad, saldo_resultante, creado_por, created_at)
-       values ($1, $2, 'compra', $3, public.saldo_creditos($1), $4,
-               now() + make_interval(days => $5))`,
-      [perfil[quien], loteDe[id], clases_, perfil.owner, dias],
+       values ($1, $2, 'compra', $3, public.saldo_creditos($1), $4, ${cuando})`,
+      [perfil[quien], loteDe[id], clases_, perfil.owner],
     );
   }
 
@@ -265,7 +282,7 @@ try {
        (id, perfil_id, plan_id, cantidad_clases, monto_clp, estado, medio_pago,
         declarada_at, created_at)
      values ($1, $2, $3, 4, 28000, 'pendiente', 'transferencia',
-             now() - interval '2 days', now() - interval '2 days')`,
+             ${enEsteMes(0.7)}, ${enEsteMes(0.7)})`,
     [CO.C7, perfil.dani, await planId("pack-4")],
   );
 
@@ -274,14 +291,14 @@ try {
     `insert into public.creditos
        (id, perfil_id, compra_id, cantidad_inicial, cantidad_disponible,
         fecha_vencimiento, created_at)
-     values ($1, $2, null, 2, 2, now() + interval '56 days', now() - interval '4 days')`,
+     values ($1, $2, null, 2, 2, ${desdeAhora(58)}, ${enEsteMes(0.5)})`,
     [CR.R1, perfil.cata],
   );
   await q(
     `insert into public.movimientos_credito
        (perfil_id, credito_id, tipo, cantidad, saldo_resultante, motivo, creado_por, created_at)
      values ($1, $2, 'regalo', 2, public.saldo_creditos($1),
-             'Cortesía del escenario de prueba', $3, now() - interval '4 days')`,
+             'Cortesía del escenario de prueba', $3, ${enEsteMes(0.5)})`,
     [perfil.cata, CR.R1, perfil.owner],
   );
 
@@ -289,28 +306,25 @@ try {
   // 4. Las reservas pasadas. A mano, porque `reservar()` no deja reservar una
   //    clase que ya ocurrió — y con razón.
   // -------------------------------------------------------------------------
-  //  id  alumna  clase  lote  dias  estado  devuelto  cancelada(dias)
+  //  id  alumna  clase  lote  cuándo reservó  estado  devuelto  cuándo canceló
   const pasadas = [
-    [RE.anaCl1, "ana", CL[1], CR.C1, -18, "confirmada", false, null],
-    [RE.beaCl1, "bea", CL[1], CR.C2, -18, "confirmada", false, null],
-    [RE.anaCl2, "ana", CL[2], CR.C1, -11, "confirmada", false, null],
+    [RE.anaCl1, "ana", CL[1], CR.C1, enEsteMes(0.24), "confirmada", false, null],
+    [RE.beaCl1, "bea", CL[1], CR.C2, enEsteMes(0.24), "confirmada", false, null],
+    [RE.anaCl2, "ana", CL[2], CR.C1, enEsteMes(0.44), "confirmada", false, null],
     // Cata canceló tarde: perdió el crédito. Cuenta como consumo y atribuye.
-    [RE.cataCl2, "cata", CL[2], CR.R1, -12, "cancelada", false, -11],
-    [RE.anaCl3, "ana", CL[3], CR.C1, -4, "confirmada", false, null],
-    [RE.cataCl3, "cata", CL[3], CR.C5, -4, "confirmada", false, null],
+    [RE.cataCl2, "cata", CL[2], CR.R1, enEsteMes(0.4), "cancelada", false, enEsteMes(0.46)],
+    [RE.anaCl3, "ana", CL[3], CR.C1, enEsteMes(0.64), "confirmada", false, null],
+    [RE.cataCl3, "cata", CL[3], CR.C5, enEsteMes(0.64), "confirmada", false, null],
     // La de CL5 la va a cancelar el trigger cuando XO cancele la clase.
-    [RE.anaCl5, "ana", CL[5], CR.C3, -7, "confirmada", false, null],
+    [RE.anaCl5, "ana", CL[5], CR.C3, enEsteMes(0.34), "confirmada", false, null],
   ];
-  for (const [id, quien, clase, lote, dias, estado, devuelto, cancelada] of pasadas) {
+  for (const [id, quien, clase, lote, cuando, estado, devuelto, cancelada] of pasadas) {
     await q(
       `insert into public.reservas
          (id, perfil_id, clase_id, credito_id, estado, credito_devuelto,
           cancelada_at, origen, created_at)
-       values ($1, $2, $3, $4, $5, $6,
-               case when $7::int is null then null
-                    else now() + make_interval(days => $7::int) end,
-               'web', now() + make_interval(days => $8))`,
-      [id, perfil[quien], clase, lote, estado, devuelto, cancelada, dias],
+       values ($1, $2, $3, $4, $5, $6, ${cancelada ?? "null"}, 'web', ${cuando})`,
+      [id, perfil[quien], clase, lote, estado, devuelto],
     );
     await q(
       `update public.creditos set cantidad_disponible = cantidad_disponible - 1
@@ -321,9 +335,8 @@ try {
       `insert into public.movimientos_credito
          (perfil_id, credito_id, reserva_id, tipo, cantidad, saldo_resultante,
           creado_por, created_at)
-       values ($1, $2, $3, 'reserva', -1, public.saldo_creditos($1), $1,
-               now() + make_interval(days => $4))`,
-      [perfil[quien], lote, id, dias],
+       values ($1, $2, $3, 'reserva', -1, public.saldo_creditos($1), $1, ${cuando})`,
+      [perfil[quien], lote, id],
     );
   }
 

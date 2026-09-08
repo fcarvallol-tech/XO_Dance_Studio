@@ -139,7 +139,9 @@ La fase que el magic link enseñó a no saltarse. Con el escenario sembrado en s
 5. Contar las llamadas a Supabase de la página con un `fetch` instrumentado. **≤ 3.** La
    instrumentación no se commitea.
 
-**Checkpoint:** los cinco resultados, con la evidencia de cada uno.
+**Checkpoint:** ✅ hecho el 08/09. Los 22 valores contrastados en pantalla, `anon` 401 / admin
+403 / owner 200 por HTTP con JWT reales, admin rebotado por URL directa, y 3 llamadas por render
+(13 en total tras 4 renders: 1 JWKS por proceso más 4 × 3). La instrumentación no se commiteó.
 
 ---
 

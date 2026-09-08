@@ -426,10 +426,11 @@ contra la transferencia que se hizo.
    pidiéndolo explícitamente. Una clase llena cuesta $18.000 + 22 × $250 = **$23.500** de
    profesora, el neto con sala llena en Los Leones baja de $119.000 a **$113.500**, y el piso
    sube en tres de los seis casos: con packs de 8 en Los Leones hacen falta **7** alumnas, no 6.
-4. ⚠️ **El variable de Teens no está definido.** Teens es suscripción mensual y **no consume
-   créditos** (`ARCHITECTURE.md` §5.3.b), así que "$250 por crédito consumido" no le aplica tal
-   cual. `CONTEXT.md` §5.b quedó calculado con el equivalente —$250 por alumna inscrita y por
-   clase— **marcado como supuesto**. La alternativa es que Teens no lleve variable. Decide Felipe.
+4. ✅ **El variable de Teens quedó definido** el 08/09/2026: **$1.000 por alumna inscrita al
+   mes**, equivalente a $250 por cada una de sus cuatro clases, y **se paga aunque la alumna
+   falte**. Va por inscripción y no por crédito consumido, porque Teens tiene horario fijo y no
+   reserva. Escrito con el contraste entre las dos bases en `CONTEXT.md` §5.b. Cuando se
+   construya PRD-0011, la liquidación tiene **dos caminos de cálculo**, no uno.
 
 ---
 
@@ -613,6 +614,59 @@ intuición.
    variable de las profesoras sigue sin definir.
 5. **Proceso de expiración de créditos**, que hoy no existe.
 
-## 16. Notas de implementación
+## 16. Notas de implementación — parte 1
 
-Se llena al terminar.
+Implementada entre el 06 y el 08/09/2026, en `prd-0010-metricas`.
+
+### Lo que se desvió del plan
+
+**Las funciones quedaron `security invoker`, no `security definer`.** §8.2 las proponía definer.
+No hacía falta: las políticas `*_admin_lee` ya usan `tiene_nivel('admin')`, que incluye a owner
+por aritmética. Con invoker, RLS queda puesto debajo como segunda capa y el filtro de rol de la
+función es la primera. Definer habría anulado la de abajo sin ganar nada.
+
+**`metricas_resumen` necesitó dos correcciones, y las dos son el mismo error:** dar por supuesto
+que el período contesta todo.
+
+1. Deducía el período anterior como "el mismo largo, pegado antes". Septiembre dura 30 días, así
+   que comparaba contra un agosto al que le faltaba un día; en febrero el error es de tres. Ahora
+   llega como parámetro, calculado por `mesAnterior()` en `lib/dominio/periodo.ts`.
+2. No traía con qué escribir "última compra registrada: nunca", que es lo que §9.2 promete. Se
+   agregó `desde_siempre`.
+
+Ninguna de las dos la agarró el escenario, porque en su primera versión usaba una ventana de 30
+días: ahí las dos definiciones de "período anterior" coinciden. **Se ancló al mes calendario**,
+que es lo que muestra la página, y recién entonces los valores de §11.4 se pudieron contrastar
+contra la pantalla.
+
+**Los meses se calculan en `America/Santiago`, no en UTC.** Con el corte en UTC, una compra
+aprobada a las 22:00 del 31 de agosto en Santiago caía en septiembre.
+
+### Lo que solo se vio abriendo la página
+
+Cinco defectos que ni `tsc` ni el SQL podían ver: `$-55.500` en vez de `-$55.500`, "1 clases
+dictadas", "1 transferencias", "1 son de clases que canceló XO" y la hora en "12:53 a. m." en vez
+de 00:53. Ninguno rompe un número; los cinco hacen que una pantalla donde se decide plata se lea
+como descuidada. **Es el argumento de la regla de `CLAUDE.md`**: verificar la ruta de datos no es
+verificar el flujo.
+
+### Verificación
+
+- 37 tests de `lib/dominio` con `node --test`, sin dependencias nuevas.
+- Los 22 valores de §11.4, contrastados contra el SQL y **contra la página renderizada**.
+- Control de acceso por HTTP con sesiones reales, no simuladas: `anon` recibe 401, un admin con
+  JWT recibe 403 y el owner 200. El admin también rebota por URL directa.
+- 3 llamadas a Supabase por render, medidas con instrumentación que no se commiteó. El JWKS se
+  descarga una vez por proceso, no por petición.
+- Mutaciones deliberadas dentro de transacciones revertidas, para comprobar que el arnés puede
+  fallar: detecta las tres y la conciliación caza los dos tipos de descuadre.
+
+### Lo que quedó pendiente
+
+- **La migración no está aplicada a producción.** Solo a staging.
+- Las partes 2 y 3 (egresos, caja neta, liquidación).
+- El escenario prueba las métricas, **no** `acreditar_compra`: la siembra inserta las filas
+  históricas directamente, porque esa función calcula el vencimiento como `now() + 60 días`.
+- Sembrar en staging necesita dos parches que no son del dominio y conviene recordar: insertar en
+  `auth.users` a mano deja las columnas de token en `NULL` y GoTrue falla al leerlas, y sin
+  `perfil_completo_at` los layouts mandan a `/completar-perfil`.

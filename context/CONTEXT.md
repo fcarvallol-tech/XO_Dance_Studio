@@ -279,6 +279,9 @@ alumna reservó y no llegó, el crédito se gastó y se paga igual. Una cancelad
 el crédito y no cuenta; una cancelada tarde sí. Es exactamente el mismo hecho con el que se le
 atribuye ingreso a la profesora — ver PRD-0010 §7.1 y §8.5.b.
 
+⚠️ **Teens se calcula sobre otra base.** Ver más abajo: allá el variable va por inscripción
+mensual, no por crédito. Son dos ramas de negocio distintas y el pago sigue a cada una.
+
 **Alumnas necesarias para cubrir el costo de una clase:**
 
 Cada alumna aporta su tarifa menos los $250 que se lleva la profesora por ella.
@@ -319,18 +322,35 @@ alumna**, y ahora además la profesora cobra:
 | Ingreso mensual (8 alumnas) | $360.000 | $224.000 | $224.000 |
 | Arriendo (4 clases) | –$240.000 | –$68.000 | $0 |
 | Profesora, base (4 clases) | $0 | –$72.000 | –$72.000 |
-| Profesora, variable (32 asistencias) | $0 | –$8.000 | –$8.000 |
+| Profesora, variable (8 inscritas × $1.000) | $0 | –$8.000 | –$8.000 |
 | **Neto** | **$120.000** | **$76.000** | **$144.000** |
 
 Antes quedaban $120.000 pero **nadie le pagaba a Carla**. Ahora la profesora cobra $80.000 al mes
 por ese curso, y ahí está el cambio de fondo.
 
-⚠️ **Supuesto que hay que confirmar.** Teens se vende como **suscripción mensual y no consume
-créditos** (`ARCHITECTURE.md` §5.3.b), así que la regla "$250 por crédito consumido" no le aplica
-tal cual: no hay créditos que contar. Acá se calculó con el equivalente natural —$250 por alumna
-inscrita y por clase— pero **eso no está decidido**. Las dos alternativas razonables son esa, o
-que Teens no lleve variable y la profesora cobre solo la base. Con la segunda, los netos vuelven
-a $84.000 y $152.000.
+#### El variable de Teens va por inscripción, no por asistencia
+
+**$1.000 por alumna inscrita al mes**, equivalente a $250 por cada una de las cuatro clases
+mensuales, asumiendo que asiste a todas. **Se paga aunque falte.**
+
+La cifra coincide con la de packs, la base de cálculo no:
+
+| | Packs (Girly, Reggaeton, Slow) | Teens |
+|---|---|---|
+| Se cuenta | Créditos consumidos y no devueltos | Alumnas inscritas |
+| Se paga | Por clase, según cuántas reservaron | Por mes, fijo |
+| Si la alumna falta | Se paga igual: el crédito se gastó | Se paga igual: está inscrita |
+| Si la alumna cancela a tiempo | **No se paga**: el crédito volvió | No aplica: no hay reserva que cancelar |
+
+**Por qué son dos bases y no un descuido.** En packs la alumna elige clase a clase, así que hay
+un hecho discreto que contar —el crédito— y ese hecho puede deshacerse cuando cancela a tiempo.
+En Teens no hay nada que contar: la alumna tiene horario fijo, no reserva y no consume créditos
+(`ARCHITECTURE.md` §5.3.b). Forzar la regla de packs sobre Teens obligaría a inventar reservas
+que nadie hace.
+
+La consecuencia práctica es que **en Teens el pago de la profesora es predecible y en packs no**:
+sabe lo que va a cobrar apenas cierra la matrícula del mes, mientras que en packs depende de
+cuánta gente reserve.
 
 ⚠️ **Con el precio de $28.000 la comparación ya no es "igual o mejor" en las dos sedes.** En Los
 Dominicos queda mejor que antes ($144.000). En **Los Leones queda por debajo** ($76.000): el
