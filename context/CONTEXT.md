@@ -144,7 +144,7 @@ cupos están en `null` y se muestran como **"Por confirmar"**. No inventarlos.
 > ⚠️ `girly` es un **slug nuevo**, no un `girly-basico` renombrado: los slugs son inmutables por
 > trigger desde PRD-0015.
 
-### Horarios (30/08/2026)
+### Horarios (vigentes desde el 07/09/2026)
 
 Siete clases a la semana. Viven en la tabla `horarios` y se muestran en el sitio.
 
@@ -152,11 +152,19 @@ Siete clases a la semana. Viven en la tabla `horarios` y se muestran en el sitio
 |---|---|---|---|---|
 | Reggaeton Femme | Drimy | lunes | 17:00 | Seducción Latina Experience |
 | Teens | Carli | lunes | 18:00 | Centro Comunitario Diaguitas |
-| Girly | Pau | lunes | 20:00 | Centro Comunitario Diaguitas |
-| Reggaeton Femme | Pau | miércoles | 20:00 | Centro Comunitario Diaguitas |
+| Girly | Pau | **martes** | 20:00 | Centro Comunitario Diaguitas |
+| Reggaeton Femme | Pau | **jueves** | **19:30** | Centro Comunitario Diaguitas |
 | Girly | Carli | viernes | 20:00 | Seducción Latina Experience |
 | Slow Femme | Lina | sábado | 17:00 | Seducción Latina Experience |
 | Girly | Carli | sábado | 18:00 | Seducción Latina Experience |
+
+> **Cambio del 08/09/2026: las dos clases de Pau se mueven** por un problema de salas. Girly pasa
+> de lunes 20:00 a **martes 20:00** y Reggaeton Femme de miércoles 20:00 a **jueves 19:30**, las
+> dos en Diaguitas. El cambio opera desde el lunes 07/09: ese lunes no hubo clase, la primera
+> Girly nueva fue el martes 08/09 y la primera Reggaeton Femme nueva es el jueves 10/09. En la
+> base va por la migración `20260908150000_horarios_pau_martes_y_jueves.sql`, que además saca las
+> clases ya materializadas de lunes y miércoles, porque `clases` copia el horario al generarse y
+> no se mueve solo.
 
 > **Cambio del 24/08/2026:** K-Pop deja de ser "todas las edades" y pasa a ser **de 11 años para
 > arriba**, igual que el resto del catálogo. Con Kids fuera, ningún curso recibe a alguien menor,
