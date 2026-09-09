@@ -354,22 +354,32 @@ viajó en la misma rama. Nada de esto está aplicado en ninguna base.
 
 **Migración de Pau (`20260908150000_horarios_pau_martes_y_jueves.sql`)**
 
-- [ ] **Sin aplicar en staging ni en producción.** Felipe aprobó el push a staging, pero la CLI no
-      pudo autenticarse: la contraseña que quedó en `.env.staging` (16 caracteres, sin espacios ni
-      retornos) devuelve `password authentication failed for user "postgres"`. Lo mismo pasó con la
-      de producción. Antes de reintentar, confirmar en el dashboard de staging (Project Settings →
-      Database) cuál es la contraseña vigente o resetearla, y actualizar `.env.staging`.
-- [ ] `node_modules` de este computador no tiene `pg`, aunque `package.json` lo declara: correr
-      `npm install` antes de usar los scripts de staging.
-- [ ] La CLI de Supabase quedó **enlazada a staging** (`supabase/.temp/project-ref` =
+- [x] **Aplicada y verificada en staging el 09/09/2026.** La autenticación del día anterior
+      fallaba porque la CLI no tomaba la contraseña pasada con `-p` al enlazar; exportar
+      `SUPABASE_DB_PASSWORD` en el entorno antes del comando la hizo conectar. Resultado, con el
+      estado previo y posterior leídos por SQL:
+
+      | Qué | Antes | Después |
+      |---|---|---|
+      | Horarios activos de Pau | lunes 20:00 · miércoles 20:00 | **martes 20:00 · jueves 19:30**; los viejos quedan inactivos, no borrados |
+      | Clases de Pau en horarios viejos, programadas desde el 07/09 | 20 (10 + 10) | **0** |
+      | Clases de Pau en horarios nuevos | 0 | **21**: 11 martes desde el **08/09** y 10 jueves desde el 10/09 |
+      | Clases en total | 75 | 76 |
+      | Reservas sobre clases de Pau | 0 | 0 |
+      | Saldos de créditos (4 perfiles) | 4 · 1 · 5 · 10 | idénticos |
+      | `movimientos_credito` | 19 asientos | idénticos |
+
+      Lo que no se ejercitó, porque staging no lo tenía: la rama que **cancela** una clase con
+      reserva y devuelve el crédito por el trigger. Producción tampoco la va a ejercitar hoy —no
+      hay reservas— pero si aparece una antes del push, ese camino corre sin prueba previa.
+- [x] `npm install` corrido en este computador: `pg` ya está.
+- [ ] La CLI de Supabase sigue **enlazada a staging** (`supabase/.temp/project-ref` =
       `ybopuahlzbjkkwumkllk`). Para producción hay que volver a enlazar, y el push allá necesita su
       propia aprobación.
-- [ ] Orden pendiente contra staging: estado previo por SQL (horarios y clases de Pau, reservas
-      sobre ellas, saldos) → `migration list` → `db push --dry-run` → `db push` → estado
-      posterior. Se espera: dos horarios activos de Pau (martes 20:00, jueves 19:30), cero clases
-      programadas en los viejos desde el 07/09, la Girly del 08/09 en el horario nuevo, y saldos
-      de créditos iguales o mayores si había reservas sobre esas clases.
-- [ ] Después, lo mismo contra producción, con aprobación explícita.
+- [ ] Contra producción, mismo orden: estado previo por SQL → `migration list` → `db push
+      --dry-run` → `db push` → estado posterior. Diferencias esperadas respecto a staging: allá
+      hay 18 futuras más la del lunes 07/09 que sale (19 en total), y las del 31/08 y 02/09 se
+      quedan; la Girly del 08/09 se crea por el relleno entre el corte y hoy.
 - [ ] `CONTEXT.md` §4 ya muestra los horarios nuevos. Si la migración no se aplica pronto, el sitio
       y el documento van a decir cosas distintas.
 
