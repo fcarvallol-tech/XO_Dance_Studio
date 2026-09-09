@@ -14,10 +14,10 @@ Sin esto la migración no se puede escribir completa, y el resto depende de la m
 
 | # | Decisión | Dónde está explicada | Default si no dices nada |
 |---|---|---|---|
-| 1 | **¿A (créditos), B (compra aparte) o C (ambas)?** | PRD §8 | No hay default: bloquea |
-| 2 | Si B: ¿se retiene cupo mientras se aprueba la transferencia? | PRD §8, fila "cupo y transferencia" | No hay default: bloquea |
-| 3 | Si B: cancelación a tiempo, ¿devolución en plata o crédito de compensación? | PRD §8, fila "cancelación" | No hay default: bloquea |
-| 4 | Si B: variable de la profesora por especial | PRD §8, fila "liquidación" | Se registra en la liquidación como $0 hasta que se defina, con el motivo en pantalla |
+| 1 | ~~¿A, B o C?~~ ✅ **B, compra aparte** (Felipe, 09/09/2026) | PRD §8 | Resuelto |
+| 2 | ¿Se retiene cupo mientras se aprueba la transferencia? | PRD §8, fila "cupo y transferencia" | No hay default: bloquea |
+| 3 | Cancelación a tiempo, ¿devolución en plata o crédito de compensación? Y si cancela la academia | PRD §8, fila "cancelación" | No hay default: bloquea |
+| 4 | Variable de la profesora por especial | PRD §8, fila "liquidación" | Se registra en la liquidación como $0 hasta que se defina, con el motivo en pantalla |
 | 5 | **Nombre público** (no puede ser "clase suelta") | PRD, nota inicial | "Clase especial" en la interfaz hasta que Carla decida |
 | 6 | **Precio por defecto** en pesos (o costo en créditos si es A) | PRD §7, `parametros` | No hay default: el formulario nace con el campo vacío y obligatorio |
 | 7 | ¿Admin puede crear especiales o solo owner? | PRD §2 | Admin crea, owner fija precio |

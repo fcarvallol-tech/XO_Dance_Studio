@@ -4,12 +4,11 @@
 --
 -- NO ejecutar a mano en producción: se aplica con `supabase db push`.
 --
--- ESTADO al 09/09/2026: aplicada en STAGING con `db push` y verificada por SQL
--- (context/prds/0018-clases-especiales.md §14): 20 clases viejas fuera, 21
--- nuevas dentro —la Girly del 08/09 incluida—, saldos y libro de créditos
--- intactos porque no había reservas sobre ellas. Pendiente en producción, con
--- aprobación aparte. Allá hay además tres clases anteriores al corte que se
--- quedan (31/08, 02/09) y una del lunes 07/09 que se va.
+-- ESTADO: aplicada en STAGING y en PRODUCCIÓN el 09/09/2026 con `db push`, con
+-- aprobación de Felipe en cada caso, y verificada por SQL antes y después
+-- (context/prds/0018-clases-especiales.md §14). En producción: 19 clases viejas
+-- fuera (la del lunes 07/09 incluida), 21 nuevas dentro (la Girly del 08/09
+-- incluida), las del 31/08 y 02/09 se quedan, cero reservas tocadas.
 --
 -- ---------------------------------------------------------------------------
 -- Por qué no basta con editar `horarios`

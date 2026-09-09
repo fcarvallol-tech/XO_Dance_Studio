@@ -213,10 +213,22 @@ la migración, igual que las de las tablas. Alternativas descartadas: pegar el l
 se puede reproducir embebido sin el script de Instagram y sin consentimiento de cookies) y Vercel
 Blob (otro proveedor para lo mismo que Supabase ya ofrece).
 
-## 8. ⚠️ Decisión abierta: ¿se pagan con créditos o son una compra aparte?
+## 8. ✅ Resuelto: son una compra aparte, no se pagan con créditos
 
-**No se resuelve en este PRD.** Bloquea la migración y el flujo de reserva, así que la fase 0 del
-plan es esta decisión. Las dos alternativas, con lo que arrastran:
+**Decidido por Felipe el 09/09/2026: alternativa B.** Las clases especiales se compran aparte,
+en pesos, porque tienen precios distintos entre sí y distintos del crédito de pack. Un crédito
+universal vale lo mismo para cualquier clase de la parrilla; una especial no es de la parrilla.
+
+Lo que esa decisión arrastra y **sigue pendiente de definir** antes de la migración (fase 0 del
+plan): retención de cupo mientras se aprueba la transferencia, qué recupera la alumna si cancela a
+tiempo, cómo se registra la devolución si cancela la academia, y el variable de la profesora. El
+detalle de cada una está en la tabla de la alternativa B, más abajo. La alternativa A queda
+escrita como registro de por qué no.
+
+Consecuencia inmediata para el copy: la promesa "un pack sirve para cualquier clase" pasa a
+"cualquier clase **de la parrilla**" en `CONTEXT.md` §5.b y en la sección Planes.
+
+Las dos alternativas que se evaluaron, con lo que arrastran:
 
 ### Alternativa A — Se pagan con créditos normales, a razón de N créditos por clase
 
@@ -263,8 +275,9 @@ igual que un pack.
   doble de superficie de error. No se recomienda para v1, pero si la decisión es B, conviene dejar
   el esquema abierto para sumar A después (la columna `costo_creditos` no estorba).
 
-**Lo que se necesita de Felipe para cerrar §8:** A, B o C; y si es B, las tres decisiones de la
-fila "Cancelación" y "Cupo y transferencia". Sin eso la migración no se puede escribir completa.
+**Cerrado en B el 09/09/2026.** Faltan las tres decisiones derivadas de las filas "Cupo y
+transferencia", "Cancelación" y "Liquidación de la profesora". Sin ellas la migración no se puede
+escribir completa.
 
 ## 9. Reglas de negocio
 
@@ -373,25 +386,39 @@ viajó en la misma rama. Nada de esto está aplicado en ninguna base.
       reserva y devuelve el crédito por el trigger. Producción tampoco la va a ejercitar hoy —no
       hay reservas— pero si aparece una antes del push, ese camino corre sin prueba previa.
 - [x] `npm install` corrido en este computador: `pg` ya está.
-- [ ] La CLI de Supabase sigue **enlazada a staging** (`supabase/.temp/project-ref` =
-      `ybopuahlzbjkkwumkllk`). Para producción hay que volver a enlazar, y el push allá necesita su
-      propia aprobación.
-- [ ] Contra producción, mismo orden: estado previo por SQL → `migration list` → `db push
-      --dry-run` → `db push` → estado posterior. Diferencias esperadas respecto a staging: allá
-      hay 18 futuras más la del lunes 07/09 que sale (19 en total), y las del 31/08 y 02/09 se
-      quedan; la Girly del 08/09 se crea por el relleno entre el corte y hoy.
+- [x] **Aplicada y verificada en producción el 09/09/2026**, con aprobación de Felipe. La CLI
+      quedó **enlazada a producción** (`wpjiwqeirdsspdfwwumv`). Antes y después por SQL:
+
+      | Qué | Antes | Después |
+      |---|---|---|
+      | Horarios activos de Pau | lunes 20:00 · miércoles 20:00 | **martes 20:00 · jueves 19:30**; los viejos inactivos |
+      | Clases de Pau en horarios viejos desde el 07/09 | 19 (10 lunes desde el 07/09 + 9 miércoles) | **0**, borradas: no tenían reservas |
+      | Clases de Pau anteriores al corte (31/08, 02/09) | 2 | 2, intactas |
+      | Clases de Pau en horarios nuevos | 0 | **21**: 11 martes desde el **08/09**, 10 jueves desde el 10/09 |
+      | Clases en total | 73 | 80: −19 +21, y +5 de otras profesoras porque `generar_clases()` alcanzó hasta el 17/11 lo que el cron no había generado |
+      | Reservas · créditos · movimientos | 0 · 0 · 0 | 0 · 0 · 0 |
+
+      La rama que cancela con reserva y devuelve el crédito **sigue sin ejercitarse** en ninguna
+      base: no había reservas sobre clases de Pau ni en staging ni en producción.
 - [ ] `CONTEXT.md` §4 ya muestra los horarios nuevos. Si la migración no se aplica pronto, el sitio
       y el documento van a decir cosas distintas.
 
 **Cron de generación de clases**
 
-- [ ] Diagnosticado, no arreglado: Vercel solo manda `Authorization` cuando la variable se llama
-      `CRON_SECRET`; el proyecto usa `CRON_SECRETO`. Opciones: agregar `CRON_SECRET` en Vercel con
-      el mismo valor, o renombrar en Vercel y en `app/api/generar-clases/route.ts`. Redeploy en
-      ambos casos. Detalle en `ROADMAP.md`, changelog del 8 sep.
+- [x] **Arreglado el 09/09/2026.** Felipe cargó `CRON_SECRET` en Vercel con el mismo valor que
+      `CRON_SECRETO` y redesplegó. Verificado disparando el cron por Vercel mismo
+      (`vercel crons run /api/generar-clases`): la petición llegó con la cabecera y respondió
+      **200**, donde todas las anteriores daban 401. Creó 0 clases porque la migración de Pau
+      ya había materializado hasta el 17/11 minutos antes; **la primera corrida que debería
+      agregar algo es la del 10/09 a las 06:00 UTC**, con la Reggaeton Femme del jueves 19/11.
+      `CRON_SECRETO` sigue en Vercel y en el código: sirve para dispararlo a mano con
+      `x-cron-secreto`. Queda como deuda menor unificar los dos nombres.
 
 **Este PRD**
 
 - [ ] Aprobación de Felipe.
-- [ ] Fase 0 del plan: alternativa A, B o C de §8, nombre público, precio por defecto, quién crea.
+- [x] §8 resuelto el 09/09/2026: **compra aparte (B)**, porque los precios son distintos.
+- [ ] Fase 0 del plan, lo que queda: retención de cupo con transferencia pendiente, devolución si
+      cancela la alumna o la academia, variable de la profesora, nombre público, precio por
+      defecto, quién crea.
 - [ ] Hay despliegues Preview en Error en Vercel de los últimos seis días, sin revisar.
