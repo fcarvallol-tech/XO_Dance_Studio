@@ -59,8 +59,7 @@ test que los compare, o no se cambia en ninguno.
 | `montoAtribuible(reserva)` | Con crédito: regla de PRD-0010 §7.1. Con compra: `monto_clp` entero, neto de reembolso |
 | `alumnasParaIgualarBase(precio, sala, base)` | Desde cuántas alumnas la profesora iguala una clase normal. Es el número que el formulario muestra al lado de `minimo_alumnas` (PRD-0009 §8.3) |
 
-El variable de la profesora (`variableEspecial`) **no va acá**: se define en PRD-0009 §8 y se
-implementa con la liquidación de PRD-0010 parte 3.
+| `variableEspecial(pagosClp[], costoSalaClp)` | PRD-0009 §8.3: mitad de lo **efectivamente pagado** menos sala, hacia abajo, nunca negativo. Recibe montos, no alumnas: una cortesía a $0 cuenta por $0 (Felipe, 10/09). La liquidación de PRD-0010 parte 3 la consume |
 
 **Checkpoint:** ✅ 10/09/2026. `npm test` 72/72 (35 de este módulo) con los bordes: URL de
 Instagram con parámetros de tracking y dominios parecidos, pendiente vencida hace un segundo y
@@ -221,8 +220,8 @@ error.
 |---|---|
 | 0 — Decisiones | ✅ Cerrada. PRD aprobado el 10/09/2026; PRD-0009 §8 confirmado el mismo día |
 | 1 — Funciones puras y tests | ✅ **Hecha el 10/09/2026**: 9 funciones, 35 tests, `npm test` 72/72 |
-| 2 — Migración | **Lista para partir.** CLI ya en staging |
-| 3 — Escenario en staging | Depende de la 2 y de aprobación del push a staging |
+| 2 — Migración | ✅ **Escrita el 10/09/2026**, `20260910120000_clases_especiales.sql`. Sin aplicar: el push a staging espera aprobación |
+| 3 — Escenario en staging | **Siguiente.** Depende de aprobar el push a staging |
 | 4 — Formulario y bandeja | Depende de la 2 |
 | 5 — Público, Planes y privacidad | Depende de la 4 |
 | 6 — Reservar, aprobar, cancelar | Depende de la 3 y la 5 |

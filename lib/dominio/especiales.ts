@@ -216,3 +216,27 @@ export function alumnasParaIgualarBase(precioClp: number, costoSalaClp: number, 
   if (!Number.isFinite(precioClp) || precioClp <= 0) return null;
   return Math.ceil((2 * baseClp + costoSalaClp) / precioClp);
 }
+
+/**
+ * El variable de la profesora en una especial (PRD-0009 §8.3): la mitad de lo
+ * **efectivamente pagado** después de descontar la sala, entero CLP,
+ * **redondeado hacia abajo** (a favor de la academia: un neto de $9.001 deja
+ * $4.500 a la profesora y $4.501 a la academia) y **nunca negativo**: si lo
+ * pagado no cubre la sala, la profesora recibe $0 y la academia absorbe.
+ *
+ * Recibe los montos pagados, no una cantidad de alumnas: una cortesía a $0 o
+ * un precio distinto cuentan por lo que entró. Cada monto es `compras.monto_clp`
+ * neto de reembolso, de compras `pagadas` de esa clase.
+ */
+export function variableEspecial(pagosClp: number[], costoSalaClp: number): number {
+  let recaudado = 0;
+  for (const p of pagosClp) {
+    if (!Number.isInteger(p) || p < 0) {
+      throw new Error("Un monto pagado tiene que ser un entero CLP no negativo.");
+    }
+    recaudado += p;
+  }
+  const neto = recaudado - costoSalaClp;
+  if (neto <= 0) return 0;
+  return Math.floor(neto / 2);
+}

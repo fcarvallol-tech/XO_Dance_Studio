@@ -115,7 +115,18 @@ migración, como propuesta. Se edita acá, sin desplegar.
 ### 8.3 Pago de la profesora en una especial — ✅ decidido y confirmado
 
 **Decidido por Felipe el 09/09/2026:** `variable = (recaudado − costo de sala) / 2`, entero CLP,
-**$0 si el neto es negativo**. Se cuenta sobre compras `pagadas` de la clase, netas de reembolsos.
+**$0 si el neto es negativo**. Tres precisiones de Felipe del 10/09/2026:
+
+- **Recaudado es lo efectivamente pagado**, nunca "alumnas × precio". Se suman los `monto_clp` de
+  las compras `pagadas` de esa clase, netos de reembolso. Si se invita a alguien (cortesía a $0)
+  o alguien pagó otro precio, cuenta por lo que entró: contar la cortesía al precio de lista sería
+  pagarle a la profesora sobre plata que nunca entró. Por eso `variableEspecial` recibe la lista
+  de montos pagados, no una cantidad de alumnas.
+- **Redondeo hacia abajo, a favor de la academia.** Un neto de $9.001 deja $4.500 a la profesora y
+  $4.501 a la academia. Con precios en cientos de pesos casi nunca pasa, pero queda definido.
+- **Una clase a $0** es válida (se puede publicar; hoy no aplica). Su variable es $0 y, en Los
+  Leones, la academia paga la sala entera. `alumnasParaIgualarBase` devuelve `null`: no hay cuenta
+  que hacer.
 
 **Sin sueldo base por hora** en las especiales, confirmado por Felipe el 10/09/2026, con esta
 razón: *en una clase especial la profesora se lleva el 50 % después de sala y nada más. La
@@ -156,10 +167,10 @@ la vista, y si al acercarse la fecha no se llega, cancelar sigue siendo decisió
 con la profesora avisada. Que ese número se vea antes de publicar es lo que evita descubrir el
 problema el día de la clase.
 
-**Dónde se implementa:** la función pura `variableEspecial(recaudado, costoSala)` con sus tests
-(la tabla de arriba fila por fila, más recaudado < sala y sala $0) y la fila correspondiente en
-`liquidaciones_profesoras` van con PRD-0010 parte 3. Coherente con §3 de este PRD: los montos los
-ve solo owner.
+**Dónde se implementa:** la función pura ya existe, `variableEspecial(pagosClp[], costoSalaClp)`
+en `lib/dominio/especiales.ts`, con tests por cada fila de la tabla, recaudado < sala, sala $0,
+cortesía a $0, precio distinto por alumna y neto impar. La fila en `liquidaciones_profesoras` va
+con PRD-0010 parte 3. Coherente con §3 de este PRD: los montos los ve solo owner.
 
 **Sección cerrada el 10/09/2026.** Lo que queda es implementarla: owner carga el default en la
 fase 7 del plan del PRD-0018 y `variableEspecial` va con PRD-0010 parte 3.

@@ -22,6 +22,7 @@ import {
   puedePublicar,
   seSolapan,
   urlDeEmbed,
+  variableEspecial,
 } from "./especiales.ts";
 
 /** Un instante UTC, para no depender de la zona de la máquina que corre el test. */
@@ -302,4 +303,44 @@ test("alumnasParaIgualarBase: un precio más alto baja el mínimo", () => {
 test("alumnasParaIgualarBase: sin precio no hay respuesta", () => {
   assert.equal(alumnasParaIgualarBase(0, 17_000, 18_000), null);
   assert.equal(alumnasParaIgualarBase(-5, 0, 18_000), null);
+});
+
+// ---------------------------------------------------------------------------
+// variableEspecial — PRD-0009 §8.3: sobre lo efectivamente pagado, nunca n × precio
+// ---------------------------------------------------------------------------
+
+test("variableEspecial: la tabla de PRD-0009 §8.3, fila por fila (sala Los Leones $17.000)", () => {
+  const pagos = (n: number) => Array.from({ length: n }, () => 12_000);
+  assert.equal(variableEspecial(pagos(2), 17_000), 3_500);
+  assert.equal(variableEspecial(pagos(3), 17_000), 9_500);
+  assert.equal(variableEspecial(pagos(5), 17_000), 21_500);
+  assert.equal(variableEspecial(pagos(10), 17_000), 51_500);
+  assert.equal(variableEspecial(pagos(22), 17_000), 123_500);
+});
+
+test("variableEspecial: con recaudado < sala el neto es negativo y la profesora recibe $0", () => {
+  assert.equal(variableEspecial([12_000], 17_000), 0);
+  assert.equal(variableEspecial([], 17_000), 0);
+});
+
+test("variableEspecial: en Diaguitas, sala $0, es la mitad de lo pagado", () => {
+  assert.equal(variableEspecial([12_000, 12_000, 12_000], 0), 18_000);
+});
+
+test("variableEspecial: una cortesía a $0 no suma, aunque ocupe cupo", () => {
+  // Dos pagaron $12.000 y una entró invitada. Se paga sobre $24.000, no sobre $36.000.
+  assert.equal(variableEspecial([12_000, 12_000, 0], 17_000), 3_500);
+});
+
+test("variableEspecial: un precio distinto por alumna cuenta por lo que pagó", () => {
+  assert.equal(variableEspecial([12_000, 8_000], 0), 10_000);
+});
+
+test("variableEspecial: un neto impar se redondea hacia abajo, a favor de la academia", () => {
+  // Neto $9.001: profesora $4.500, academia $4.501.
+  assert.equal(variableEspecial([9_001], 0), 4_500);
+});
+
+test("variableEspecial: un pago negativo es un dato roto y se rechaza", () => {
+  assert.throws(() => variableEspecial([12_000, -1], 0));
 });

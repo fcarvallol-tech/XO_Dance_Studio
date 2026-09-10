@@ -153,6 +153,7 @@ clase, la liquidación del período la incluye con la regla de PRD-0009 §8.
 | La alumna declara y nadie aprueba | La reserva pendiente expira sola según §8.2, libera el cupo y la compra pasa a `expirada`. Si transfirió de verdad y admin lo ve después, admin la puede reactivar si hay cupo, o devolver la plata |
 | La alumna cancela | Libera el cupo. No se le devuelve plata automáticamente: si la pide, admin la resuelve a mano (§8.3) |
 | La academia cancela | Las reservas pasan a canceladas y liberan cupo. Las compras pagadas quedan marcadas **por reembolsar** y admin las resuelve a mano. Nada de plata se mueve solo |
+| Una especial a $0 (Felipe, 10/09/2026: anotado, hoy no aplica) | Se puede publicar: `puedePublicar` acepta $0. Reservarla no puede pasar por "declarar transferencia" de $0: cuando se use, `reservar_especial()` crea la compra ya `pagada` con monto 0 y la reserva `confirmada`, sin expiración. **Mientras no se necesite, `reservar_especial()` la rechaza con un mensaje claro**, para que el camino no exista a medias. El variable de la profesora en esa clase es $0 (PRD-0009 §8.3) |
 | Admin crea y no hay precio por defecto cargado | `crear_especial()` falla con "Falta el precio por defecto: lo carga owner en parámetros". Owner sí puede crear, pasando el precio. Así la migración no necesita inventar un número |
 | Owner cambia el precio con reservas ya hechas | Las compras hechas no cambian: el monto quedó congelado. Solo afecta a las siguientes |
 | Se edita fecha u hora con reservas hechas | Se permite, con aviso de cuántas reservas hay. No manda correo (fuera de alcance): hay que avisar por WhatsApp |
@@ -285,11 +286,14 @@ on conflict (clave) do nothing;
 | `crear_especial(...)` / `editar_especial(...)` | Validan rol (admin+), solape, coherencia. **Solo owner puede pasar `precio_clp`**: si lo manda un admin, se ignora y se usa `especial_precio_default_clp`. Si esa fila no existe y quien crea es admin, falla con mensaje claro |
 | `publicar_especial(id)` | Exige Reel, portada, fecha futura, profesora y sede |
 | `reservar_especial(clase_id, actor, titular, nota)` | En una transacción: bloquea la clase, cuenta cupo con pendientes vigentes, crea la compra `pendiente` con `clase_id` y la reserva `pendiente_pago` con `expira_at`. Es `reservar()` con otro medio de pago, no otra función suelta: comparte el bloqueo y el conteo |
-| `acreditar_compra` (extendida) | Si la compra tiene `clase_id`: reserva → `confirmada`, compra → `pagada`. Si la reserva ya expiró y hay cupo, la reactiva; si no hay cupo, deja la compra `pagada` sin reserva y avisa a admin para devolver |
+| `acreditar_compra` (extendida) | Si la compra tiene `clase_id`: reserva → `confirmada`, compra → `pagada`, cero lotes. Si la reserva ya expiró y hay cupo, la reactiva; si no hay cupo, la compra queda **`por_reembolsar`** (plata recibida sin cupo que dar) y aparece en la bandeja. Acepta compras `pendiente` y `expirada` |
 | `expirar_reservas_pendientes()` | Marca `expirada` la reserva y la compra cuando `expira_at < now()`. La llama el cron diario **y** `reservar_especial()` antes de contar cupo, para no depender del cron |
 | `cancelar_reserva` (extendida) | Si la reserva tiene `compra_id`: libera el cupo, no toca plata. La compra queda `pagada` con la reserva cancelada, visible en admin por si la alumna pide devolución |
 | `devolver_creditos_de_clase` (extendida) | Para reservas con `compra_id` pagada: compra → `por_reembolsar`. Las pendientes → `expirada` |
-| `registrar_reembolso(compra_id, monto, nota)` | Admin+. Compra → `reembolsada`, con monto, autor y fecha. Nunca automático |
+| `registrar_reembolso(compra_id, monto, nota)` | Admin+. Compra → `reembolsada`, con monto, autor y fecha. Nunca automático. Solo compras de clase: devolver un pack implica retirar créditos y no es este camino |
+| `borrar_borrador_especial(id)` | Admin+. Borra de verdad un borrador sin reservas (§6). Publicada, se cancela |
+| `cupo_tomado(clase_id)` | El conteo de §7.3, una sola vez. Lo usan `reservar` y `reservar_especial`; el "quedan N cupos" de la página pública lo calcula el servidor con la service role, así que no se le concede a `anon` |
+| `solape_de_especial`, `codigo_de_reel`, `slug_de` | Helpers. El solape mira parrilla programada y especiales publicadas; una de parrilla dura 60 min |
 
 ### 7.6 Storage — bucket privado, URL firmada
 
@@ -550,7 +554,28 @@ formato están mal.
 
 ## 13. Notas de implementación
 
-Se llena al terminar.
+**Fase 2 — migración `20260910120000_clases_especiales.sql`, escrita el 10/09/2026, sin aplicar.**
+Lo que decidió más fino que el texto de arriba, para que el texto no mienta:
+
+- **Las políticas de insert/update de admin sobre `clases` quedan limitadas a la parrilla.** Si un
+  admin pudiera insertar una especial por PostgREST, "solo owner fija el precio" y el solape
+  vivirían en el formulario. Toda escritura sobre especiales pasa por las funciones de §7.5.
+- **Teens se rechaza también en la base**, no solo en el formulario (`cursos.slug = 'teens'`).
+- **Cupo entre 1 y 22, duración entre 30 y 180 minutos**, validados en `crear_especial`.
+- **`fecha` de una especial** es la de `inicio` en `America/Santiago`, igual que `generar_clases`.
+- **Slug** = título normalizado + fecha `YYYYMMDD`; si choca, se numera.
+- **Editar con `null` significa "no cambiar"**: no se puede vaciar un campo desde la función. Una
+  portada se reemplaza subiendo otra.
+- **Reservar a menos de 2 horas de la clase se rechaza**: `expira_at` quedaría en el pasado.
+- **Índice único `reservas_una_por_clase` incluye `pendiente_pago`**: una persona no puede tener
+  dos pendientes en la misma clase. Consecuencia: si una reserva expiró, la alumna volvió a
+  reservar y admin acredita la compra vieja, la reactivación choca con el índice y falla con
+  error, no en silencio. Es un caso raro; se anota para la bandeja.
+- **`metricas_demanda`** ya cuenta pendientes vigentes en el cupo y atribuye compras de clase
+  netas de reembolso; una especial sale con su título en `por_clase` y con `tipo`.
+- **`metricas_resumen` no cambia**: suma toda compra pagada, con o sin plan.
+- **El barrido diario** (`expirar_reservas_pendientes()` desde el cron) es código y va después
+  de que la migración corra en producción: si se despliega antes, el cron falla.
 
 ## 14. Para retomar — estado al 10/09/2026
 
@@ -592,5 +617,7 @@ Se llena al terminar.
 - [x] 10/09/2026: Felipe dio la razón de "sin sueldo base" y anotó el riesgo de quedar bajo los
       $18.000; `minimo_alumnas` queda escrito como la palanca (PRD-0009 §8.3, §12 de este PRD).
 - [x] Fase 1 del plan hecha el 10/09/2026: `lib/dominio/especiales.ts` con 35 tests.
-- [ ] Fase 2: escribir la migración. CLI en staging; el push a staging necesita aprobación.
+- [x] Fase 2: migración escrita el 10/09/2026 (`20260910120000_clases_especiales.sql`), sin
+      aplicar. Ver §13.
+- [ ] Push a staging: **necesita aprobación de Felipe en el mensaje.** Después, fase 3.
 - [ ] Despliegues Preview en Error en Vercel de los últimos días, sin revisar.
