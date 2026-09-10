@@ -23,7 +23,7 @@ export default function Privacidad() {
   return (
     <PaginaLegal
       titulo="Política de Privacidad"
-      actualizado="28 de agosto de 2026"
+      actualizado="10 de septiembre de 2026"
     >
       <Seccion numero={1} titulo="Quiénes somos">
         <P>
@@ -174,6 +174,11 @@ export default function Privacidad() {
                 para="Inicio de sesión con cuenta de Google"
                 donde="Servidores fuera de Chile"
               />
+              <Fila
+                proveedor="Meta (Instagram)"
+                para="Reproducir los videos de Instagram incrustados en las clases especiales, solo si tú los activas"
+                donde="Servidores fuera de Chile"
+              />
             </tbody>
           </table>
         </div>
@@ -269,6 +274,15 @@ export default function Privacidad() {
           Usamos cookies estrictamente necesarias para mantener tu sesión
           iniciada. Sin ellas no es posible acceder a tu cuenta. No usamos
           cookies publicitarias ni de seguimiento entre sitios.
+        </P>
+        <P>
+          Las páginas de clases especiales tienen videos incrustados de
+          Instagram. <Fuerte>No se cargan solos:</Fuerte> ves una portada
+          nuestra, y el video se carga únicamente si tocas &quot;Ver el Reel en
+          Instagram&quot;. Al reproducirlo, Meta (la empresa dueña de Instagram)
+          puede recoger datos sobre tu visita y dejar sus propias cookies, bajo
+          su propia política de privacidad. Si no lo activas, no se envía nada
+          a Meta.
         </P>
       </Seccion>
 

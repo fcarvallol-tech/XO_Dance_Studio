@@ -5,7 +5,7 @@
 >
 > Rama: `horario-pau-y-prd-0018` mientras no se mergee la migración de Pau; después,
 > `prd-0018-clases-especiales`. Nada se mezcla a `main` hasta que pase la fase 7.
-> **No se escribe código hasta que Felipe apruebe el PRD.**
+> **PRD aprobado por Felipe el 10/09/2026.** Se puede escribir código desde la fase 1.
 
 ---
 
@@ -26,7 +26,7 @@ la migración salió de acá (ver abajo).
 precio por defecto, el **variable** de la profesora y el **sueldo base**. Viven en **PRD-0009 §8**
 y se confirman ahí. El nombre público ("Clases especiales") ya está decidido y es copy, no esquema.
 
-**Checkpoint:** Felipe aprueba el PRD. Nada más bloquea la fase 1.
+**Checkpoint:** ✅ Felipe aprobó el PRD el 10/09/2026. Nada bloquea la fase 1.
 
 ---
 
@@ -71,14 +71,15 @@ pendiente vencida hace un segundo, clase en menos de 26 h, sin especiales public
 **Archivo:** `supabase/migrations/2026MMDDHHMMSS_clases_especiales.sql`
 
 0. **Antes de nada:** `cat supabase/.temp/project-ref` tiene que decir **staging**
-   (`ybopuahlzbjkkwumkllk`). Hoy dice producción.
+   (`ybopuahlzbjkkwumkllk`). Re-enlazada el 10/09/2026; verificar igual, porque un `link` a
+   producción para otra cosa la cambia sin avisar.
 1. `clases`: columnas de §7.1, `horario_id` nullable, checks, índice de slug.
 2. `compras`: `plan_id` nullable, `clase_id`, columnas de reembolso, estados `expirada` y
    `por_reembolsar`, check plan-o-clase.
 3. `reservas`: `credito_id` nullable, `compra_id`, `expira_at`, estados `pendiente_pago` y
    `expirada`, check crédito-o-compra.
 4. `parametros`: `especial_retencion_horas` = 24. **No se inserta `especial_precio_default_clp`**:
-   lo carga owner cuando PRD-0009 §8 lo confirme.
+   lo carga owner en la fase 7 (confirmado el 10/09: 12000, PRD-0009 §8).
 5. Política `clases_lectura_publica` reescrita: borradores no son públicos. **Mirar qué otras
    políticas tiene `clases`** antes, porque se suman con OR.
 6. Funciones de §7.5, cada una con `revoke ... from public, anon` y `grant execute ... to
@@ -86,7 +87,8 @@ pendiente vencida hace un segundo, clase en menos de 26 h, sin especiales public
    de la fila y el conteo de cupo: se extrae una función `cupo_tomado(clase_id)` y la usan las dos.
 7. `reservas_de_mis_clases`, `inscritas_de_clase` y las funciones de métricas: cuentan pendientes
    vigentes donde corresponde (cupo sí, inscritas no).
-8. Bucket `portadas-especiales` con sus políticas.
+8. Bucket `portadas-especiales` **privado**: sin política de `select` para `anon` ni
+   `authenticated`. Solo la service role lee y escribe; el sitio sirve URLs firmadas (PRD §7.6).
 
 **Checkpoint:** `db push --dry-run` contra staging muestra solo esta migración. Push a staging
 **con aprobación**.
@@ -130,7 +132,8 @@ Por SQL, en transacciones revertidas:
 
 - El campo de Reel valida con `codigoDeReel` en el cliente y **otra vez en el servidor**; guarda
   solo el código.
-- La portada sube por Route Handler con la service role: tipo y tamaño validados en el servidor.
+- La portada sube por Route Handler con la service role al bucket privado: tipo y tamaño
+  validados en el servidor; se guarda `portada_path`. La vista previa la muestra con URL firmada.
 - Vista previa antes de publicar usa `ReelFachada`, el mismo componente que verá la visitante:
   si el Reel es privado, se ve el error de Instagram acá y no en producción.
 - Precio: campo editable para owner, bloqueado con el default visible para admin. Si no hay
@@ -150,24 +153,27 @@ publicar, ver la vista previa. Con rol admin, el precio está bloqueado.
 `app/clases-especiales/[slug]/opengraph-image.tsx` · `components/Especiales.tsx` ·
 `components/Planes.tsx` · `app/api/revalidar/route.ts` · `app/privacidad/page.tsx`
 
-- `ReelFachada`: portada propia con el botón **"Ver el Reel en Instagram"** y la línea "Se carga
-  desde Instagram"; al tocar, monta el iframe a `urlDeEmbed(código)` en un contenedor de
-  proporción fija. **Nada de instagram.com se carga antes del toque.** Sin `embed.js`, nunca.
+- `ReelFachada`: portada propia (URL firmada de 30 días, generada en el servidor al renderizar)
+  con el botón **"Ver el Reel en Instagram"** y la línea "Se carga desde Instagram"; al tocar,
+  monta el iframe a `urlDeEmbed(código)` en un contenedor de proporción fija. **Nada de instagram.com se carga antes del toque.** Sin `embed.js`, nunca.
   Opcional: escuchar el `postMessage` de tipo `MEASURE` desde `https://www.instagram.com` para
   ajustar la altura, como hace `embed.js`.
-- Open Graph desde la portada propia: 1200×630 compuesto con satori, con título, profesora y
-  fecha, como `app/opengraph-image.tsx`.
+- Open Graph desde la portada propia: `opengraph-image.tsx` descarga el objeto con la service
+  role (sin URL) y compone 1200×630 con satori, con título, profesora y fecha, como
+  `app/opengraph-image.tsx`.
 - Fila en Planes: "Clases especiales · desde $X · **Ver clases especiales**". Desaparece sola sin
   publicadas futuras. El texto "los mismos valores para todos los cursos" pasa a hablar de la
   parrilla.
 - El botón dice lo que pasa: "Reservar por $12.000". Nunca "Reservar" a secas.
-- `/privacidad`: fila de Meta en §5 y la línea del toque en §9 (PRD §7.7).
+- `/privacidad`: ✅ ya hecho el 10/09/2026 (fila de Meta en §5, párrafo en §9). Solo revisar
+  que el texto del botón coincida con lo que dice la política.
 - Colores solo de tokens `xo-*`; rosa nunca como texto sobre claro; copy en español de Chile.
   Leer `BRAND.md` §7 antes de escribir una frase.
 
 **Checkpoint:** desde un **teléfono real**, sin sesión, en staging: landing → fila → lista →
 página propia; la pestaña de red no muestra `instagram.com` hasta tocar; tocar reproduce; el link
-pegado en WhatsApp muestra la portada.
+pegado en WhatsApp muestra la portada; la URL de la portada lleva token y sin token responde
+error.
 
 ---
 
@@ -195,8 +201,8 @@ pegado en WhatsApp muestra la portada.
 1. `npm run build` y `npm test` en verde en la rama.
 2. `cat supabase/.temp/project-ref` dice producción. `db push --dry-run` muestra solo esta migración.
 3. **`db push` con aprobación de Felipe en ese mensaje.**
-4. Owner carga `especial_precio_default_clp` con el valor confirmado en PRD-0009 §8. Crear la
-   primera especial real con Carla.
+4. Owner carga `especial_precio_default_clp` = **12000** (confirmado el 10/09/2026, PRD-0009 §8).
+   Crear la primera especial real con Carla.
 5. Repetir el checkpoint de la fase 5 contra producción, desde un teléfono.
 6. Actualizar PRD §13 y estado, `ROADMAP.md`, `ARCHITECTURE.md` §5.3 (clases sin horario, compras
    por clase, reservas pendientes) y `CONTEXT.md` §5.b si hace falta (ya dice "de la parrilla").
@@ -207,9 +213,9 @@ pegado en WhatsApp muestra la portada.
 
 | Fase | Estado |
 |---|---|
-| 0 — Decisiones | ✅ Cerrada. Nada pendiente bloquea la migración; lo demás está en PRD-0009 §8 |
-| 1 — Funciones puras y tests | Lista para partir con la aprobación del PRD |
-| 2 — Migración | Depende de la 1 y de enlazar la CLI a staging |
+| 0 — Decisiones | ✅ Cerrada. PRD aprobado el 10/09/2026; PRD-0009 §8 confirmado el mismo día |
+| 1 — Funciones puras y tests | **Lista para partir** |
+| 2 — Migración | Depende de la 1. CLI ya en staging |
 | 3 — Escenario en staging | Depende de la 2 y de aprobación del push a staging |
 | 4 — Formulario y bandeja | Depende de la 2 |
 | 5 — Público, Planes y privacidad | Depende de la 4 |

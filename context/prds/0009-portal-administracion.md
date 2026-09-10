@@ -88,14 +88,14 @@ planilla.
 > carga en `parametros` y una regla que la liquidación (PRD-0010 parte 3) aplica. Se sacaron de
 > la fase 0 de ese PRD para que la migración no espere a confirmaciones que no necesita.
 
-### 8.1 Precio por defecto de una especial — `especial_precio_default_clp` · ⚠️ por confirmar
+### 8.1 Precio por defecto de una especial — `especial_precio_default_clp` · ✅ $12.000, confirmado el 10/09/2026
 
 Lo que decidió Felipe (09/09/2026): owner fija el precio en cada clase; admin crea con un valor
 por defecto que no puede tocar. Ese valor es una fila de `parametros` que **la migración del
 PRD-0018 no inserta**, para no inventar un precio. Mientras no exista, admin no puede crear
 especiales y owner tiene que escribir el precio a mano.
 
-**Propuesta: $12.000.** Razones, para confirmar o cambiar:
+**$12.000**, confirmado por Felipe el 10/09/2026. Las razones de la propuesta, para el registro:
 
 - Es más que la clase suelta de pack ($8.500), así que un admin que crea sin pensar en el precio
   no publica una especial más barata que la parrilla por accidente.
@@ -112,14 +112,14 @@ El mecanismo lo decidió Felipe y está en PRD-0018 §8.2: una reserva pendiente
 hasta `min(declarada + retención, inicio − 2 h)`. El número **nace en 24 horas** con la
 migración, como propuesta. Se edita acá, sin desplegar.
 
-### 8.3 Pago de la profesora en una especial — decidido, con un supuesto por confirmar
+### 8.3 Pago de la profesora en una especial — ✅ decidido y confirmado
 
 **Decidido por Felipe el 09/09/2026:** `variable = (recaudado − costo de sala) / 2`, entero CLP,
 **$0 si el neto es negativo**. Se cuenta sobre compras `pagadas` de la clase, netas de reembolsos.
 
-**Supuesto por confirmar:** **sin sueldo base por hora** en las especiales, que es la diferencia
-con la parrilla (`CONTEXT.md` §5.b: $18.000/hora más $250 por crédito consumido). Felipe definió
-el variable y no mencionó el base. Si hay base, la regla y la tabla cambian.
+**Sin sueldo base por hora** en las especiales, confirmado por Felipe el 10/09/2026. Es la
+diferencia con la parrilla (`CONTEXT.md` §5.b: $18.000/hora más $250 por crédito consumido): en
+una especial la profesora cobra solo el variable.
 
 **Por qué neto y no bruto**, con números. Precio $12.000, sala Los Leones $17.000:
 
@@ -145,6 +145,6 @@ persona.
 `liquidaciones_profesoras` van con PRD-0010 parte 3. Coherente con §3 de este PRD: los montos los
 ve solo owner.
 
-**Checkpoint para cerrar esta sección:** Felipe confirma o cambia el default de $12.000 y el
-supuesto de sin sueldo base. Hasta entonces, la liquidación de una especial se calcula sin base.
+**Sección cerrada el 10/09/2026.** Lo que queda es implementarla: owner carga el default en la
+fase 7 del plan del PRD-0018 y `variableEspecial` va con PRD-0010 parte 3.
 

@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | **Borrador con decisiones cerradas** (10/09/2026) — esperando aprobación de Felipe para la fase 1. **Nada pendiente bloquea la migración.** Lo que falta confirmar (precio por defecto, sueldo base) se separó a PRD-0009 §8 |
+| **Estado** | ✅ **Aprobado por Felipe el 10/09/2026.** Fase 1 lista para partir. Precio por defecto ($12.000) y sin sueldo base confirmados en PRD-0009 §8. Bucket privado y embed tras un clic decididos el mismo día (§7.6, §8.7) |
 | **Autor** | Propuesto por Claude a pedido de Felipe Carvalho. Decisiones de §8: Felipe |
 | **Fecha** | 8 de septiembre de 2026 · decisiones cerradas el 9 · Reel y alcance de fase 0 resueltos el 10 |
 | **Hito** | Hito 3 — Reservas (extiende el calendario) · Hito 4 — Portales (formulario en admin) |
@@ -182,7 +182,7 @@ alter table public.clases
   -- Solo el código del Reel, no la URL entera: la URL se arma al mostrar y
   -- así no se guardan parámetros de tracking ni variantes.
   add column if not exists reel_codigo text,
-  add column if not exists portada_url text,
+  add column if not exists portada_path text,
   add column if not exists dificultad text
     check (dificultad in ('principiante', 'intermedio', 'avanzado')),
   add column if not exists fin timestamptz,
@@ -201,7 +201,7 @@ alter table public.clases add constraint clases_tipo_coherente check (
 -- Publicar exige Reel y portada.
 alter table public.clases add constraint clases_publicada_completa check (
   publicada_at is null or tipo = 'parrilla'
-  or (reel_codigo is not null and portada_url is not null)
+  or (reel_codigo is not null and portada_path is not null)
 );
 
 create unique index if not exists clases_slug_unico on public.clases (slug) where slug is not null;
@@ -286,24 +286,38 @@ on conflict (clave) do nothing;
 | `devolver_creditos_de_clase` (extendida) | Para reservas con `compra_id` pagada: compra → `por_reembolsar`. Las pendientes → `expirada` |
 | `registrar_reembolso(compra_id, monto, nota)` | Admin+. Compra → `reembolsada`, con monto, autor y fecha. Nunca automático |
 
-### 7.6 Storage
+### 7.6 Storage — bucket privado, URL firmada
 
-Un solo bucket, **`portadas-especiales`**, imágenes chicas, lectura pública, escritura desde el
-servidor con la service role. Un archivo por clase nombrado por su `id`. **No hay bucket de
-videos**: el video es el Reel.
+Un solo bucket, **`portadas-especiales`**, **privado** (decidido por Felipe el 10/09/2026: cuesta
+lo mismo que público y evita que las portadas queden enumerables). Sin política de lectura para
+`anon` ni `authenticated`; escritura y lectura solo desde el servidor con la service role. Un
+archivo por clase nombrado por su `id`. La columna es **`portada_path`**, la ruta dentro del
+bucket, nunca una URL.
+
+Cómo se sirve:
+
+- La página pública genera la **URL firmada al renderizar**, con vigencia de 30 días: más que lo
+  que una especial pasa publicada. Las páginas se revalidan por webhook al publicar y por tiempo
+  (la lista suelta las que ya pasaron), así que una URL firmada no alcanza a vencer dentro de una
+  página cacheada. El token no se guarda en ninguna parte.
+- La imagen de Open Graph **no usa URL**: `opengraph-image.tsx` descarga el objeto con la
+  service role y lo compone con satori.
+- El formulario de admin y la vista previa firman igual, en el servidor.
+
+**No hay bucket de videos**: el video es el Reel.
 
 ### 7.7 Lo que cambia en consultas existentes
 
 | Dónde | Cambio |
 |---|---|
-| `getCalendario` | Traer `tipo, titulo, precio_clp, portada_url`; incluir `publicada_at is not null or tipo = 'parrilla'`; contar pendientes vigentes en `tomados` |
+| `getCalendario` | Traer `tipo, titulo, precio_clp, portada_path` y firmar la portada en el servidor; incluir `publicada_at is not null or tipo = 'parrilla'`; contar pendientes vigentes en `tomados` |
 | `clases_lectura_publica` (RLS) | Hoy `using (true)`. Pasa a `tipo = 'parrilla' or publicada_at is not null`. **Mirar las otras políticas de `clases` antes**: se suman con OR |
 | `metricas_*` → `atribucion` | Rama nueva: reserva con `compra_id` atribuye `compras.monto_clp` entero |
 | `metricas_*` → `por_horario` | El `join horarios` deja fuera a las especiales, que es lo correcto. Se documenta |
 | `GrillaSemanal` | `titulo` en vez de `cursos.nombre` cuando `tipo = 'especial'` |
 | Bandeja de compras (admin) | Mostrar la clase cuando `clase_id` no es null, y el botón de reembolso |
-| `/privacidad` §5 | Fila nueva en la tabla de proveedores: **Meta (Instagram)** · "Reproducir el Reel de una clase especial, solo cuando tocas 'Ver el Reel'" · "Servidores fuera de Chile" |
-| `/privacidad` §9 | Hoy dice que no hay cookies de seguimiento entre sitios. Se agrega: "Si tocas el Reel de una clase especial, Instagram carga su reproductor y puede dejar sus propias cookies. Antes de tocarlo no se carga nada de Instagram" |
+| `/privacidad` §5 | ✅ **Hecho el 10/09/2026.** Fila nueva en la tabla de proveedores: **Meta (Instagram)** · "Reproducir los videos de Instagram incrustados en las clases especiales, solo si tú los activas" |
+| `/privacidad` §9 | ✅ **Hecho el 10/09/2026.** Párrafo nuevo: los videos no se cargan solos; se ve una portada nuestra y el video carga solo al tocar "Ver el Reel en Instagram"; al reproducirlo Meta puede recoger datos y dejar sus cookies bajo su política; si no se activa, no se envía nada a Meta. Fecha de actualización de la política: 10/09/2026 |
 
 ## 8. Decisiones — cerradas por Felipe el 09/09/2026; Reel y alcance el 10/09
 
@@ -417,6 +431,11 @@ Lo que eso implica para nosotros:
 - El botón dice lo que va a pasar: **"Ver el Reel en Instagram"**, con una línea chica debajo:
   "Se carga desde Instagram". Eso es el consentimiento: una acción explícita e informada.
 
+**Decidido por Felipe el 10/09/2026: embed tras un clic.** La portada se ve de entrada y el Reel
+carga solo si la persona lo pide. Así no hace falta banner y la página carga más rápido. La
+política de privacidad ya lo dice (§7.7): al reproducir un video incrustado de Instagram, Meta
+puede recoger datos, y eso ocurre solo si la persona lo activa.
+
 **3. Open Graph no lee iframes: la portada propia es obligatoria.** WhatsApp, Instagram y
 cualquier otro que arma la vista previa de un link lee el HTML de **nuestra** página y toma
 `og:image`, `og:title` y `og:description`. No ejecuta JavaScript ni mira dentro de un iframe,
@@ -434,7 +453,8 @@ problema de la música. Una sola imagen cumple dos funciones: es el póster de l
 toque y la fuente de `og:image`. La portada del propio Reel sirve. Especificación: `jpg` o `webp`,
 hasta 1 MB, vertical 4:5 recomendado. Para Open Graph, `app/clases-especiales/[slug]/opengraph-image.tsx`
 compone 1200×630 con la portada, el título, la profesora y la fecha, igual que hace
-`app/opengraph-image.tsx` con satori. Bucket `portadas-especiales` (§7.6).
+`app/opengraph-image.tsx` con satori, descargando el objeto con la service role. Bucket
+`portadas-especiales`, **privado con URL firmada** (§7.6, decidido por Felipe el 10/09/2026).
 
 **Riesgo que Felipe da por marginal (10/09/2026):** que un Reel deje de estar disponible. La
 cuenta es de negocios y va a seguir pública. Si pasa igual, la ficha sobrevive con la portada.
@@ -487,7 +507,10 @@ Se prueban **con el artefacto que toca la persona**, en staging, antes del `db p
       lista sin las pendientes.
 - [ ] El tablero de owner suma su compra en ingresos y atribución sin romper la conciliación de
       créditos (que no la toca).
-- [ ] `/privacidad` §5 lista a Meta y §9 dice lo del toque.
+- [x] `/privacidad` §5 lista a Meta y §9 dice lo del toque. Hecho el 10/09/2026, antes que el
+      resto, porque no depende de la migración.
+- [ ] La portada en la página pública se sirve con URL firmada. La misma ruta del bucket sin
+      token responde error; el bucket no lista objetos para `anon`.
 - [ ] `npm run build` y `npm test` en verde. `anon` no ve borradores por la API REST.
 
 ## 11. Métrica de éxito
@@ -498,8 +521,8 @@ formato están mal.
 
 ## 12. Riesgos y supuestos
 
-- **El precio por defecto y el sueldo base están sin confirmar**, en PRD-0009 §8. No bloquean la
-  migración: sin default cargado, solo owner crea.
+- **Precio por defecto ($12.000) y sin sueldo base: confirmados por Felipe el 10/09/2026** en
+  PRD-0009 §8. La migración igual no inserta el precio: lo carga owner en la fase 7.
 - **Dependencia de Instagram.** Felipe la da por marginal: cuenta de negocios, pública. Si un Reel
   se borra o Instagram cambia `/embed/`, la ficha pierde el video y sobrevive con la portada.
 - **El `/embed/` como iframe no es API documentada.** Es exactamente lo que `embed.js` genera y
@@ -531,8 +554,9 @@ Se llena al terminar.
       extra son de otras profesoras, que `generar_clases()` alcanzó hasta el 17/11). Reservas,
       créditos y movimientos: 0 antes y después. La rama que cancela con reserva y devuelve el
       crédito **no se ejercitó** en ninguna base.
-- [x] La CLI quedó enlazada a **producción** (`wpjiwqeirdsspdfwwumv`). Verificado de nuevo el
-      10/09. **Antes de la fase 2 hay que enlazar staging.**
+- [x] La CLI estuvo enlazada a producción desde el push de Pau. **Re-enlazada a staging
+      (`ybopuahlzbjkkwumkllk`) el 10/09/2026** para la fase 2. Verificar igual antes de cada
+      `db push`: un `link` para otra cosa la cambia sin avisar.
 - [ ] La rama `horario-pau-y-prd-0018` tiene la migración que ya corre en producción. Mergear a
       `main` pronto.
 
@@ -554,5 +578,7 @@ Se llena al terminar.
       en todo el PRD y el plan.
 - [x] 10/09/2026: fase 0 del plan recortada a lo que necesita la migración. Precio por defecto,
       variable y sueldo base separados a **PRD-0009 §8**.
-- [ ] Aprobación de Felipe para pasar a la fase 1 del plan.
+- [x] 10/09/2026: Felipe aprobó el PRD, confirmó $12.000 y sin sueldo base (PRD-0009 §8), decidió
+      bucket privado con URL firmada y embed tras un clic. `/privacidad` actualizada y desplegable.
+- [ ] Fase 1 del plan: funciones puras y tests.
 - [ ] Despliegues Preview en Error en Vercel de los últimos días, sin revisar.
