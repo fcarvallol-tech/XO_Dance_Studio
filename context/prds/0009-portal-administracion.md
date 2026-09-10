@@ -117,9 +117,11 @@ migración, como propuesta. Se edita acá, sin desplegar.
 **Decidido por Felipe el 09/09/2026:** `variable = (recaudado − costo de sala) / 2`, entero CLP,
 **$0 si el neto es negativo**. Se cuenta sobre compras `pagadas` de la clase, netas de reembolsos.
 
-**Sin sueldo base por hora** en las especiales, confirmado por Felipe el 10/09/2026. Es la
-diferencia con la parrilla (`CONTEXT.md` §5.b: $18.000/hora más $250 por crédito consumido): en
-una especial la profesora cobra solo el variable.
+**Sin sueldo base por hora** en las especiales, confirmado por Felipe el 10/09/2026, con esta
+razón: *en una clase especial la profesora se lleva el 50 % después de sala y nada más. La
+coreografía, el video y el público son de ella, así que su ingreso depende de cuántas lleve. En la
+parrilla es distinto porque el curso es de XO* ($18.000/hora más $250 por crédito consumido,
+`CONTEXT.md` §5.b).
 
 **Por qué neto y no bruto**, con números. Precio $12.000, sala Los Leones $17.000:
 
@@ -136,9 +138,23 @@ regla neta la sala se paga primero y lo que queda se parte igual: la academia nu
 de la profesora, y las dos ganan lo mismo. En Diaguitas, con sala $0, las dos reglas coinciden.
 
 **Caso borde:** si recaudado < sala (una alumna en Los Leones), el neto es negativo. La profesora
-no debe plata: su variable es **$0** y la academia absorbe la pérdida. Es el caso que
-`minimo_alumnas` (PRD-0018 §7.1) existe para evitar, aunque cancelar siga siendo decisión de una
-persona.
+no debe plata: su variable es **$0** y la academia absorbe la pérdida.
+
+**Riesgo, anotado por Felipe el 10/09/2026:** con pocas alumnas la profesora puede quedar **bajo
+los $18.000** de una clase normal. Con la regla y el precio por defecto, iguala ese base recién
+desde:
+
+| Sede | Cuenta | Iguala $18.000 desde |
+|---|---|---|
+| Los Leones (sala $17.000) | (n × $12.000 − $17.000) / 2 ≥ $18.000 | **5 alumnas** ($21.500); con 4 son $15.500 |
+| Diaguitas (sala $0) | n × $12.000 / 2 ≥ $18.000 | **3 alumnas** ($18.000 justo); con 2 son $12.000 |
+
+**La palanca es `minimo_alumnas`** (PRD-0018 §7.1). No cancela nada solo: el formulario muestra,
+al lado del campo, desde cuántas alumnas la profesora iguala una clase normal con ese precio y esa
+sala (`alumnasParaIgualarBase` en `lib/dominio/especiales.ts`), owner fija el mínimo con ese dato a
+la vista, y si al acercarse la fecha no se llega, cancelar sigue siendo decisión de una persona,
+con la profesora avisada. Que ese número se vea antes de publicar es lo que evita descubrir el
+problema el día de la clase.
 
 **Dónde se implementa:** la función pura `variableEspecial(recaudado, costoSala)` con sus tests
 (la tabla de arriba fila por fila, más recaudado < sala y sala $0) y la fila correspondiente en

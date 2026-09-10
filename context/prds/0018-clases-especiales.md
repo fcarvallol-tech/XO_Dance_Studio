@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | ✅ **Aprobado por Felipe el 10/09/2026.** Fase 1 lista para partir. Precio por defecto ($12.000) y sin sueldo base confirmados en PRD-0009 §8. Bucket privado y embed tras un clic decididos el mismo día (§7.6, §8.7) |
+| **Estado** | ✅ **Aprobado por Felipe el 10/09/2026.** Fase 1 hecha; fase 2 (migración) lista para partir. Precio por defecto ($12.000) y sin sueldo base confirmados en PRD-0009 §8. Bucket privado y embed tras un clic decididos el mismo día (§7.6, §8.7) |
 | **Autor** | Propuesto por Claude a pedido de Felipe Carvalho. Decisiones de §8: Felipe |
 | **Fecha** | 8 de septiembre de 2026 · decisiones cerradas el 9 · Reel y alcance de fase 0 resueltos el 10 |
 | **Hito** | Hito 3 — Reservas (extiende el calendario) · Hito 4 — Portales (formulario en admin) |
@@ -95,7 +95,10 @@ coreografía es de ella, el Reel es de ella, y la mitad de lo que deja la clase 
   cancelación sale igual que hoy.
 - **Teens.** Las especiales son para 15+.
 - **Precio distinto por sede.** El precio es por clase; la sede solo entra en la liquidación.
-- **Cancelación automática por pocas alumnas.** El campo `minimo_alumnas` es informativo.
+- **Cancelación automática por pocas alumnas.** El campo `minimo_alumnas` es informativo, pero es
+  **la palanca** contra el riesgo de que la profesora gane menos que en una clase normal (§12,
+  PRD-0009 §8.3): el formulario muestra desde cuántas alumnas iguala el base con ese precio y esa
+  sala, owner fija el mínimo con eso a la vista, y cancelar sigue siendo decisión de una persona.
 - **Devolución automática de dinero.** Toda devolución la registra un admin a mano (§8.3).
 - **Pagar una especial con créditos del pack.** Descartado en §8.1.
 - **El valor del precio por defecto, el variable y el sueldo base de la profesora.** Separados a
@@ -189,6 +192,8 @@ alter table public.clases
   add column if not exists precio_clp int check (precio_clp >= 0),
   add column if not exists publicada_at timestamptz,
   add column if not exists creada_por uuid references public.perfiles (id),
+  -- Informativo, sin automatismo. Es la palanca de PRD-0009 §8.3: con pocas
+  -- alumnas la profesora gana menos que en una clase normal.
   add column if not exists minimo_alumnas smallint;
 
 alter table public.clases add constraint clases_tipo_coherente check (
@@ -533,6 +538,10 @@ formato están mal.
   compensa con una buena portada.
 - **Reservas pendientes fantasma** si el barrido y la expiración perezosa se desincronizan del
   conteo en la interfaz. Por eso §7.3 exige tocar los cinco lugares a la vez.
+- **La profesora puede ganar menos que en una clase normal** (Felipe, 10/09/2026). Sin sueldo
+  base, con $12.000 iguala los $18.000 recién desde 5 alumnas en Los Leones y 3 en Diaguitas
+  (PRD-0009 §8.3). La palanca es `minimo_alumnas`, con el número calculado a la vista en el
+  formulario; cancelar sigue siendo decisión de una persona.
 - **Canibalización.** Especiales más baratas que la parrilla pueden vaciarla. Se mira en la
   ocupación por horario del tablero.
 - **Consentimiento de imagen.** El Reel es de la profesora. Si aparece una alumna, autorización
@@ -580,5 +589,8 @@ Se llena al terminar.
       variable y sueldo base separados a **PRD-0009 §8**.
 - [x] 10/09/2026: Felipe aprobó el PRD, confirmó $12.000 y sin sueldo base (PRD-0009 §8), decidió
       bucket privado con URL firmada y embed tras un clic. `/privacidad` actualizada y desplegable.
-- [ ] Fase 1 del plan: funciones puras y tests.
+- [x] 10/09/2026: Felipe dio la razón de "sin sueldo base" y anotó el riesgo de quedar bajo los
+      $18.000; `minimo_alumnas` queda escrito como la palanca (PRD-0009 §8.3, §12 de este PRD).
+- [x] Fase 1 del plan hecha el 10/09/2026: `lib/dominio/especiales.ts` con 35 tests.
+- [ ] Fase 2: escribir la migración. CLI en staging; el push a staging necesita aprobación.
 - [ ] Despliegues Preview en Error en Vercel de los últimos días, sin revisar.

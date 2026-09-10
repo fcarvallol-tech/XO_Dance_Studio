@@ -56,13 +56,17 @@ test que los compare, o no se cambia en ninguno.
 | `urlDeEmbed(codigo)` | Arma `https://www.instagram.com/reel/<c>/embed/`. Es lo único de Instagram que el sitio construye, y solo se usa después del toque |
 | `expiraAt(declaradaAt, inicioClase, retencionHoras)` | La regla de §8.2, incluido el caso de clase en menos de 26 h |
 | `cupoTomado(reservas, ahora)` | Confirmadas + asistió + pendientes vigentes. **Es la función que los cinco lugares tienen que usar o replicar** |
-| `montoAtribuible(reserva)` | Con crédito: regla de PRD-0010 §7.1. Con compra: `monto_clp` entero |
+| `montoAtribuible(reserva)` | Con crédito: regla de PRD-0010 §7.1. Con compra: `monto_clp` entero, neto de reembolso |
+| `alumnasParaIgualarBase(precio, sala, base)` | Desde cuántas alumnas la profesora iguala una clase normal. Es el número que el formulario muestra al lado de `minimo_alumnas` (PRD-0009 §8.3) |
 
 El variable de la profesora (`variableEspecial`) **no va acá**: se define en PRD-0009 §8 y se
 implementa con la liquidación de PRD-0010 parte 3.
 
-**Checkpoint:** `npm test` en verde con los bordes: URL de Instagram con parámetros de tracking,
-pendiente vencida hace un segundo, clase en menos de 26 h, sin especiales publicadas.
+**Checkpoint:** ✅ 10/09/2026. `npm test` 72/72 (35 de este módulo) con los bordes: URL de
+Instagram con parámetros de tracking y dominios parecidos, pendiente vencida hace un segundo y
+otra que vence exactamente ahora, clase en menos de 26 h y en menos de 2 h, sin especiales
+publicadas, precio $0, reembolso mayor que el monto. Hecho con el test escrito antes que el
+código: el corredor falló por módulo inexistente y después pasó.
 
 ---
 
@@ -138,6 +142,8 @@ Por SQL, en transacciones revertidas:
   si el Reel es privado, se ve el error de Instagram acá y no en producción.
 - Precio: campo editable para owner, bloqueado con el default visible para admin. Si no hay
   default cargado, admin ve el aviso y no puede guardar.
+- Al lado de "mínimo de alumnas": "Con este precio y esta sala, la profesora iguala una clase
+  normal desde N alumnas" (`alumnasParaIgualarBase`). Se recalcula al cambiar precio o sede.
 - Aviso de "hay N reservas" al editar fecha u hora.
 - Bandeja de compras: la clase al lado cuando `clase_id` no es null; botón "Registrar reembolso"
   para pagadas con reserva cancelada y para `por_reembolsar`.
@@ -214,8 +220,8 @@ error.
 | Fase | Estado |
 |---|---|
 | 0 — Decisiones | ✅ Cerrada. PRD aprobado el 10/09/2026; PRD-0009 §8 confirmado el mismo día |
-| 1 — Funciones puras y tests | **Lista para partir** |
-| 2 — Migración | Depende de la 1. CLI ya en staging |
+| 1 — Funciones puras y tests | ✅ **Hecha el 10/09/2026**: 9 funciones, 35 tests, `npm test` 72/72 |
+| 2 — Migración | **Lista para partir.** CLI ya en staging |
 | 3 — Escenario en staging | Depende de la 2 y de aprobación del push a staging |
 | 4 — Formulario y bandeja | Depende de la 2 |
 | 5 — Público, Planes y privacidad | Depende de la 4 |
