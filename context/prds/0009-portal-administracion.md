@@ -5,7 +5,7 @@
 | **Estado** | Borrador |
 | **Fecha** | 21 de agosto de 2026 |
 | **Hito** | Hito 4 |
-| **Relacionados** | PRD-0008 · PRD-0010 |
+| **Relacionados** | PRD-0008 · PRD-0010 · PRD-0018 (clases especiales: §8 de este PRD) |
 
 ## 1. Problema
 
@@ -31,6 +31,9 @@ quién está inscrita y resolver las solicitudes. Hoy eso es Felipe con planilla
    sala y horario a la vista. Se adelantó porque sin ella una solicitud caía en un buzón que
    nadie abre. **Lo que sigue siendo de este PRD:** crear el bloque en la parrilla al aprobar,
    que toca cupos y el calendario de las alumnas.
+10. **Clases especiales (PRD-0018), lo que se define desde acá:** el precio por defecto, la
+    retención del cupo y la regla de pago de la profesora. Ver §8. El formulario de creación, la
+    bandeja de reembolsos y la migración siguen en PRD-0018.
 
 ## 2.b Datos iniciales
 
@@ -78,3 +81,70 @@ volver a cambiar: el sistema tiene que asumir que el catálogo es data, no confi
 
 Que armar la programación de la semana tome menos de 15 minutos y no requiera abrir ninguna
 planilla.
+
+## 8. Clases especiales: parámetros y pago de la profesora
+
+> Separado del PRD-0018 el 10/09/2026. Nada de esto cambia el esquema: son valores que owner
+> carga en `parametros` y una regla que la liquidación (PRD-0010 parte 3) aplica. Se sacaron de
+> la fase 0 de ese PRD para que la migración no espere a confirmaciones que no necesita.
+
+### 8.1 Precio por defecto de una especial — `especial_precio_default_clp` · ⚠️ por confirmar
+
+Lo que decidió Felipe (09/09/2026): owner fija el precio en cada clase; admin crea con un valor
+por defecto que no puede tocar. Ese valor es una fila de `parametros` que **la migración del
+PRD-0018 no inserta**, para no inventar un precio. Mientras no exista, admin no puede crear
+especiales y owner tiene que escribir el precio a mano.
+
+**Propuesta: $12.000.** Razones, para confirmar o cambiar:
+
+- Es más que la clase suelta de pack ($8.500), así que un admin que crea sin pensar en el precio
+  no publica una especial más barata que la parrilla por accidente.
+- Con la regla de §8.3, en Los Leones la academia cubre la sala desde la **segunda** alumna
+  ($24.000 > $17.000) y en Diaguitas desde la primera.
+- Es un número redondo que se puede decir en un Reel.
+
+Entra en el alcance de §2.b (precios sin deploy): se edita desde el portal, y hasta que exista esa
+pantalla, desde el Table Editor.
+
+### 8.2 Retención del cupo — `especial_retencion_horas`
+
+El mecanismo lo decidió Felipe y está en PRD-0018 §8.2: una reserva pendiente de pago ocupa cupo
+hasta `min(declarada + retención, inicio − 2 h)`. El número **nace en 24 horas** con la
+migración, como propuesta. Se edita acá, sin desplegar.
+
+### 8.3 Pago de la profesora en una especial — decidido, con un supuesto por confirmar
+
+**Decidido por Felipe el 09/09/2026:** `variable = (recaudado − costo de sala) / 2`, entero CLP,
+**$0 si el neto es negativo**. Se cuenta sobre compras `pagadas` de la clase, netas de reembolsos.
+
+**Supuesto por confirmar:** **sin sueldo base por hora** en las especiales, que es la diferencia
+con la parrilla (`CONTEXT.md` §5.b: $18.000/hora más $250 por crédito consumido). Felipe definió
+el variable y no mencionó el base. Si hay base, la regla y la tabla cambian.
+
+**Por qué neto y no bruto**, con números. Precio $12.000, sala Los Leones $17.000:
+
+| Alumnas | Recaudado | Regla **bruto** (50 % del recaudado, la academia paga la sala) | Regla **neto** (50 % de recaudado − sala) |
+|---|---|---|---|
+| 2 | $24.000 | Profesora $12.000 · Sala $17.000 · **Academia −$5.000** | Profesora $3.500 · Academia $3.500 |
+| 3 | $36.000 | Profesora $18.000 · Sala $17.000 · Academia $1.000 | Profesora $9.500 · Academia $9.500 |
+| 5 | $60.000 | Profesora $30.000 · Sala $17.000 · Academia $13.000 | Profesora $21.500 · Academia $21.500 |
+| 10 | $120.000 | Profesora $60.000 · Sala $17.000 · Academia $43.000 | Profesora $51.500 · Academia $51.500 |
+| 22 | $264.000 | Profesora $132.000 · Sala $17.000 · Academia $115.000 | Profesora $123.500 · Academia $123.500 |
+
+Con la regla bruta la academia **pierde plata con dos alumnas** y gana $1.000 con tres. Con la
+regla neta la sala se paga primero y lo que queda se parte igual: la academia nunca queda debajo
+de la profesora, y las dos ganan lo mismo. En Diaguitas, con sala $0, las dos reglas coinciden.
+
+**Caso borde:** si recaudado < sala (una alumna en Los Leones), el neto es negativo. La profesora
+no debe plata: su variable es **$0** y la academia absorbe la pérdida. Es el caso que
+`minimo_alumnas` (PRD-0018 §7.1) existe para evitar, aunque cancelar siga siendo decisión de una
+persona.
+
+**Dónde se implementa:** la función pura `variableEspecial(recaudado, costoSala)` con sus tests
+(la tabla de arriba fila por fila, más recaudado < sala y sala $0) y la fila correspondiente en
+`liquidaciones_profesoras` van con PRD-0010 parte 3. Coherente con §3 de este PRD: los montos los
+ve solo owner.
+
+**Checkpoint para cerrar esta sección:** Felipe confirma o cambia el default de $12.000 y el
+supuesto de sin sueldo base. Hasta entonces, la liquidación de una especial se calcula sin base.
+

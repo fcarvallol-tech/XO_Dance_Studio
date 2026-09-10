@@ -3,37 +3,43 @@
 > El PRD dice **qué** y **por qué**. Esto dice **en qué orden** y **cómo se sabe que cada paso
 > quedó bien**. Se lee junto a `0018-clases-especiales.md`.
 >
-> Rama: `prd-0018-clases-especiales`. Nada se mezcla a `main` hasta que pase la fase 7.
-> **No se escribe código hasta que el PRD esté aprobado y la fase 0 cerrada.**
+> Rama: `horario-pau-y-prd-0018` mientras no se mergee la migración de Pau; después,
+> `prd-0018-clases-especiales`. Nada se mezcla a `main` hasta que pase la fase 7.
+> **No se escribe código hasta que Felipe apruebe el PRD.**
 
 ---
 
-## Lo que necesito de ti antes de partir (fase 0)
+## Fase 0 — Lo que la migración necesita ✅ cerrado
 
-Sin esto la migración no se puede escribir completa, y el resto depende de la migración.
+Recortada el 10/09/2026 a las decisiones que cambian el esquema o las funciones. Lo que no toca
+la migración salió de acá (ver abajo).
 
-| # | Decisión | Dónde está explicada | Default si no dices nada |
-|---|---|---|---|
-| 1 | ~~¿A, B o C?~~ ✅ **B, compra aparte** (Felipe, 09/09/2026) | PRD §8 | Resuelto |
-| 2 | ¿Se retiene cupo mientras se aprueba la transferencia? | PRD §8, fila "cupo y transferencia" | No hay default: bloquea |
-| 3 | Cancelación a tiempo, ¿devolución en plata o crédito de compensación? Y si cancela la academia | PRD §8, fila "cancelación" | No hay default: bloquea |
-| 4 | Variable de la profesora por especial | PRD §8, fila "liquidación" | Se registra en la liquidación como $0 hasta que se defina, con el motivo en pantalla |
-| 5 | **Nombre público** (no puede ser "clase suelta") | PRD, nota inicial | "Clase especial" en la interfaz hasta que Carla decida |
-| 6 | **Precio por defecto** en pesos (o costo en créditos si es A) | PRD §7, `parametros` | No hay default: el formulario nace con el campo vacío y obligatorio |
-| 7 | ¿Admin puede crear especiales o solo owner? | PRD §2 | Admin crea, owner fija precio |
+| # | Decisión | Estado |
+|---|---|---|
+| 1 | ¿Créditos o compra aparte? | ✅ **Compra aparte** (Felipe, 09/09) |
+| 2 | ¿Se retiene cupo mientras se aprueba la transferencia? | ✅ **Sí** (Felipe, 09/09). Expiración `min(declarada + retención, inicio − 2 h)`, perezosa más barrido. La retención es el parámetro `especial_retencion_horas`, que nace en 24 h como propuesta editable |
+| 3 | Cancelación: ¿devolución automática? | ✅ **No** (Felipe, 09/09). Columnas de reembolso, estados `expirada` y `por_reembolsar`, `registrar_reembolso()` |
+| 4 | Quién crea y quién fija precio | ✅ Admin y owner crean; solo owner fija `precio_clp` (Felipe, 09/09). Sin default cargado, admin no puede crear |
+| 5 | Video | ✅ Iframe a `/embed/` sin `embed.js`, más **portada** propia obligatoria (PRD §8.7, 10/09) |
 
-**Checkpoint:** las decisiones quedan escritas en PRD §8 como resueltas, con fecha. Si alguna
-cambia una regla ya decidida (créditos sin `curso_id`, cupo no retenido), se escribe el ADR antes
-de la migración.
+**Lo que salió de esta fase el 10/09/2026** porque no cambia ni una columna: el **valor** del
+precio por defecto, el **variable** de la profesora y el **sueldo base**. Viven en **PRD-0009 §8**
+y se confirman ahí. El nombre público ("Clases especiales") ya está decidido y es copy, no esquema.
+
+**Checkpoint:** Felipe aprueba el PRD. Nada más bloquea la fase 1.
 
 ---
 
 ## El orden no es arbitrario
 
-La lección de PRD-0010 aplica entera: lo que decide plata se prueba **con datos** antes de que
-exista la interfaz, y la interfaz se prueba **con el artefacto real** —el link, el video en el
-teléfono, el correo— antes de dar nada por hecho. Y la lección del magic link: si una prueba no
-puede fallar por lo mismo que fallaría en producción, no es una prueba.
+Lo que decide plata se prueba **con datos** antes de que exista la interfaz, y la interfaz se
+prueba **con el artefacto real** —el link, el Reel en el teléfono, el correo— antes de dar nada
+por hecho. La regla del magic link: si una prueba no puede fallar por lo mismo que fallaría en
+producción, no es una prueba.
+
+Hay una novedad respecto de PRD-0017 que ordena este plan: **el cupo ahora cuenta reservas
+pendientes**, y ese conteo vive en cinco lugares. Se cambia en todos en la misma fase (2), con un
+test que los compare, o no se cambia en ninguno.
 
 ---
 
@@ -41,19 +47,22 @@ puede fallar por lo mismo que fallaría en producción, no es una prueba.
 
 **Archivos:** `lib/dominio/especiales.ts` · `lib/dominio/especiales.test.ts`
 
-Lo que divide, compara o decide, sin tocar la base:
-
 | Función | Qué resuelve |
 |---|---|
-| `desdePrecio(especiales)` | El "desde $X" de la fila de Planes: mínimo de las publicadas futuras; `null` si no hay |
-| `seSolapan(a, b)` | Dos bloques `[inicio, fin)` se pisan. Es la regla que después se escribe en SQL; el test fija el contrato (19:30–20:30 pisa 20:00–21:00; 19:00–20:00 no pisa 20:00–21:00) |
-| `puedePublicar(especial)` | Video, profesora, sede, fecha futura, precio. Devuelve qué falta, no un booleano |
-| `costoEnCreditos(especial)` (solo A) | N entero ≥ 1 |
-| `lotesParaDescontar(lotes, n)` (solo A) | Qué lotes y cuánto de cada uno, FIFO por vencimiento. Es la función que después replica `reservar()` en SQL y la más fácil de romper |
-| `montoAtribuible(reserva)` | Con A: `monto_compra / clases_compra × n`. Con B: `precio_clp`. Extiende la regla de PRD-0010 §7.1 |
+| `desdePrecio(especiales)` | El "desde $X" de Planes: mínimo de las publicadas futuras; `null` si no hay |
+| `seSolapan(a, b)` | Dos bloques `[inicio, fin)` se pisan. Fija el contrato que después replica el SQL |
+| `puedePublicar(especial)` | Reel, portada, profesora, sede, fecha futura, precio. Devuelve qué falta |
+| `codigoDeReel(url)` | Extrae el código de `instagram.com/reel/<c>` y `/p/<c>`, rechaza todo lo demás. Sin él no hay embed |
+| `urlDeEmbed(codigo)` | Arma `https://www.instagram.com/reel/<c>/embed/`. Es lo único de Instagram que el sitio construye, y solo se usa después del toque |
+| `expiraAt(declaradaAt, inicioClase, retencionHoras)` | La regla de §8.2, incluido el caso de clase en menos de 26 h |
+| `cupoTomado(reservas, ahora)` | Confirmadas + asistió + pendientes vigentes. **Es la función que los cinco lugares tienen que usar o replicar** |
+| `montoAtribuible(reserva)` | Con crédito: regla de PRD-0010 §7.1. Con compra: `monto_clp` entero |
 
-**Checkpoint:** `npm test` en verde con los bordes: sin especiales publicadas, N mayor que el
-saldo, lotes que vencen el mismo día, especial de 90 minutos.
+El variable de la profesora (`variableEspecial`) **no va acá**: se define en PRD-0009 §8 y se
+implementa con la liquidación de PRD-0010 parte 3.
+
+**Checkpoint:** `npm test` en verde con los bordes: URL de Instagram con parámetros de tracking,
+pendiente vencida hace un segundo, clase en menos de 26 h, sin especiales publicadas.
 
 ---
 
@@ -61,64 +70,77 @@ saldo, lotes que vencen el mismo día, especial de 90 minutos.
 
 **Archivo:** `supabase/migrations/2026MMDDHHMMSS_clases_especiales.sql`
 
-Lo del PRD §7 más lo que decida §8:
+0. **Antes de nada:** `cat supabase/.temp/project-ref` tiene que decir **staging**
+   (`ybopuahlzbjkkwumkllk`). Hoy dice producción.
+1. `clases`: columnas de §7.1, `horario_id` nullable, checks, índice de slug.
+2. `compras`: `plan_id` nullable, `clase_id`, columnas de reembolso, estados `expirada` y
+   `por_reembolsar`, check plan-o-clase.
+3. `reservas`: `credito_id` nullable, `compra_id`, `expira_at`, estados `pendiente_pago` y
+   `expirada`, check crédito-o-compra.
+4. `parametros`: `especial_retencion_horas` = 24. **No se inserta `especial_precio_default_clp`**:
+   lo carga owner cuando PRD-0009 §8 lo confirme.
+5. Política `clases_lectura_publica` reescrita: borradores no son públicos. **Mirar qué otras
+   políticas tiene `clases`** antes, porque se suman con OR.
+6. Funciones de §7.5, cada una con `revoke ... from public, anon` y `grant execute ... to
+   authenticated, service_role` escrito. `reservar_especial` comparte con `reservar` el bloqueo
+   de la fila y el conteo de cupo: se extrae una función `cupo_tomado(clase_id)` y la usan las dos.
+7. `reservas_de_mis_clases`, `inscritas_de_clase` y las funciones de métricas: cuentan pendientes
+   vigentes donde corresponde (cupo sí, inscritas no).
+8. Bucket `portadas-especiales` con sus políticas.
 
-1. Columnas nuevas en `clases`, `horario_id` nullable, checks de coherencia, índices.
-2. Política `clases_lectura_publica` reescrita: borradores no son públicos. **Mirar qué otras
-   políticas tiene `clases` antes**, porque se suman con OR.
-3. Funciones `security definer`, con sus grants explícitos:
-   - `crear_especial(...)` y `editar_especial(...)`: validan rol, solape y coherencia. Solo owner
-     toca el precio.
-   - `publicar_especial(id)` y `cancelar` reutiliza `cancelar_clase`.
-   - `reservar()` extendida según §8. Con A: descuenta N cruzando lotes y escribe N movimientos.
-     Con B: crea la compra y la reserva en la misma transacción.
-   - `cancelar_reserva()` y `devolver_creditos_de_clase()` extendidas para devolver N, o para
-     registrar la devolución en plata.
-4. Bucket `videos-especiales` con sus políticas.
-5. `parametros`: precio por defecto.
-
-**Checkpoint:** `npx supabase db push --dry-run` contra staging muestra solo esta migración. El
-push a staging **con tu aprobación**.
+**Checkpoint:** `db push --dry-run` contra staging muestra solo esta migración. Push a staging
+**con aprobación**.
 
 ---
 
 ## Fase 3 — Escenario en staging, sin interfaz
 
-Se siembra con `scripts/sembrar-escenario.mjs` extendido: dos especiales (una publicada, un
-borrador), una alumna con un lote de 3 créditos y otra sin nada.
+Se extiende `scripts/sembrar-escenario.mjs`: dos especiales (una publicada con precio en Los
+Leones, un borrador), tres alumnas con cuenta. Sin la fila `especial_precio_default_clp`, para
+probar el camino de "admin no puede crear".
 
-Se ejercita **por SQL**, en transacciones revertidas, igual que PRD-0010 fase 3:
+Por SQL, en transacciones revertidas:
 
 | Caso | Esperado |
 |---|---|
-| `reservar()` la publicada con saldo suficiente | reserva `confirmada`, cupo −1, cobro registrado en la misma transacción |
-| `reservar()` sin saldo (A) o sin compra (B) | rechazo con el mensaje de la regla |
-| Dos `reservar()` concurrentes al último cupo | una entra, la otra "La clase está llena" |
-| `cancelar_reserva()` a tiempo y tarde | cupo liberado en ambos; devolución solo en el primero, al lote original (A) o como se haya decidido (B) |
-| `update clases set estado = 'cancelada'` | el trigger devuelve todo, sin mirar ventana |
-| `anon` consulta `clases` por la API REST | ve la publicada, **no ve el borrador** |
-| `crear_especial()` en Diaguitas jueves 20:00 | rechazo por solape con Reggaeton Femme 19:30 |
-| Admin llama `editar_especial()` cambiando precio | rechazo; owner sí puede |
-| `metricas_*` del período | ocupación y atribución incluyen la especial; `conciliacion` cuadra |
+| `reservar_especial()` | compra `pendiente` con `clase_id`, reserva `pendiente_pago`, `expira_at` según regla, cupo −1 |
+| Cupo en 1 con una pendiente vigente, otra alumna reserva | "La clase está llena" |
+| Se adelanta `expira_at`, otra alumna reserva | La pendiente pasa a `expirada` y la nueva entra |
+| `acreditar_compra()` de la pendiente | reserva `confirmada`, compra `pagada`, **cero lotes y cero movimientos** de crédito |
+| `acreditar_compra()` de una ya expirada, con cupo | La reactiva |
+| `acreditar_compra()` de una expirada, sin cupo | compra `pagada` sin reserva, marcada para devolver |
+| `cancelar_reserva()` de una confirmada con compra | cupo liberado, compra sigue `pagada`, nada de dinero |
+| `registrar_reembolso()` | compra `reembolsada` con monto, autor, fecha; admin sí, alumna no |
+| `update clases set estado = 'cancelada'` | pagadas → `por_reembolsar`; pendientes → `expirada`; las de parrilla siguen devolviendo crédito |
+| `anon` consulta `clases` por REST | ve la publicada, no el borrador |
+| `crear_especial()` Diaguitas jueves 20:00 | rechazo por solape con 19:30 |
+| Admin crea sin default cargado | rechazo con "Falta el precio por defecto" |
+| Se carga el default; admin manda `precio_clp` | se ignora, queda el default; owner sí lo fija |
+| `metricas_*` | ingresos y atribución incluyen la compra; `conciliacion` de créditos cuadra porque no la toca |
 
-**Checkpoint:** tabla de casos con resultado real al lado del esperado, pegada en PRD §13.
+**Checkpoint:** tabla con resultado real al lado del esperado, pegada en PRD §13.
 
 ---
 
-## Fase 4 — El formulario de admin y la subida del video
+## Fase 4 — El formulario de admin
 
 **Archivos:** `app/(admin)/admin/especiales/page.tsx` · `app/(admin)/admin/especiales/[id]/page.tsx`
-· `components/FormularioEspecial.tsx` · `app/api/especiales/video/route.ts` · `lib/especiales-consultas.ts`
-· acciones en `lib/acciones.ts`
+· `components/FormularioEspecial.tsx` · `components/ReelFachada.tsx` ·
+`app/api/especiales/portada/route.ts` · `lib/especiales-consultas.ts` · acciones en `lib/acciones.ts`
 
-- Formulario mobile-first aunque se use desde computador; mismo patrón que `FormularioSolicitud`.
-- La subida pasa por el Route Handler con la service role: valida tipo y tamaño **en el servidor**,
-  sube al bucket, guarda `video_url`. Nunca con la llave desde el navegador.
-- Vista previa antes de publicar: el mismo componente que verá la visitante.
+- El campo de Reel valida con `codigoDeReel` en el cliente y **otra vez en el servidor**; guarda
+  solo el código.
+- La portada sube por Route Handler con la service role: tipo y tamaño validados en el servidor.
+- Vista previa antes de publicar usa `ReelFachada`, el mismo componente que verá la visitante:
+  si el Reel es privado, se ve el error de Instagram acá y no en producción.
+- Precio: campo editable para owner, bloqueado con el default visible para admin. Si no hay
+  default cargado, admin ve el aviso y no puede guardar.
 - Aviso de "hay N reservas" al editar fecha u hora.
+- Bandeja de compras: la clase al lado cuando `clase_id` no es null; botón "Registrar reembolso"
+  para pagadas con reserva cancelada y para `por_reembolsar`.
 
-**Checkpoint:** en staging, desde el computador, crear una especial con un video real de 20 MB,
-guardarla, publicarla y verla en la vista previa. Con rol admin, el campo precio está bloqueado.
+**Checkpoint:** en staging, crear una especial con un Reel real de @XO.dancestudioo, guardar,
+publicar, ver la vista previa. Con rol admin, el precio está bloqueado.
 
 ---
 
@@ -126,49 +148,58 @@ guardarla, publicarla y verla en la vista previa. Con rol admin, el campo precio
 
 **Archivos:** `app/clases-especiales/page.tsx` · `app/clases-especiales/[slug]/page.tsx` ·
 `app/clases-especiales/[slug]/opengraph-image.tsx` · `components/Especiales.tsx` ·
-`components/Planes.tsx` (una fila más) · `app/api/revalidar/route.ts` (revalidar las rutas nuevas)
+`components/Planes.tsx` · `app/api/revalidar/route.ts` · `app/privacidad/page.tsx`
 
-- Video `muted loop playsInline`, con `poster` de la miniatura, como `Lineup`. En la lista solo
-  reproduce el que está en pantalla (`IntersectionObserver`, sin librerías).
-- Colores solo de tokens `xo-*`; rosa nunca como texto sobre claro; copy en español de Chile
-  desde el lado de la alumna. Cargar `BRAND.md` §7 antes de escribir una sola frase.
-- El botón dice lo que pasa: "Reservar por 2 clases de tu pack" (A) o "Reservar · $12.000" (B).
-  Nunca "Reservar" a secas cuando hay que pagar aparte.
-- La fila en Planes desaparece sola cuando no hay especiales publicadas futuras.
+- `ReelFachada`: portada propia con el botón **"Ver el Reel en Instagram"** y la línea "Se carga
+  desde Instagram"; al tocar, monta el iframe a `urlDeEmbed(código)` en un contenedor de
+  proporción fija. **Nada de instagram.com se carga antes del toque.** Sin `embed.js`, nunca.
+  Opcional: escuchar el `postMessage` de tipo `MEASURE` desde `https://www.instagram.com` para
+  ajustar la altura, como hace `embed.js`.
+- Open Graph desde la portada propia: 1200×630 compuesto con satori, con título, profesora y
+  fecha, como `app/opengraph-image.tsx`.
+- Fila en Planes: "Clases especiales · desde $X · **Ver clases especiales**". Desaparece sola sin
+  publicadas futuras. El texto "los mismos valores para todos los cursos" pasa a hablar de la
+  parrilla.
+- El botón dice lo que pasa: "Reservar por $12.000". Nunca "Reservar" a secas.
+- `/privacidad`: fila de Meta en §5 y la línea del toque en §9 (PRD §7.7).
+- Colores solo de tokens `xo-*`; rosa nunca como texto sobre claro; copy en español de Chile.
+  Leer `BRAND.md` §7 antes de escribir una frase.
 
-**Checkpoint:** desde un **teléfono real**, sin sesión, en staging: abrir la landing, ver la fila,
-llegar a la lista, ver el video, abrir la página propia, pegar el link en WhatsApp y ver la
-miniatura.
+**Checkpoint:** desde un **teléfono real**, sin sesión, en staging: landing → fila → lista →
+página propia; la pestaña de red no muestra `instagram.com` hasta tocar; tocar reproduce; el link
+pegado en WhatsApp muestra la portada.
 
 ---
 
-## Fase 6 — Reservar y cancelar desde la interfaz
+## Fase 6 — Reservar, aprobar y cancelar desde la interfaz
 
-**Archivos:** `components/Calendario.tsx` (las especiales en el calendario de la alumna, con su
-marca) · `components/MisReservas.tsx` · acciones de reservar/cancelar reutilizadas ·
-`components/GrillaSemanal.tsx` (título en vez de curso)
+**Archivos:** `components/FormularioCompra.tsx` (variante para clase) · `components/Calendario.tsx`
+· `components/MisReservas.tsx` · `components/BandejaCompras.tsx` · `components/GrillaSemanal.tsx`
+· `lib/correo.ts` (plantillas: pendiente con hora de expiración, confirmada)
 
-**Checkpoint:** el flujo entero, con el artefacto real, en staging:
+**Checkpoint,** el flujo entero con el artefacto real, en staging:
 
-1. Visitante sin cuenta aprieta Reservar → `/entrar` → **abre el enlace del correo** → vuelve a la
-   especial → reserva.
-2. Recibe el comprobante por correo y **lo abre**.
-3. Cancela desde "Mis clases" y ve lo que le devolvieron.
-4. Admin cancela la clase con motivo; la alumna lo ve en "Mis clases".
-5. La profesora ve la especial en su grilla y sus inscritas.
+1. Visitante sin cuenta → "Reservar por $X" → `/entrar` → **abre el enlace del correo** → vuelve
+   a la especial → declara la transferencia → ve "tu cupo queda tomado hasta …" y recibe el correo.
+2. Otra alumna intenta el último cupo y ve "llena".
+3. Admin aprueba desde la bandeja; la alumna recibe el comprobante y **lo abre**.
+4. La alumna cancela desde "Mis clases"; ve que el cupo se liberó y que el dinero se pide por
+   WhatsApp. Admin registra el reembolso.
+5. Admin cancela la clase con motivo; la compra queda por reembolsar en la bandeja.
+6. La profesora ve la especial en su grilla con su título y sus inscritas, sin las pendientes.
 
 ---
 
 ## Fase 7 — Producción
 
 1. `npm run build` y `npm test` en verde en la rama.
-2. `cat supabase/.temp/project-ref` dice producción. `npx supabase db push --dry-run` muestra solo
-   esta migración.
-3. **`db push` con tu aprobación en ese mensaje.**
-4. Cargar el precio real en `parametros`. Crear la primera especial real con Carla.
+2. `cat supabase/.temp/project-ref` dice producción. `db push --dry-run` muestra solo esta migración.
+3. **`db push` con aprobación de Felipe en ese mensaje.**
+4. Owner carga `especial_precio_default_clp` con el valor confirmado en PRD-0009 §8. Crear la
+   primera especial real con Carla.
 5. Repetir el checkpoint de la fase 5 contra producción, desde un teléfono.
-6. Actualizar PRD §13 y estado, `ROADMAP.md` changelog, `ARCHITECTURE.md` §5.3 (clases sin
-   horario) y proponer a Felipe la línea de `CONTEXT.md` §5.b sobre la promesa de los créditos.
+6. Actualizar PRD §13 y estado, `ROADMAP.md`, `ARCHITECTURE.md` §5.3 (clases sin horario, compras
+   por clase, reservas pendientes) y `CONTEXT.md` §5.b si hace falta (ya dice "de la parrilla").
 
 ---
 
@@ -176,11 +207,11 @@ marca) · `components/MisReservas.tsx` · acciones de reservar/cancelar reutiliz
 
 | Fase | Estado |
 |---|---|
-| 0 — Decisiones | **Bloqueada** hasta que Felipe cierre PRD §8 y el nombre |
-| 1 — Funciones puras y tests | Lista para partir tras la 0 |
-| 2 — Migración | Depende de la 0 |
+| 0 — Decisiones | ✅ Cerrada. Nada pendiente bloquea la migración; lo demás está en PRD-0009 §8 |
+| 1 — Funciones puras y tests | Lista para partir con la aprobación del PRD |
+| 2 — Migración | Depende de la 1 y de enlazar la CLI a staging |
 | 3 — Escenario en staging | Depende de la 2 y de aprobación del push a staging |
-| 4 — Formulario y video | Depende de la 2 |
-| 5 — Público y fila en Planes | Depende de la 4 |
-| 6 — Reservar y cancelar | Depende de la 3 y la 5 |
+| 4 — Formulario y bandeja | Depende de la 2 |
+| 5 — Público, Planes y privacidad | Depende de la 4 |
+| 6 — Reservar, aprobar, cancelar | Depende de la 3 y la 5 |
 | 7 — Producción | Depende de todo, y de aprobación del push |

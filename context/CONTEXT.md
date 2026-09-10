@@ -65,7 +65,7 @@ Todas tienen Instagram propio con seguidores y son parte activa de la campaña d
 | **Sedes** | **Dos, con dirección pública desde el 30/08/2026:** Seducción Latina Experience (Av. Nueva Providencia 2260, Providencia, sector Los Leones) y Centro Comunitario Diaguitas (Diaguitas 911, Las Condes) |
 | **Razón social** | **XO Dance Studio SpA** (en constitución vía Tu Empresa en un Día) |
 | **Nombre de fantasía** | XO Dance Studio |
-| **Alumnas hoy** | 7–8 (⚠️ confirmar el número exacto). Migran de Kids a Teens |
+| **Alumnas hoy** | 7–8 (⚠️ confirmar el número exacto). Migran de Kids a Teens. **No se migran al sistema**: septiembre se cierra por fuera y desde octubre entran registrándose por la web (ver §5.b, "Puesta en marcha") |
 | **Precio** | Tarifa de packs para todos los cursos. Teens deja los $45.000/mes |
 | **Costo de sala** | Los Leones: **$17.000/hora** · Los Dominicos: **$0** |
 | **Sueldo base profesoras** | **$18.000/hora**. Clases de 1 hora. Variable por definir |
@@ -216,6 +216,20 @@ El negocio pasa de **mensualidad por curso** a **paquetes de clases con reserva 
 **Por qué importa:** cambia qué se vende (un paquete, no un mes), cómo entra la plata (por
 adelantado, en bloque), qué significa retención (recompra, no permanencia) y qué hay que
 construir (cuentas, pagos online y reservas, todo en la primera versión).
+
+### Puesta en marcha: octubre de 2026, sin datos migrados (decidido el 09/09/2026)
+
+**El sistema entra en uso en octubre con alumnas nuevas o reinscritas, no con datos migrados.**
+La importación del Excel de alumnas que ya pagaron (PRD-0017 parte 3) **se descartó**: el corte es
+por fecha, no por persona.
+
+- **Septiembre** se termina como venía: horarios y pagos coordinados por fuera del sistema, y la
+  planilla como registro. Lo cobrado en septiembre no entra a la base ni al tablero de owner.
+- **Desde octubre**, quien quiera reservar —sea nueva o venga de septiembre— se registra en la web,
+  compra un pack por transferencia y reserva. Nadie llega con créditos precargados.
+- Si a una alumna de septiembre le queda saldo, se resuelve a mano con un lote de regalo con
+  motivo, que es para lo que existe ese tipo de movimiento.
+- Octubre es el **primer mes completo** que el tablero de owner refleja.
 
 ### ✅ Decisión resuelta: modelo híbrido (21/08/2026)
 

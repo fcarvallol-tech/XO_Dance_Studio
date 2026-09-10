@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | **Aprobado** el 31/08/2026 · **partes 1 y 2 implementadas** |
+| **Estado** | **Aprobado** el 31/08/2026 · **partes 1 y 2 implementadas** · **parte 3 (importación) descartada el 09/09/2026**, ver §14 |
 | **Autor** | Felipe Carvalho |
 | **Fecha** | 31 de agosto de 2026 |
 | **Hito** | Hito 2 — Venta de clases · Hito 3 — Reservas |
@@ -312,6 +312,12 @@ grants, no con confianza.
 
 ## 9. Importación de las alumnas que ya pagaron
 
+> **❌ Descartada el 09/09/2026.** No se migra a las alumnas actuales: el corte es por fecha. Las de
+> septiembre terminan el mes coordinándose por fuera del sistema, y **desde octubre quien quiera
+> reservar se registra y compra por la web**. Ver §14. Esta sección se conserva como registro de
+> lo que se analizó y de por qué el esquema tiene lo que tiene (`medio_pago = 'importacion'`,
+> `normalizar_nombre`, `duplicados_probables`, `perfiles_sin_actividad`).
+
 ### 9.1 El mapeo de "Curso Reservado"
 
 La columna usa abreviaturas: `R` = Reggaeton Femme, `G` = Girly, más el día. **El par (letra, día)
@@ -537,11 +543,28 @@ Aprobado el 31/08/2026 implementar esto en tres tramos, con revisión entre uno 
 |---|---|---|
 | **1** | Esquema, funciones, RLS y ADR-0007 | ✅ **Hecha.** Migración escrita, **sin aplicar** |
 | **2** | Interfaz, unificación de planes y generador de clases | ✅ **Hecha.** Migración escrita, **sin aplicar** |
-| **3** | Script de importación | ⏳ **Se implementa, no se ejecuta** |
+| **3** | Script de importación | ❌ **Descartada el 09/09/2026.** No se implementa ni se ejecuta |
 
-**Por qué la importación se construye pero no se corre:** faltan 36 correos y hay filas que
-requieren decisión manual (§9.5). Queda lista, con su pasada de simulación, para el día en que
-los datos estén completos.
+**Por qué se descarta la importación (09/09/2026):** en vez de migrar a las alumnas actuales, el
+corte es por fecha. Las de septiembre terminan el mes coordinándose por fuera del sistema —
+horarios y pagos como hasta ahora— y **desde octubre quien quiera reservar se registra y compra
+por la web**, sea nueva o reinscrita. Lo que la importación resolvía a la fuerza —36 correos que
+faltaban, filas con decisión manual, un Excel que había que mantener al día hasta el corte— deja
+de hacer falta: cada alumna entra con su propio correo y su propia compra.
+
+Consecuencias que hay que tener a la vista:
+
+- **Los ~$950.000 ya recibidos en septiembre no entran al sistema.** El tablero de owner no los
+  va a mostrar; septiembre se cierra en la planilla. Octubre es el primer mes que el tablero
+  refleja entero.
+- Las alumnas de septiembre que sigan en octubre **compran de nuevo**, como cualquiera. Si a
+  alguna le queda saldo de lo pagado en septiembre, se resuelve a mano: un lote de regalo con
+  motivo (`movimientos_credito.tipo = 'regalo'`), que es para lo que existe.
+- Lo construido en la parte 1 para la importación se queda: `medio_pago = 'importacion'`,
+  `normalizar_nombre`, `duplicados_probables` y `perfiles_sin_actividad`. No estorban y detectan
+  duplicados también entre cuentas creadas por la web.
+- El texto original de esta fila decía "se implementa, no se ejecuta" porque faltaban datos. Ya
+  no falta nada: se decidió no hacerlo.
 
 ## 15. Notas de implementación — parte 1
 
