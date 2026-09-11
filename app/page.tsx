@@ -12,6 +12,7 @@ import { QueEsXo } from "@/components/QueEsXo";
 import { Sedes } from "@/components/Sedes";
 import { SeleccionProvider } from "@/components/Seleccion";
 import { getCatalogoPublico } from "@/lib/catalogo-consultas";
+import { getDesdePrecioEspecial } from "@/lib/especiales-consultas";
 import { getPlanes } from "@/lib/planes-consultas";
 
 /**
@@ -25,10 +26,12 @@ import { getPlanes } from "@/lib/planes-consultas";
 export const revalidate = 3600;
 
 export default async function Home() {
-  const [{ cursos, profesoras, sedes, horarios }, planes] = await Promise.all([
-    getCatalogoPublico(),
-    getPlanes(),
-  ]);
+  const [{ cursos, profesoras, sedes, horarios }, planes, desdeEspecial] =
+    await Promise.all([
+      getCatalogoPublico(),
+      getPlanes(),
+      getDesdePrecioEspecial(),
+    ]);
 
   return (
     <SeleccionProvider>
@@ -50,7 +53,7 @@ export default async function Home() {
           horarios={horarios}
         />
         <Sedes sedes={sedes} />
-        <Planes planes={planes} />
+        <Planes planes={planes} desdeEspecial={desdeEspecial} />
         <ClaseDePrueba />
         <Formulario cursos={cursos} profesoras={profesoras} />
       </main>

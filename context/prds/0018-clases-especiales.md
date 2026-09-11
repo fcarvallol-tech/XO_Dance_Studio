@@ -41,7 +41,7 @@ coreografía es de ella, el Reel es de ella, y la mitad de lo que deja la clase 
 | **Visitante** que llegó por Instagram | Teléfono, sin cuenta | Viendo el Reel de una coreo que le gustó | Ver cuándo es, cuánto cuesta, quién la dicta y dónde, y reservar en menos de dos minutos |
 | **Alumna** con cuenta | Teléfono | Mirando el calendario o el link que le mandaron | Entender que se paga aparte de sus clases del pack, y reservar |
 | **Owner** (Felipe o Carla) | Computador | Después de acordar con la profesora fecha, sala y coreo | Crear la clase en cinco minutos, fijar el precio, publicarla, compartir el link |
-| **Admin** | Computador | Lo mismo que owner, sin tocar el precio | Crear y editar la clase con el precio por defecto |
+| **Admin** | Computador | Lo mismo que owner, sin tocar el precio | Crear y editar la clase con el precio de arranque, que no puede cambiar |
 | **Profesora** | Teléfono | Antes de la clase | Verla en su grilla e inscritas igual que una clase normal. En v1 la propone por WhatsApp |
 
 ## 3. Alcance
@@ -101,8 +101,9 @@ coreografía es de ella, el Reel es de ella, y la mitad de lo que deja la clase 
   sala, owner fija el mínimo con eso a la vista, y cancelar sigue siendo decisión de una persona.
 - **Devolución automática de dinero.** Toda devolución la registra un admin a mano (§8.3).
 - **Pagar una especial con créditos del pack.** Descartado en §8.1.
-- **El valor del precio por defecto, el variable y el sueldo base de la profesora.** Separados a
-  PRD-0009 §8 el 10/09/2026: no tocan la migración y no tienen por qué bloquearla.
+- **El variable y el sueldo base de la profesora.** Viven en PRD-0009 §8 desde el 10/09/2026: no
+  tocan esta migración. El valor de arranque del precio sí quedó acá, en §8.4, porque la
+  migración lo carga.
 - **Sacar la portada desde Instagram automáticamente.** El oEmbed de Meta exige una app con
   revisión y devuelve URLs que vencen (§8.7). La portada se sube a mano.
 
@@ -156,7 +157,7 @@ clase, la liquidación del período la incluye con la regla de PRD-0009 §8.
 | Soltó el cupo y la transferencia igual llegó | `acreditar_compra` **no la reactiva**: la compra queda `por_reembolsar` y admin devuelve la plata. Reactivar una reserva que ella soltó sería meterla a una clase a la que dijo que no iba (§8.3.b) |
 | La academia cancela | Las reservas pasan a canceladas y liberan cupo. Las compras pagadas quedan marcadas **por reembolsar** y admin las resuelve a mano. Nada de plata se mueve solo |
 | Una especial a $0 (Felipe, 10/09/2026: anotado, hoy no aplica) | Se puede publicar: `puedePublicar` acepta $0. Reservarla no puede pasar por "declarar transferencia" de $0: cuando se use, `reservar_especial()` crea la compra ya `pagada` con monto 0 y la reserva `confirmada`, sin expiración. **Mientras no se necesite, `reservar_especial()` la rechaza con un mensaje claro**, para que el camino no exista a medias. El variable de la profesora en esa clase es $0 (PRD-0009 §8.3) |
-| Admin crea y no hay precio por defecto cargado | `crear_especial()` falla con "Falta el precio por defecto: lo carga owner en parámetros". Owner sí puede crear, pasando el precio. Así la migración no necesita inventar un número |
+| Admin crea y alguien borró el valor de arranque | `crear_especial()` falla con "Falta el precio por defecto: lo carga owner en parámetros". Owner sí puede crear, pasando el precio. La migración lo deja cargado en $12.000, así que esto solo pasa si se borra a mano (§8.4) |
 | Owner cambia el precio con reservas ya hechas | Las compras hechas no cambian: el monto quedó congelado. Solo afecta a las siguientes |
 | Se edita fecha u hora con reservas hechas | Se permite, con aviso de cuántas reservas hay. No manda correo (fuera de alcance): hay que avisar por WhatsApp |
 | Se intenta borrar una especial publicada | No se borra: se cancela. Un borrador sin reservas sí se puede borrar |
@@ -280,10 +281,12 @@ insert into public.parametros (clave, valor, descripcion) values
    'Horas que una reserva pendiente de pago de una clase especial retiene el cupo.')
 on conflict (clave) do nothing;
 
--- El precio por defecto NO lo inserta la migración: no se inventa un precio.
--- Lo carga owner (PRD-0009 §8). Mientras no exista la fila, admin no puede crear
--- especiales y owner tiene que pasar el precio a mano.
--- clave: especial_precio_default_clp
+-- El valor con el que nace el formulario. No es el precio de las especiales:
+-- cada clase guarda el suyo y owner lo cambia al crearla (§8.4).
+insert into public.parametros (clave, valor, descripcion) values
+  ('especial_precio_default_clp', '12000',
+   'Precio con el que nace el formulario de una clase especial. Editable por owner en cada clase.')
+on conflict (clave) do nothing;
 ```
 
 ### 7.5 Funciones
@@ -414,15 +417,30 @@ están en pie—. Si la soltó por error, reserva de nuevo y listo.
 `expirada` en los dos casos y el motivo lo lleva la reserva, que es una por compra. Dos columnas
 diciendo lo mismo terminan diciendo cosas distintas.
 
-### 8.4 Precio: lo define owner en cada clase, con un default en `parametros`
+### 8.4 Precio: lo define owner en cada clase, con un valor de arranque en `parametros`
 
-No hay un precio fijo. Owner lo escribe al crear cada especial: puede ser premium o más barato que
-la parrilla. Admin no lo toca: crea con el valor por defecto, `especial_precio_default_clp`.
+No hay un precio fijo, y esto es lo primero que hay que entender de esta sección: **las clases
+especiales no tienen precio**. Cada una tiene el suyo, porque una es un proyecto premium y otra
+es una idea barata para llenar un horario.
 
-**El valor del default no lo decide este PRD ni lo inserta la migración.** Vive en PRD-0009 §8,
-con la propuesta de $12.000 y sus razones, esperando confirmación. Mientras no esté cargado,
-admin no puede crear especiales (§6). Es un default, no un precio: cada clase lleva el suyo, y ese
-número se congela en la compra.
+**`especial_precio_default_clp` = $12.000 es el valor con el que nace el formulario**
+(Felipe, 11/09/2026). No es una definición de precio: es lo que aparece escrito en el campo
+cuando owner abre "Nueva clase especial", para no partir de una casilla vacía. Owner lo cambia
+en cada clase, y el número que se congela en la compra es el de **la clase**, no el del
+parámetro. Cambiar el parámetro no toca ninguna clase ya creada ni ninguna compra hecha.
+
+Consecuencias de que sea un valor de arranque y no un precio:
+
+- Vive en `parametros`, no en el código: se edita desde el Table Editor, sin desplegar.
+- Lo inserta la migración. Antes no lo hacía —para no inventar un número— pero desde que Felipe
+  lo confirmó, dejarlo vacío solo lograba que admin no pudiera crear nada el primer día.
+- **Admin no lo edita**, ni en el formulario ni por la función: crea con el valor de arranque tal
+  cual. Solo owner pasa un precio propio, y la validación está en la base (§8.6).
+- Si alguien borra la fila, `crear_especial` le dice a admin qué falta en vez de adivinar un
+  número (§6). Ese camino sigue existiendo y el escenario de la fase 3 lo prueba.
+- El formulario muestra al lado desde cuántas alumnas la profesora iguala una clase normal con
+  **ese** precio y esa sala (§12, PRD-0009 §8.3): el número de arranque no es una recomendación
+  silenciosa.
 
 ### 8.5 Variable de la profesora → PRD-0009 §8
 
@@ -553,8 +571,9 @@ Se prueban **con el artefacto que toca la persona**, en staging, antes del `db p
 - [ ] El tablero de owner muestra los cupos soltados por la alumna separados de los que
       expiraron, y de esos, cuántos fueron por una clase que canceló XO.
 - [ ] La academia cancela desde admin: las pagadas quedan `por_reembolsar` en la bandeja.
-- [ ] Sin `especial_precio_default_clp` cargado, admin no puede crear y owner sí. Con la fila
-      cargada, admin crea con ese valor aunque mande otro; owner fija el suyo.
+- [ ] Con la fila cargada —que es como queda tras la migración—, admin crea con los $12.000
+      aunque mande otro número, y owner fija el suyo. Cambiar el parámetro no toca ninguna clase
+      ya creada. Si se borra la fila, admin no puede crear y owner sí.
 - [ ] Guardar una especial en Diaguitas el jueves a las 20:00 se rechaza por solape con Reggaeton
       Femme 19:30.
 - [ ] La especial aparece en la grilla de la profesora con su título e `inscritas_de_clase` la
@@ -575,8 +594,9 @@ formato están mal.
 
 ## 12. Riesgos y supuestos
 
-- **Precio por defecto ($12.000) y sin sueldo base: confirmados por Felipe el 10/09/2026** en
-  PRD-0009 §8. La migración igual no inserta el precio: lo carga owner en la fase 7.
+- **Precio de arranque ($12.000) y sin sueldo base: confirmados por Felipe** el 10/09/2026 en
+  PRD-0009 §8, y el 11/09 quedó explícito que los $12.000 son **con lo que nace el formulario**,
+  no una definición de precio: la migración los carga y owner los cambia en cada clase (§8.4).
 - **Dependencia de Instagram.** Felipe la da por marginal: cuenta de negocios, pública. Si un Reel
   se borra o Instagram cambia `/embed/`, la ficha pierde el video y sobrevive con la portada.
 - **El `/embed/` como iframe no es API documentada.** Es exactamente lo que `embed.js` genera y
@@ -639,6 +659,31 @@ listo:
 - El conteo de `expirar_reservas_pendientes()` devolvía el `row_count` del update de `compras` y
   no cuántas reservas expiró. Corregido en la misma migración, con su caso en el escenario.
 
+**Fase 5 — lo público, escrito el 11/09/2026 fuera de orden** (antes que la fase 4, que es el
+formulario de admin). Lo que quedó y lo que eso implica:
+
+- `/clases-especiales` y `/clases-especiales/[slug]`, estáticas con revalidación y con el webhook
+  de `/api/revalidar` agregado para las dos rutas nuevas. `ReelFachada` monta el iframe recién al
+  tocar; la fila "Clases especiales · desde $X · Ver clases especiales" aparece en Planes solo si
+  `desdePrecio` devuelve un número.
+- **Dos clientes de Supabase, a propósito** (`lib/especiales-consultas.ts`): la ficha con el
+  cliente público, para que las páginas sigan prerenderizándose y RLS filtre; la portada firmada y
+  el conteo de cupo con la service role, porque el bucket es privado y `cupo_tomado` no se le
+  concede a `anon`. La consulta filtra igual que la política: publicada, programada y futura.
+- **La imagen de Open Graph no usa URL**: descarga el objeto con la service role y lo incrusta
+  como data URI. Una URL firmada dentro de una imagen cacheada vencería sin que nadie se entere.
+- `/entrar` ahora respeta `?volver=` **también con sesión iniciada**. Antes mandaba a la persona a
+  su inicio, así que una alumna con sesión que apretaba "Reservar por $X" terminaba en
+  "Mis clases" buscando de nuevo la clase que ya había elegido. Nadie pasaba `volver` en un link
+  hasta ahora.
+- ⚠️ **`npm run build` falla**, y es la misma situación que PRD-0017 dejó anotada: compila y pasa
+  TypeScript, pero el prerender se cae con `column clases.slug does not exist` y el mensaje que
+  nombra la migración. Es deliberado —una lectura que se cae y se ve como "no hay clases
+  especiales" no se distingue del caso normal (§17 de PRD-0017)—, pero significa que **estas
+  páginas no se renderizaron nunca**: están verificadas por el compilador, no por un navegador.
+- El texto del botón, "Ver el Reel en Instagram", es palabra por palabra el que ya dice
+  `/privacidad` §9. Verificado.
+
 ## 14. Para retomar — estado al 10/09/2026
 
 **Migración de Pau (`20260908150000_horarios_pau_martes_y_jueves.sql`)**
@@ -688,6 +733,12 @@ listo:
       migración, en el tablero y en el escenario.
 - [x] 10/09/2026: defecto de concurrencia de PRD-0017 anotado en **PRD-0017 §18** y arreglado en
       esta migración: el `for update` estaba donde se descuenta y no donde se devuelve.
+- [x] 11/09/2026: los $12.000 quedaron escritos como **valor de arranque del formulario**, no
+      como definición de precio (§8.4), y la migración los carga.
+- [x] 11/09/2026: fase 5 escrita —lista, página propia, Open Graph, fachada del Reel y fila en
+      Planes—, **sin renderizar nunca**. Ver §13.
+- [ ] **Fase 4 sigue pendiente**: sin el formulario de admin no hay cómo crear una especial, así
+      que no hay nada que mirar en las páginas nuevas.
 - [ ] **Re-enlazar la CLI a staging** (`npx supabase link --project-ref ybopuahlzbjkkwumkllk`) y
       verificar con `cat supabase/.temp/project-ref` antes de cualquier cosa.
 - [ ] Push a staging: **necesita aprobación de Felipe en el mensaje.** Después, correr el

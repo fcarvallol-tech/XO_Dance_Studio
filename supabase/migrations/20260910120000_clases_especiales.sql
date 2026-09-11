@@ -239,15 +239,25 @@ comment on column public.reservas.cancelada_at is
 -- ---------------------------------------------------------------------------
 -- 4. parametros
 -- ---------------------------------------------------------------------------
--- La retención es el mecanismo de §8.2; el número lo edita owner. 24 h es una
--- propuesta, no un dato del negocio.
+-- Los dos parámetros de las especiales. Ninguno es una definición de negocio
+-- congelada: los dos viven acá justamente para cambiarse sin desplegar.
 --
--- El precio por defecto (`especial_precio_default_clp`) NO lo inserta esta
--- migración: no se inventa un precio. Lo carga owner (PRD-0009 §8.1, $12.000
--- confirmado). Mientras no exista la fila, admin no puede crear especiales y
--- owner tiene que pasar el precio a mano.
+-- `especial_precio_default_clp` = 12000 es **el valor con el que nace el
+-- formulario**, no el precio de las clases especiales. Cada clase lleva el
+-- suyo, owner lo cambia al crearla, y el número que se congela en la compra es
+-- el de la clase (Felipe, 11/09/2026). Que exista desde el principio es lo que
+-- permite que admin pueda crear una sin inventarse un precio; si alguien borra
+-- la fila, `crear_especial` se lo dice a admin en vez de adivinar.
+--
+-- `especial_retencion_horas` = 24 es el mecanismo de §8.2, y la misma idea: una
+-- propuesta editable, no un dato del negocio.
+--
+-- `on conflict do nothing`: si owner ya lo movió, la migración no le pisa el
+-- número al reaplicarse.
 
 insert into public.parametros (clave, valor, descripcion) values
+  ('especial_precio_default_clp', '12000',
+   'Precio con el que nace el formulario de una clase especial. Editable por owner en cada clase; no es el precio de las especiales. PRD-0018 §8.4.'),
   ('especial_retencion_horas', '24',
    'Horas que una reserva pendiente de pago de una clase especial retiene el cupo. PRD-0018 §8.2.')
 on conflict (clave) do nothing;
@@ -1579,7 +1589,8 @@ grant execute on function public.metricas_demanda(timestamptz, timestamptz)
 -- ---------------------------------------------------------------------------
 -- 9. Lo que esta migración NO hace
 -- ---------------------------------------------------------------------------
--- · No inserta `especial_precio_default_clp`. Lo carga owner (PRD-0009 §8.1).
+-- · No fija el precio de ninguna clase: `especial_precio_default_clp` es con
+--   lo que nace el formulario y cada especial guarda el suyo.
 -- · No agenda el barrido diario: `expirar_reservas_pendientes()` la llama el
 --   cron de generación de clases desde el código, y ese cambio va con la fase
 --   4, después de que esta migración corra en producción. Mientras tanto la

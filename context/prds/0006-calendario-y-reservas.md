@@ -151,3 +151,71 @@ Al escribir esto había **0 reservas** en la base, así que el flujo completo �
 clase, ver el crédito de vuelta— no se pudo reproducir con datos reales. Conviene hacerlo con la
 primera reserva de verdad, o con una de prueba, antes de confiar en él. Es el mismo pendiente que
 ya arrastra la política `reservas_de_mis_clases`.
+
+## 11. El comprobante que se reintentaba solo en el papel (11/09/2026)
+
+**Encontrado el 11/09/2026**, diseñando el correo de las clases especiales (PRD-0018 fase 6). Se
+fue a mirar cómo manda el comprobante la reserva de parrilla, para copiar el patrón, y el patrón
+no estaba completo.
+
+### La promesa
+
+§5 de este PRD dice, desde agosto:
+
+> **Falla el email pero la reserva se creó.** La reserva vale. **El comprobante se reintenta**; no
+> se revierte una reserva por un problema de correo.
+
+No es una frase suelta: la misma promesa está escrita en **ADR-0007** ("no se revierte… se
+reintenta") y repetida en **PRD-0017 §11**. Tres documentos, la misma garantía, dos meses.
+
+### Lo que hay
+
+La mitad buena existe y está bien hecha: `enviar()` en `lib/correo.ts` no lanza nunca, así que un
+problema de correo **no revierte** ni una reserva ni una compra. Eso funciona.
+
+La otra mitad no existe. `enviar()` atrapa el error, hace `console.error` y devuelve `false`. Ese
+`false` es lo único que queda del fallo, y **ninguno de los cuatro llamadores lo mira**: las cuatro
+líneas de `lib/acciones.ts` son `await avisarX({ … })` sin asignar el resultado. No hay tabla de
+envíos, no hay cola, no hay cron que reintente, no hay nada que registre que ese correo se debía
+mandar. **"Se reintenta" no está implementado en ninguna parte del repositorio.**
+
+O sea: si Resend está caído treinta segundos, la alumna reservó, se le descontó el crédito y su
+comprobante no existe ni va a existir. Lo único que queda es una línea en los logs de una función
+de servidor.
+
+### Por qué nadie lo notó en dos meses
+
+Es la misma forma del defecto de PRD-0017 §17, y por eso conviene decirlo con las mismas palabras:
+**el fallo se ve exactamente igual que el caso normal.** Un correo que no llega no se distingue de
+uno que llegó a spam, o de uno que la persona no abrió. Nadie reporta lo que no puede ver, y el
+código no dejaba ningún rastro que se pudiera revisar después.
+
+Se suma que hoy hay poquísimas reservas reales: con volumen bajo, la probabilidad de que un envío
+falle es baja, y el día que falle no va a haber con qué demostrarlo.
+
+### Por qué aparece recién ahora
+
+Porque en las clases especiales el comprobante deja de ser una cortesía. Ahí el correo es el que
+lleva **hasta qué hora queda tomado el cupo** (PRD-0018 §8.2), y es lo que la alumna mira antes de
+transferir. Un correo que no llega y del que no queda registro cuesta un cupo bloqueado y una
+transferencia que nadie esperaba.
+
+### Qué habría que hacer — no se hizo acá
+
+Este PRD lo deja anotado, no arreglado: toca los cuatro avisos y necesita una tabla, así que es
+trabajo con su propio alcance y no un parche dentro de PRD-0018.
+
+1. **Registrar cada envío** en una tabla `envios_correo` (destinatario, plantilla, datos, estado,
+   intentos, último error). Sin registro no hay reintento posible: hoy, cuando falla, no queda ni
+   a quién había que escribirle.
+2. **Reintentar desde el cron que ya existe** (`/api/generar-clases` ya corre a diario y ya tiene
+   su secreto), o desde `pg_cron` si está disponible.
+3. **Que el fallo se vea**: hoy `reservarClase` devuelve `{ ok: true }` igual que si el correo
+   hubiera salido. Como mínimo, que la pantalla diga "reservaste, pero no pudimos mandarte el
+   comprobante" en vez de callarlo.
+
+Mientras tanto, la promesa de §5 está **escrita pero no cumplida**, y así queda marcada acá para
+que nadie la lea como si existiera.
+
+> Sigue pendiente además el correo de **clase cancelada por XO** (§10): un trigger no puede
+> mandarlo. Son dos huecos distintos del mismo tema, y los dos esperan el mismo trabajo.

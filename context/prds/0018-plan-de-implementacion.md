@@ -19,7 +19,7 @@ la migración salió de acá (ver abajo).
 | 1 | ¿Créditos o compra aparte? | ✅ **Compra aparte** (Felipe, 09/09) |
 | 2 | ¿Se retiene cupo mientras se aprueba la transferencia? | ✅ **Sí** (Felipe, 09/09). Expiración `min(declarada + retención, inicio − 2 h)`, perezosa más barrido. La retención es el parámetro `especial_retencion_horas`, que nace en 24 h como propuesta editable |
 | 3 | Cancelación: ¿devolución automática? | ✅ **No** (Felipe, 09/09). Columnas de reembolso, estados `expirada` y `por_reembolsar`, `registrar_reembolso()` |
-| 4 | Quién crea y quién fija precio | ✅ Admin y owner crean; solo owner fija `precio_clp` (Felipe, 09/09). Sin default cargado, admin no puede crear |
+| 4 | Quién crea y quién fija precio | ✅ Admin y owner crean; solo owner fija `precio_clp` (Felipe, 09/09). El valor de arranque del formulario son $12.000 y lo carga la migración (Felipe, 11/09): no es un precio, es con lo que nace el campo |
 | 5 | Video | ✅ Iframe a `/embed/` sin `embed.js`, más **portada** propia obligatoria (PRD §8.7, 10/09) |
 
 **Lo que salió de esta fase el 10/09/2026** porque no cambia ni una columna: el **valor** del
@@ -82,8 +82,9 @@ código: el corredor falló por módulo inexistente y después pasó.
    `por_reembolsar`, check plan-o-clase.
 3. `reservas`: `credito_id` nullable, `compra_id`, `expira_at`, estados `pendiente_pago` y
    `expirada`, check crédito-o-compra.
-4. `parametros`: `especial_retencion_horas` = 24. **No se inserta `especial_precio_default_clp`**:
-   lo carga owner en la fase 7 (confirmado el 10/09: 12000, PRD-0009 §8).
+4. `parametros`: `especial_retencion_horas` = 24 y `especial_precio_default_clp` = 12000, los
+   dos con `on conflict do nothing` para no pisar lo que owner haya movido. El precio es **el
+   valor con el que nace el formulario**, no el precio de las especiales (§8.4, Felipe 11/09).
 5. Política `clases_lectura_publica` reescrita: borradores no son públicos. **Mirar qué otras
    políticas tiene `clases`** antes, porque se suman con OR.
 6. Funciones de §7.5, cada una con `revoke ... from public, anon` y `grant execute ... to
@@ -139,7 +140,7 @@ Por SQL, en transacciones revertidas:
 | `update clases set estado = 'cancelada'` | pagadas → `por_reembolsar`; pendientes → `expirada`; las de parrilla siguen devolviendo crédito |
 | `anon` consulta `clases` por REST | ve la publicada, no el borrador |
 | `crear_especial()` Diaguitas jueves 20:00 | rechazo por solape con 19:30 |
-| Admin crea sin default cargado | rechazo con "Falta el precio por defecto" |
+| Admin crea con el valor de arranque borrado | rechazo con "Falta el precio por defecto" |
 | Se carga el default; admin manda `precio_clp` | se ignora, queda el default; owner sí lo fija |
 | `metricas_*` | ingresos y atribución incluyen la compra; `conciliacion` de créditos cuadra porque no la toca |
 
@@ -170,7 +171,8 @@ está verificado hasta que esto corra**: acá no hay Postgres local con que pars
 - Vista previa antes de publicar usa `ReelFachada`, el mismo componente que verá la visitante:
   si el Reel es privado, se ve el error de Instagram acá y no en producción.
 - Precio: campo editable para owner, bloqueado con el default visible para admin. Si no hay
-  default cargado, admin ve el aviso y no puede guardar.
+  valor de arranque cargado, admin ve el aviso y no puede guardar. El campo dice que son
+  $12.000 de partida y que se cambian por clase, no que las especiales valgan $12.000.
 - Al lado de "mínimo de alumnas": "Con este precio y esta sala, la profesora iguala una clase
   normal desde N alumnas" (`alumnasParaIgualarBase`). Se recalcula al cambiar precio o sede.
 - Aviso de "hay N reservas" al editar fecha u hora.
@@ -183,6 +185,13 @@ publicar, ver la vista previa. Con rol admin, el precio está bloqueado.
 ---
 
 ## Fase 5 — Lo público: lista, página propia y fila en Planes
+
+**Escrita el 11/09/2026, fuera de orden y sin renderizar.** Se construyó antes que la fase 4, así
+que no existe forma de crear una especial y las páginas no se han visto nunca en un navegador:
+`npm run build` compila pero falla en el prerender con `column clases.slug does not exist`,
+porque la migración sigue sin aplicarse. Es el mismo estado que PRD-0017 dejó anotado, y es
+deliberado: una lectura que se cae y se ve como "no hay clases especiales" no se distingue del
+caso normal. **Lo que sigue en verde es el compilador, no el producto.**
 
 **Archivos:** `app/clases-especiales/page.tsx` · `app/clases-especiales/[slug]/page.tsx` ·
 `app/clases-especiales/[slug]/opengraph-image.tsx` · `components/Especiales.tsx` ·
@@ -200,8 +209,10 @@ publicar, ver la vista previa. Con rol admin, el precio está bloqueado.
   publicadas futuras. El texto "los mismos valores para todos los cursos" pasa a hablar de la
   parrilla.
 - El botón dice lo que pasa: "Reservar por $12.000". Nunca "Reservar" a secas.
-- `/privacidad`: ✅ ya hecho el 10/09/2026 (fila de Meta en §5, párrafo en §9). Solo revisar
-  que el texto del botón coincida con lo que dice la política.
+- `/privacidad`: ✅ ya hecho el 10/09/2026 (fila de Meta en §5, párrafo en §9). ✅ Verificado el
+  11/09: la política dice "Ver el Reel en Instagram" y el botón dice exactamente eso.
+- `/entrar` respeta `?volver=` también con sesión iniciada, para que "Reservar por $X" no deje a
+  una alumna con sesión en "Mis clases" buscando otra vez la clase que ya eligió.
 - Colores solo de tokens `xo-*`; rosa nunca como texto sobre claro; copy en español de Chile.
   Leer `BRAND.md` §7 antes de escribir una frase.
 
@@ -243,8 +254,9 @@ venció el plazo para transferir" y la cancelación de siempre.
 1. `npm run build` y `npm test` en verde en la rama.
 2. `cat supabase/.temp/project-ref` dice producción. `db push --dry-run` muestra solo esta migración.
 3. **`db push` con aprobación de Felipe en ese mensaje.**
-4. Owner carga `especial_precio_default_clp` = **12000** (confirmado el 10/09/2026, PRD-0009 §8).
-   Crear la primera especial real con Carla.
+4. Verificar que `especial_precio_default_clp` quedó en **12000** —lo carga la migración— y que
+   owner lo puede cambiar desde el Table Editor sin desplegar. Crear la primera especial real con
+   Carla, con **su** precio, que puede no ser 12000.
 5. Repetir el checkpoint de la fase 5 contra producción, desde un teléfono.
 6. Actualizar PRD §13 y estado, `ROADMAP.md`, `ARCHITECTURE.md` §5.3 (clases sin horario, compras
    por clase, reservas pendientes) y `CONTEXT.md` §5.b si hace falta (ya dice "de la parrilla").
@@ -260,6 +272,6 @@ venció el plazo para transferir" y la cancelación de siempre.
 | 2 — Migración | ✅ **Escrita el 10/09/2026**, `20260910120000_clases_especiales.sql`. Sin aplicar: el push a staging espera aprobación. Incluye `liberada` (§8.3.b) y el arreglo de PRD-0017 §18 |
 | 3 — Escenario en staging | ✅ Escrito el 10/09/2026 (20 casos). ⏸ **Sin correr**: falta re-enlazar la CLI a staging y aprobar el push |
 | 4 — Formulario y bandeja | Depende de la 2 |
-| 5 — Público, Planes y privacidad | Depende de la 4 |
+| 5 — Público, Planes y privacidad | ✅ Escrita el 11/09/2026, fuera de orden. ⏸ **Sin renderizar**: falta la migración aplicada y la fase 4 para tener qué mostrar |
 | 6 — Reservar, aprobar, cancelar | Depende de la 3 y la 5 |
 | 7 — Producción | Depende de todo, y de aprobación del push |

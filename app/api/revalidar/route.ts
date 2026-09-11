@@ -5,8 +5,11 @@ import { NextResponse } from "next/server";
  * Lo que hace que un cambio en el Table Editor se vea en segundos.
  *
  * La llama un Database Webhook de Supabase cuando cambia `cursos`,
- * `profesoras` o `cursos_profesoras`. No la llama una persona, así que no se
- * protege con sesión sino con un secreto compartido en cabecera.
+ * `profesoras` o `clases`. No la llama una persona, así que no se protege con
+ * sesión sino con un secreto compartido en cabecera.
+ *
+ * Publicar una clase especial es el caso donde esperar una hora se nota: se
+ * publica para compartir el link en el momento (PRD-0018 §5.1).
  *
  * Sin esto el sitio igual se actualiza solo, por el `revalidate` de cada
  * página, pero puede tardar hasta una hora. Ver PRD-0015 §5.
@@ -30,6 +33,18 @@ export async function POST(request: Request) {
   // siguiente visita la regenera. No hay regeneración ansiosa en App Router.
   revalidatePath("/");
   revalidatePath("/profesoras/[slug]", "page");
+  // La landing muestra el "desde $X" de las especiales, la lista las muestra
+  // todas y cada una tiene su página: las tres cambian al publicar una.
+  revalidatePath("/clases-especiales");
+  revalidatePath("/clases-especiales/[slug]", "page");
 
-  return NextResponse.json({ ok: true, revalidado: ["/", "/profesoras/[slug]"] });
+  return NextResponse.json({
+    ok: true,
+    revalidado: [
+      "/",
+      "/profesoras/[slug]",
+      "/clases-especiales",
+      "/clases-especiales/[slug]",
+    ],
+  });
 }

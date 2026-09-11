@@ -38,11 +38,15 @@ const ERRORES: Record<string, string> = {
 export default async function Entrar({ searchParams }: Props) {
   const { volver, error } = await searchParams;
 
-  // Quien ya tiene sesión no ve la puerta: se va a donde le corresponde.
-  const perfil = await perfilActual();
-  if (perfil) redirect(inicioSegunRol(perfil.rol));
+  const pedido = volver?.startsWith("/") && !volver.startsWith("//") ? volver : null;
 
-  const destino = volver?.startsWith("/") && !volver.startsWith("//") ? volver : "/mi-perfil";
+  // Quien ya tiene sesión no ve la puerta. Si venía pidiendo una página —el
+  // botón de una clase especial, por ejemplo— se va a **esa**: mandarla a su
+  // inicio la obligaría a buscar de nuevo lo que ya había elegido.
+  const perfil = await perfilActual();
+  if (perfil) redirect(pedido ?? inicioSegunRol(perfil.rol));
+
+  const destino = pedido ?? "/mi-perfil";
 
   return (
     <main className="xo-grain relative flex min-h-dvh flex-col justify-center px-6 py-16 sm:px-10">

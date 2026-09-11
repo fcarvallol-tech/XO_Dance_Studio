@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { BotonInscripcion } from "./BotonInscripcion";
 import { Reveal } from "./Reveal";
 import {
@@ -17,7 +18,14 @@ import {
  * Lista de filas, no tarjetas: son cuatro variantes del mismo producto y lo
  * que la visitante compara es una columna de precios, no cuatro bloques.
  */
-export function Planes({ planes }: { planes: Plan[] }) {
+export function Planes({
+  planes,
+  desdeEspecial,
+}: {
+  planes: Plan[];
+  /** El precio más bajo entre las clases especiales publicadas. `null` = no hay. */
+  desdeEspecial: number | null;
+}) {
   const conPromo = hayPromo(planes);
   const promo = nombrePromo(planes);
   const hasta = hastaPromo(planes);
@@ -34,7 +42,7 @@ export function Planes({ planes }: { planes: Plan[] }) {
         </h2>
         <p className="mt-5 max-w-md text-xo-blanco/70">
           Mientras más clases lleves, menos te sale cada una. Los mismos valores
-          para todos los cursos.
+          para todos los cursos de la parrilla.
         </p>
 
         {conPromo && hasta ? (
@@ -61,6 +69,17 @@ export function Planes({ planes }: { planes: Plan[] }) {
               <Fila plan={plan} />
             </li>
           ))}
+
+          {/* Las especiales no son un pack: son una coreo con fecha propia y
+              precio propio, y se pagan aparte. Van acá igual porque es donde
+              alguien mira cuánto cuesta bailar en XO. Sin ninguna publicada, la
+              fila no existe (PRD-0018 §3.8). */}
+          {desdeEspecial !== null ? (
+            <li>
+              <div aria-hidden="true" className="h-px bg-xo-blanco/15" />
+              <FilaEspeciales desde={desdeEspecial} />
+            </li>
+          ) : null}
         </ul>
 
         <p className="mt-10 max-w-md text-sm leading-relaxed text-xo-blanco/60">
@@ -76,6 +95,35 @@ export function Planes({ planes }: { planes: Plan[] }) {
         </div>
       </Reveal>
     </section>
+  );
+}
+
+/** La fila de las clases especiales: no tiene "por clase" porque es una sola. */
+function FilaEspeciales({ desde }: { desde: number }) {
+  return (
+    <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 py-7">
+      <div>
+        <p className="font-display text-[clamp(1.75rem,5vw,2.5rem)] leading-none text-xo-blanco">
+          Clases especiales
+        </p>
+        <p className="mt-2 text-sm text-xo-blanco/60">
+          Una coreo puntual, fuera del horario de siempre. Se paga aparte.
+        </p>
+        <Link
+          href="/clases-especiales"
+          className="xo-eyebrow mt-4 inline-block text-xo-rosa underline-offset-4 transition-colors hover:text-xo-rosa-claro hover:underline"
+        >
+          Ver clases especiales
+        </Link>
+      </div>
+
+      <p className="text-right">
+        <span className="mr-2 text-base text-xo-blanco/60">desde</span>
+        <span className="font-display text-[clamp(2rem,6vw,3rem)] leading-none text-xo-blanco">
+          {clp(desde)}
+        </span>
+      </p>
+    </div>
   );
 }
 
