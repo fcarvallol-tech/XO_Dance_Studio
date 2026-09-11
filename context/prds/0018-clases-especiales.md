@@ -709,6 +709,28 @@ el pasado y entra en "las dictadas del mes". El numerador no se movió —las do
 tienen cero reservas—, así que no era una regresión de esta migración. Se ancló la medición a las
 cinco clases del escenario, que es sobre lo que se calculó el número a mano. **25 de 25.**
 
+**Fase 7 — todo listo menos el push, que espera aprobación (11/09/2026).**
+
+- `npm run build` **pasa apuntando a staging**, donde la migración existe: prerenderizó
+  `/clases-especiales/coreo-del-escenario-20260916` desde `generateStaticParams`. Contra
+  producción sigue fallando con `column clases.slug does not exist`, y eso es exactamente lo que
+  el push resuelve. `npm test` 87/87, `tsc --noEmit` y lint limpios.
+- **Dry-run contra producción:** 17 migraciones aplicadas, una sin aplicar, y `db push --dry-run`
+  muestra solo `20260910120000_clases_especiales.sql`. La CLI quedó **de vuelta en staging**, que
+  es el estado seguro por defecto.
+- **El barrido diario ya es código y está probado.** `/api/generar-clases` llama a
+  `expirar_reservas_pendientes()` después de generar, y **su fallo no tumba la generación**: con
+  la migración sin aplicar esa función no existe, y el cron tiene que seguir creando clases
+  igual. Una regla de orden que alguien tiene que recordar es una regla que algún día no se
+  recuerda. Verificado contra staging por HTTP: sin secreto responde 401; con el secreto que
+  manda Vercel devolvió `{"ok":true,"creadas":2,"expiradas":0}`, y con una pendiente vencida
+  sembrada a mano devolvió `expiradas: 1` y la dejó en `expirada` junto con su compra.
+- `ARCHITECTURE.md` §5.3, §5.4 y §5.5 actualizadas: clases sin horario, compras por clase,
+  reservas pendientes y los tres finales. `CONTEXT.md` §5.b **no hizo falta tocarla**: ya decía
+  "cualquier clase de la parrilla".
+- **Falta: el `db push` a producción, con aprobación en el mensaje**, y antes de publicar la
+  primera especial de verdad, **PRD-0019**.
+
 **Fases 4 y 6 — construidas y verificadas con clics el 11/09/2026.** La fase 4 no existía —eso se
 aclaró mirando el repo, no la memoria— y sin ella la 6 no se podía recorrer, así que se
 construyeron juntas: formulario de admin, subida de portada por Route Handler con la service role,
@@ -858,5 +880,11 @@ formulario de admin). Lo que quedó y lo que eso implica:
       Escrito el 11/09/2026, sin aprobar.
 - [x] 11/09/2026: CLI re-enlazada a **staging** (`ybopuahlzbjkkwumkllk`) y verificada antes de
       cada comando. Ojo al volver: para `npm run build` y para producción hay que re-enlazar.
-- [ ] Push a **producción**: fase 7, y con PRD-0019 antes (§10).
+- [x] 11/09/2026: fase 7 preparada. Build verde contra staging, dry-run contra producción con una
+      sola migración pendiente, barrido del cron escrito y probado, `ARCHITECTURE.md` al día.
+- [ ] **`db push` a producción: necesita la aprobación de Felipe en ese mismo mensaje.** No se
+      hereda de un "dale con la fase 7" (`CLAUDE.md`).
+- [ ] Después del push: verificar `especial_precio_default_clp` = 12000, crear la primera especial
+      real con Carla y repetir el checkpoint de la fase 5 **desde un teléfono**.
+- [ ] 🔴 **PRD-0019 antes de publicar la primera especial de verdad.**
 - [ ] Despliegues Preview en Error en Vercel de los últimos días, sin revisar.

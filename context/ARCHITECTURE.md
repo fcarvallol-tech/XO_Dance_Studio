@@ -234,6 +234,27 @@ estado (pendiente|aprobada|rechazada), resuelta_por, resuelta_at, respuesta`
 - Resolver pasa por `resolver_solicitud`, con respuesta obligatoria. Aprobar **no crea el
   horario**: eso queda en el portal de administración, porque toca cupos y calendario.
 
+**Clases especiales** — PRD-0018, en staging desde el 11/09/2026. Una especial **es una fila más
+de `clases`**, no una tabla nueva: `tipo = 'especial'`, **sin `horario_id`**, con ficha propia
+(`slug, titulo, cancion, descripcion, reel_codigo, portada_path, dificultad, fin, precio_clp,
+publicada_at, creada_por, minimo_alumnas`).
+
+Se extendió `clases` y no se creó una tabla porque todo lo que cuesta plata y ya está probado
+—`reservar()`, el trigger de devolución, el bloqueo de cupo, `inscritas_de_clase`, la grilla de la
+profesora, las métricas de ocupación— trabaja sobre `clases`. Una especial es una clase que no
+vino de un horario y que se paga con una compra propia.
+
+- `horario_id` pasó a ser nullable. El unique `(horario_id, fecha)` sigue sirviendo: los null no
+  chocan entre sí, y `generar_clases()` no se tocó.
+- Un check exige coherencia: la parrilla lleva horario y no lleva título ni precio; la especial
+  lleva título, slug y precio, y no lleva horario.
+- **Nada de las especiales se escribe por PostgREST.** Las políticas de insert/update de admin
+  sobre `clases` quedaron limitadas a la parrilla, y todo pasa por funciones `security definer`
+  que reciben al actor: `crear_especial`, `editar_especial`, `publicar_especial`,
+  `borrar_borrador_especial`.
+- **`portadas-especiales` es un bucket privado.** La columna guarda la ruta, nunca una URL; el
+  sitio firma al renderizar y Open Graph descarga el objeto con la service role.
+
 ### 5.3.b Suscripciones (rama Teens)
 
 El modelo es híbrido: Teens se vende como **suscripción mensual**, no como packs.
@@ -289,6 +310,13 @@ Cuatro filas iniciales: clase suelta, 2, 4 y 8 clases. **Un solo nivel de precio
 `perfil_id, plan_id, cantidad_clases, monto_clp, estado (pendiente|pagada|fallida|reembolsada),
 medio_pago, referencia_pasarela, pagada_at`
 
+> **Una compra puede ser de un plan o de una clase** (PRD-0018). `plan_id` pasó a nullable y se
+> agregó `clase_id`, con un check que exige exactamente uno de los dos. Una compra de clase **no
+> acredita créditos**: `acreditar_compra` la reconoce por `clase_id` y en vez de crear un lote
+> confirma la reserva. Estados nuevos: `expirada` —nadie acreditó a tiempo— y `por_reembolsar`
+> —hay plata recibida sin cupo que dar—. Las devoluciones son siempre manuales:
+> `registrar_reembolso` deja monto, autor y fecha, y nunca se dispara sola.
+
 **`creditos`** — el saldo. **No es un contador simple.**
 `perfil_id, compra_id, cantidad_inicial, cantidad_disponible, fecha_vencimiento, estado`
 
@@ -338,6 +366,24 @@ reservada_at, cancelada_at, comprobante_enviado_at`
 ⚠️ **Concurrencia.** Con 22 cupos y campañas de Instagram, dos personas pueden reservar el
 último lugar al mismo tiempo. El chequeo de cupo debe hacerse en base de datos —constraint o
 transacción con bloqueo—, no leyendo el conteo y escribiendo después.
+
+**Reservas de clases especiales** (PRD-0018). `credito_id` pasó a nullable, se agregó `compra_id`
+y un check exige uno u otro: una reserva se paga con un crédito **o** con una compra, nunca con
+las dos. Se agregó `expira_at`.
+
+- Una reserva de especial nace **`pendiente_pago` y ocupa cupo** hasta `expira_at`. Invierte para
+  las especiales la regla de PRD-0017 —una compra pendiente no retiene cupo— y tiene sentido:
+  allá se compraba un pack sin fecha, acá un asiento en una clase con fecha.
+- **El cupo tomado es una sola definición**, `cupo_tomado(clase_id)`: confirmadas + asistió +
+  pendientes vigentes. La usan `reservar`, `reservar_especial`, la página pública y las métricas.
+  Una pendiente que cuenta en un lado y no en otro es un cupo vendido dos veces.
+- **Tres finales distintos a propósito** (§8.3.b de PRD-0018): `liberada` —la alumna soltó el cupo
+  antes de que la aprobaran—, `expirada` —se venció el plazo o cayó la clase— y `cancelada` —se
+  cayó una que ya estaba en pie—. No es cosmética: una `liberada` **no se reactiva** al acreditar
+  la compra, una `expirada` sí si hay cupo.
+- La expiración es **perezosa más barrido**: `reservar_especial` expira las vencidas de esa clase
+  antes de contar, así que el cupo se libera cuando alguien lo necesita; el cron diario barre el
+  resto para que la bandeja y las métricas no muestren pendientes muertas.
 
 ### 5.6 Finanzas
 

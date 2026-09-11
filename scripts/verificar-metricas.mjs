@@ -11,7 +11,7 @@
  * que va a usar la página. Reimplementarlas en el verificador probaría que dos
  * copias coinciden, no que la que se usa está bien.
  */
-import { CLASES_ESCENARIO, conectar } from "./staging.mjs";
+import { conectar } from "./staging.mjs";
 import {
   atribuir,
   brecha,
@@ -85,24 +85,21 @@ const top = planesMasVendidos(
   R.venta.por_plan.map((p) => ({ slug: p.slug, nombre: p.nombre, compras: p.compras })),
 );
 /**
- * La ocupación se mide **solo sobre las clases del escenario**.
+ * ⚠️ **Este valor da distinto desde el 11/09/2026 y está bien que dé distinto.**
  *
- * El 11/09/2026 este valor empezó a dar 5 de 110 en vez de 5 de 66 sin que
- * nadie cambiara una métrica: staging tiene clases de parrilla de verdad
- * —las que generó la migración de Pau— y cada día que pasa una más queda en el
- * pasado y entra en "dictadas". El número esperado se calculó a mano sobre las
- * cinco clases sembradas, así que comparar contra todo el mes era comparar
- * contra algo que crece solo.
+ * Mide la ocupación sobre **todas** las clases dictadas del mes, y staging tiene
+ * clases de parrilla de verdad —las que generó la migración de Pau— que cada día
+ * que pasa entran al pasado y se suman al denominador. El esperado de
+ * PRD-0010 §11.4 se calculó a mano sobre las cinco clases del escenario, así que
+ * la comparación se corre sola: 5 de 66 pasó a 5 de 110, y va a seguir subiendo.
  *
- * Restringirlo no debilita la prueba: los valores los sigue calculando el SQL y
- * la ocupación la sigue calculando `lib/dominio`. Lo único que se fija es sobre
- * qué clases.
+ * **Decisión de Felipe (11/09/2026): se deja así.** Hoy el ruido es mínimo y
+ * separar las cifras del escenario de las reales no compensa. Se revisa cuando
+ * haya volumen — anotado en PRD-0010 §11.5. El numerador sí sigue siendo
+ * comparable, y es lo que importa: si cambiara, sería una regresión de verdad.
  */
-const delEscenario = new Set(CLASES_ESCENARIO);
 const ocup = ocupacionPromedio(
-  D.por_clase
-    .filter((c) => c.dictada && delEscenario.has(c.clase_id))
-    .map((c) => ({ reservas: c.reservas, cupo: c.cupo })),
+  D.por_clase.filter((c) => c.dictada).map((c) => ({ reservas: c.reservas, cupo: c.cupo })),
 );
 const atrib = atribuir(
   D.por_profesora.flatMap((p) =>

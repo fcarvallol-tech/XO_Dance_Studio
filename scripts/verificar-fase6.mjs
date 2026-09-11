@@ -111,6 +111,26 @@ const sesion = async (email, volver) => {
 
 let claseId = null;
 
+/**
+ * Borra lo que dejó esta verificación, la de ahora y las de antes. Se corre al
+ * final y también al principio, por si una corrida anterior se cortó a la mitad.
+ */
+async function limpiar() {
+  await sql(
+    `with mias as (
+       select id from public.clases
+       where tipo = 'especial' and titulo like 'Coreo de la fase 6%'
+     ),
+     sin_reservas as (
+       delete from public.reservas where clase_id in (select id from mias) returning compra_id
+     ),
+     sin_compras as (
+       delete from public.compras where clase_id in (select id from mias) returning id
+     )
+     delete from public.clases where id in (select id from mias)`,
+  ).catch((e) => console.error("no se pudo limpiar:", e.message));
+}
+
 // PRD-0017 deja los datos de transferencia vacíos a propósito, y con eso la
 // pantalla de reserva se niega a pedir plata —bien hecho—. En staging se cargan
 // con datos evidentemente falsos para poder recorrer el camino entero.
@@ -124,6 +144,8 @@ await sql(`
     ('transferencia_correo', 'staging@ejemplo.invalid', 'Staging')
   on conflict (clave) do update set valor = excluded.valor
 `);
+
+await limpiar();
 
 try {
   // 1. Admin entra por el enlace del correo -----------------------------------
@@ -263,13 +285,14 @@ try {
   console.error("\nSE CORTÓ:", e.message);
   resultados.push({ nombre: "el recorrido llegó al final", esperado: "sí", real: `cortado: ${e.message.split("\n")[0]}`, ok: false });
 } finally {
-  // La clase de la prueba no queda dando vueltas en staging.
-  if (claseId) {
-    await sql(
-      `update public.clases set estado = 'cancelada', motivo_cancelacion = 'Verificación de fase 6' where id = $1`,
-      [claseId],
-    ).catch(() => {});
-  }
+  // La clase de la prueba se borra de verdad, con todo lo suyo.
+  //
+  // Antes solo se cancelaba, y eso **ensuciaba el escenario de PRD-0010**: una
+  // clase cancelada con una compra pagada sigue atribuyendo ingresos y suma una
+  // cancelación, así que a la cuarta corrida el verificador de métricas pasó de
+  // 25/25 a 21/25 sin que nadie tocara una métrica. Una prueba que deja rastro
+  // en los datos de otra prueba no es una prueba: es una fuente de ruido.
+  await limpiar();
   await navegador.close();
 }
 

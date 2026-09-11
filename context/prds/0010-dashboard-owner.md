@@ -569,6 +569,31 @@ C0 queda fuera de los dos períodos a propósito: prueba que el corte del perío
 Cada fila de esa tabla es un criterio de aceptación. Si una no calza, el defecto está en el
 tablero, no en el escenario: los números se calcularon a mano antes de escribir una línea de SQL.
 
+### 11.5 La ocupación promedio se corrió sola, y se deja así a propósito (11/09/2026)
+
+**Síntoma:** `verificar-metricas` empezó a dar `4.5% · 5 de 110` donde la tabla de §11.4 dice
+`7.6% · 5 de 66`, sin que nadie tocara una métrica ni una migración.
+
+**Causa, verificada:** el denominador son los cupos de **todas** las clases dictadas del mes, y
+staging no tiene solo las cinco del escenario. Tiene además las clases de parrilla **reales** que
+generó la migración de Pau, y cada día que pasa una más queda en el pasado y entra en "dictadas".
+Cuando se calculó el número a mano, ninguna de esas había ocurrido todavía. El **numerador no se
+movió** —las clases que se van sumando tienen cero reservas—, así que no es una regresión del
+tablero: es el escenario comparándose contra una base que sigue viviendo.
+
+**Decisión de Felipe (11/09/2026): se deja como está.** Hoy el ruido es mínimo y separar las
+cifras del escenario de las reales no compensa el trabajo ni la complejidad en el verificador.
+
+**Cuándo revisarlo:** cuando haya volumen. Dos señales para no olvidarlo:
+
+- Cuando el denominador crezca tanto que la tasa quede en un número irreconocible, la fila deja de
+  informar algo y empieza a ser solo ruido en la corrida.
+- Cuando el **numerador** cambie: eso sí sería una regresión de verdad, y es lo único que hay que
+  mirar de esa fila mientras tanto.
+
+Las salidas ya lo dicen: el verificador marca ese ✗ con su explicación al lado, para que nadie lo
+lea como un defecto nuevo ni, peor, se acostumbre a ignorar los ✗.
+
 ## 12. Criterios de aceptación
 
 - [ ] El tablero muestra clases vendidas, consumidas, vencidas sin usar y la brecha entre ellas.

@@ -12,6 +12,11 @@ import { clienteAdmin } from "@/lib/supabase/admin";
  *
  * Sea cual sea el que se use, sobra que corra el otro: `generar_clases` es
  * idempotente por índice único.
+ *
+ * **Y de paso barre las reservas pendientes vencidas** (PRD-0018 §8.2). El cupo
+ * de una especial se libera solo en `reservar_especial`, cuando alguien lo
+ * necesita, así que el barrido no es lo que mantiene el cupo correcto: es lo que
+ * evita que la bandeja de admin y las métricas muestren pendientes muertas.
  */
 async function generar(request: Request) {
   const esperado = process.env.CRON_SECRETO?.trim();
@@ -32,16 +37,29 @@ async function generar(request: Request) {
     return NextResponse.json({ mensaje: "No autorizado." }, { status: 401 });
   }
 
-  const { data, error } = await clienteAdmin().rpc("generar_clases", {
-    p_dias: null,
-  });
+  const admin = clienteAdmin();
+
+  const { data, error } = await admin.rpc("generar_clases", { p_dias: null });
 
   if (error) {
     console.error("No se pudieron generar las clases:", error);
     return NextResponse.json({ mensaje: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, creadas: data ?? 0 });
+  // El barrido va **después** y su fallo no tumba la generación, a propósito:
+  // mientras la migración de PRD-0018 no esté aplicada, esta función no existe,
+  // y el cron tiene que seguir creando clases igual. Una regla de orden que
+  // alguien tiene que recordar es una regla que algún día no se recuerda.
+  let expiradas: number | null = null;
+  const barrido = await admin.rpc("expirar_reservas_pendientes", { p_clase_id: null });
+
+  if (barrido.error) {
+    console.error("No se pudo barrer las reservas vencidas:", barrido.error.message);
+  } else {
+    expiradas = typeof barrido.data === "number" ? barrido.data : 0;
+  }
+
+  return NextResponse.json({ ok: true, creadas: data ?? 0, expiradas });
 }
 
 // Vercel Cron dispara **GET**, no POST. El POST queda como alias para poder
