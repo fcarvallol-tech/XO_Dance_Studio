@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | ✅ **Aprobado por Felipe el 10/09/2026.** Fase 1 hecha; fase 2 (migración) lista para partir. Precio por defecto ($12.000) y sin sueldo base confirmados en PRD-0009 §8. Bucket privado y embed tras un clic decididos el mismo día (§7.6, §8.7) |
+| **Estado** | ✅ **Aprobado por Felipe el 10/09/2026.** Fases 1 y 2 hechas; fase 3 escrita y **sin correr**, esperando el push a staging. Precio por defecto ($12.000) y sin sueldo base confirmados en PRD-0009 §8. Bucket privado y embed tras un clic decididos el mismo día (§7.6, §8.7). Soltar el cupo tiene estado propio desde el 10/09 (§8.3.b) |
 | **Autor** | Propuesto por Claude a pedido de Felipe Carvalho. Decisiones de §8: Felipe |
 | **Fecha** | 8 de septiembre de 2026 · decisiones cerradas el 9 · Reel y alcance de fase 0 resueltos el 10 |
 | **Hito** | Hito 3 — Reservas (extiende el calendario) · Hito 4 — Portales (formulario en admin) |
@@ -151,7 +151,9 @@ clase, la liquidación del período la incluye con la regla de PRD-0009 §8.
 | La sede o la profesora tienen otra clase a esa hora | Se rechaza al guardar: la validación de solape mira `clases` publicadas y de parrilla en la ventana de duración. Es una función de base de datos |
 | Se llena mientras la visitante mira el Reel | `reservar_especial()` rechaza con "La clase está llena": la fila de la clase se bloquea con `for update`. Las pendientes de pago no vencidas **cuentan** como tomadas |
 | La alumna declara y nadie aprueba | La reserva pendiente expira sola según §8.2, libera el cupo y la compra pasa a `expirada`. Si transfirió de verdad y admin lo ve después, admin la puede reactivar si hay cupo, o devolver la plata |
-| La alumna cancela | Libera el cupo. No se le devuelve plata automáticamente: si la pide, admin la resuelve a mano (§8.3) |
+| La alumna suelta una reserva que todavía no aprueban | La reserva queda `liberada` y la compra `expirada`. El cupo se libera al instante. No hay plata que devolver porque nadie aprobó nada (§8.3.b) |
+| La alumna cancela una reserva ya confirmada | Queda `cancelada` y libera el cupo. No se le devuelve plata automáticamente: si la pide, admin la resuelve a mano (§8.3) |
+| Soltó el cupo y la transferencia igual llegó | `acreditar_compra` **no la reactiva**: la compra queda `por_reembolsar` y admin devuelve la plata. Reactivar una reserva que ella soltó sería meterla a una clase a la que dijo que no iba (§8.3.b) |
 | La academia cancela | Las reservas pasan a canceladas y liberan cupo. Las compras pagadas quedan marcadas **por reembolsar** y admin las resuelve a mano. Nada de plata se mueve solo |
 | Una especial a $0 (Felipe, 10/09/2026: anotado, hoy no aplica) | Se puede publicar: `puedePublicar` acepta $0. Reservarla no puede pasar por "declarar transferencia" de $0: cuando se use, `reservar_especial()` crea la compra ya `pagada` con monto 0 y la reserva `confirmada`, sin expiración. **Mientras no se necesite, `reservar_especial()` la rechaza con un mensaje claro**, para que el camino no exista a medias. El variable de la profesora en esa clase es $0 (PRD-0009 §8.3) |
 | Admin crea y no hay precio por defecto cargado | `crear_especial()` falla con "Falta el precio por defecto: lo carga owner en parámetros". Owner sí puede crear, pasando el precio. Así la migración no necesita inventar un número |
@@ -250,13 +252,18 @@ alter table public.reservas
   -- Hasta cuándo una pendiente ocupa cupo (§8.2).
   add column if not exists expira_at timestamptz;
 
--- Estado nuevo `pendiente_pago` y `expirada` en el check existente.
+-- Estados nuevos en el check existente: `pendiente_pago`, `expirada` y
+-- `liberada` (§8.3.b).
 
 -- Una reserva se paga con un crédito o con una compra, nunca las dos.
 alter table public.reservas add constraint reservas_credito_o_compra check (
   (credito_id is not null and compra_id is null) or (credito_id is null and compra_id is not null)
 );
 ```
+
+**Los tres finales de una pendiente** (§8.3.b): `liberada` cuando la alumna suelta el cupo,
+`expirada` cuando se vence el plazo o cae la clase, `cancelada` cuando se cae una reserva que ya
+estaba en pie. Ninguna de las tres toma cupo; la diferencia es para saber **por qué** se cayó.
 
 **Cupo:** todo lo que cuenta cupo —`reservar()`, `reservar_especial()`, `lugaresLibres`,
 `reservas_de_mis_clases`, las métricas— pasa a contar `estado in ('confirmada', 'asistio')`
@@ -375,6 +382,37 @@ para cambiarlos sin desplegar:
   deuda queda registrada aunque el pago sea manual.
 - Las reservas `pendiente_pago` de una clase cancelada pasan a `expirada`: no hay plata que
   devolver porque no se aprobó ninguna.
+
+### 8.3.b Soltar el cupo es un estado propio (Felipe, 10/09/2026)
+
+**Decidido por Felipe:** que la alumna suelte un cupo que todavía no le aprueban se registra con
+un estado propio, `liberada`, distinto de la expiración por tiempo y de la cancelación normal.
+
+| Estado | Cuándo | Quién lo escribe |
+|---|---|---|
+| `liberada` | La alumna soltó el cupo antes de que nadie aprobara | `cancelar_reserva` sobre una `pendiente_pago` |
+| `expirada` | Se venció el plazo de §8.2, o la academia canceló la clase antes de aprobar | `expirar_reservas_pendientes` y `devolver_creditos_de_clase` |
+| `cancelada` | Se cayó una reserva que ya estaba en pie (confirmada o con crédito) | `cancelar_reserva` y `devolver_creditos_de_clase` |
+
+**Por qué importa y no es cosmética.** No es lo mismo que se arrepienta a que nadie le haya
+aprobado a tiempo: la primera habla de la oferta —el precio, la coreo, la hora— y la segunda
+habla de nosotros. Con un solo estado las dos serían la misma barra en el tablero y la conclusión
+sería la equivocada. Por eso `metricas_demanda` devuelve `pendientes` con las soltadas y las
+expiradas separadas, y con cuántas de esas expiraron porque cayó la clase.
+
+**Consecuencia operativa, que es donde se paga el estado:** si la reserva quedó `liberada` y la
+transferencia llega igual, `acreditar_compra` **no la reactiva**, haya cupo o no. La compra pasa a
+`por_reembolsar` y se le devuelve la plata. Una `expirada`, en cambio, sí se reactiva si hay cupo,
+porque ahí la alumna nunca dijo que no. Esa bifurcación no se puede escribir si los dos casos
+comparten estado.
+
+**Lo que no cambia:** una `liberada` no toma cupo, no atribuye ingresos a la profesora, y no
+bloquea a la alumna para volver a reservar la misma clase —el índice único solo mira las que
+están en pie—. Si la soltó por error, reserva de nuevo y listo.
+
+**Lo que se decidió no hacer:** darle un estado propio también a la compra. La compra queda
+`expirada` en los dos casos y el motivo lo lleva la reserva, que es una por compra. Dos columnas
+diciendo lo mismo terminan diciendo cosas distintas.
 
 ### 8.4 Precio: lo define owner en cada clase, con un default en `parametros`
 
@@ -507,6 +545,13 @@ Se prueban **con el artefacto que toca la persona**, en staging, antes del `db p
       **abierto**. No se creó ningún lote de créditos ni movimiento en el libro.
 - [ ] La alumna cancela desde "Mis clases": cupo liberado, compra sigue `pagada`, ningún
       movimiento de dinero. Admin registra un reembolso a mano y la compra queda `reembolsada`.
+- [ ] La alumna suelta una reserva que todavía no le aprueban: queda **`liberada`** (no
+      `cancelada` ni `expirada`), la compra queda `expirada`, el cupo se libera al instante y
+      puede volver a reservar la misma clase.
+- [ ] Acreditar una compra cuya reserva quedó `liberada` **no** la reactiva aunque sobre cupo: la
+      compra queda `por_reembolsar`.
+- [ ] El tablero de owner muestra los cupos soltados por la alumna separados de los que
+      expiraron, y de esos, cuántos fueron por una clase que canceló XO.
 - [ ] La academia cancela desde admin: las pagadas quedan `por_reembolsar` en la bandeja.
 - [ ] Sin `especial_precio_default_clp` cargado, admin no puede crear y owner sí. Con la fila
       cargada, admin crea con ese valor aunque mande otro; owner fija el suyo.
@@ -577,6 +622,23 @@ Lo que decidió más fino que el texto de arriba, para que el texto no mienta:
 - **El barrido diario** (`expirar_reservas_pendientes()` desde el cron) es código y va después
   de que la migración corra en producción: si se despliega antes, el cron falla.
 
+**Fase 3 — escenario escrito el 10/09/2026, sin correr.** Bloqueado: la migración no está
+aplicada en staging y la CLI estaba enlazada a **producción** ese día (ver §14). Lo que quedó
+listo:
+
+- `scripts/escenario-especiales.mjs`: 20 casos, cada uno en una transacción que se revierte,
+  con el esperado escrito al lado y sacado del PRD, no de correr el código y copiar lo que dio.
+  Imprime la tabla en markdown para pegarla acá cuando corra.
+- `scripts/sembrar-escenario.mjs` siembra las dos especiales con `crear_especial()` y
+  `publicar_especial()` —el camino real, no un insert—, las deja **sin reservas y en el futuro**
+  para no mover los 22 valores de PRD-0010 §11.4, y **borra**
+  `especial_precio_default_clp` a propósito, que es la condición del caso "admin no puede crear".
+  Las identifica por título: el id lo genera la función.
+- La migración incorpora `liberada` (§8.3.b) y el arreglo de bloqueo de **PRD-0017 §18**. Nada de
+  esto se ejecutó todavía contra una base: el SQL no está verificado hasta que corra en staging.
+- El conteo de `expirar_reservas_pendientes()` devolvía el `row_count` del update de `compras` y
+  no cuántas reservas expiró. Corregido en la misma migración, con su caso en el escenario.
+
 ## 14. Para retomar — estado al 10/09/2026
 
 **Migración de Pau (`20260908150000_horarios_pau_martes_y_jueves.sql`)**
@@ -588,9 +650,11 @@ Lo que decidió más fino que el texto de arriba, para que el texto no mienta:
       extra son de otras profesoras, que `generar_clases()` alcanzó hasta el 17/11). Reservas,
       créditos y movimientos: 0 antes y después. La rama que cancela con reserva y devuelve el
       crédito **no se ejercitó** en ninguna base.
-- [x] La CLI estuvo enlazada a producción desde el push de Pau. **Re-enlazada a staging
-      (`ybopuahlzbjkkwumkllk`) el 10/09/2026** para la fase 2. Verificar igual antes de cada
-      `db push`: un `link` para otra cosa la cambia sin avisar.
+- [x] La CLI estuvo enlazada a producción desde el push de Pau. Re-enlazada a staging
+      (`ybopuahlzbjkkwumkllk`) el 10/09/2026 para la fase 2. **Y el 10/09, más tarde, estaba de
+      vuelta en producción (`wpjiwqeirdsspdfwwumv`)**: `cat supabase/.temp/project-ref` lo dijo al
+      empezar la fase 3. Que la advertencia de verificar antes de cada comando exista **no** es
+      teórico: pasó dos veces en dos días. Nada se corrió contra ninguna base con la CLI así.
 - [ ] La rama `horario-pau-y-prd-0018` tiene la migración que ya corre en producción. Mergear a
       `main` pronto.
 
@@ -619,5 +683,13 @@ Lo que decidió más fino que el texto de arriba, para que el texto no mienta:
 - [x] Fase 1 del plan hecha el 10/09/2026: `lib/dominio/especiales.ts` con 35 tests.
 - [x] Fase 2: migración escrita el 10/09/2026 (`20260910120000_clases_especiales.sql`), sin
       aplicar. Ver §13.
-- [ ] Push a staging: **necesita aprobación de Felipe en el mensaje.** Después, fase 3.
+- [x] 10/09/2026: Felipe eligió la **opción B** para soltar el cupo — estado propio `liberada`,
+      distinguible de la expiración por tiempo y de la cancelación normal (§8.3.b). En la
+      migración, en el tablero y en el escenario.
+- [x] 10/09/2026: defecto de concurrencia de PRD-0017 anotado en **PRD-0017 §18** y arreglado en
+      esta migración: el `for update` estaba donde se descuenta y no donde se devuelve.
+- [ ] **Re-enlazar la CLI a staging** (`npx supabase link --project-ref ybopuahlzbjkkwumkllk`) y
+      verificar con `cat supabase/.temp/project-ref` antes de cualquier cosa.
+- [ ] Push a staging: **necesita aprobación de Felipe en el mensaje.** Después, correr el
+      escenario de la fase 3 y pegar su tabla en §13.
 - [ ] Despliegues Preview en Error en Vercel de los últimos días, sin revisar.

@@ -56,6 +56,7 @@ test que los compare, o no se cambia en ninguno.
 | `urlDeEmbed(codigo)` | Arma `https://www.instagram.com/reel/<c>/embed/`. Es lo único de Instagram que el sitio construye, y solo se usa después del toque |
 | `expiraAt(declaradaAt, inicioClase, retencionHoras)` | La regla de §8.2, incluido el caso de clase en menos de 26 h |
 | `cupoTomado(reservas, ahora)` | Confirmadas + asistió + pendientes vigentes. **Es la función que los cinco lugares tienen que usar o replicar** |
+| `estadoAlSoltar(estado)` | En qué queda una reserva cuando la alumna la suelta: `pendiente_pago` → `liberada`, en pie → `cancelada`, ya caída → sin tocar. Nunca devuelve `expirada`: esa la escribe el tiempo (§8.3.b, agregada el 10/09) |
 | `montoAtribuible(reserva)` | Con crédito: regla de PRD-0010 §7.1. Con compra: `monto_clp` entero, neto de reembolso |
 | `alumnasParaIgualarBase(precio, sala, base)` | Desde cuántas alumnas la profesora iguala una clase normal. Es el número que el formulario muestra al lado de `minimo_alumnas` (PRD-0009 §8.3) |
 
@@ -100,9 +101,22 @@ código: el corredor falló por módulo inexistente y después pasó.
 
 ## Fase 3 — Escenario en staging, sin interfaz
 
-Se extiende `scripts/sembrar-escenario.mjs`: dos especiales (una publicada con precio en Los
-Leones, un borrador), tres alumnas con cuenta. Sin la fila `especial_precio_default_clp`, para
-probar el camino de "admin no puede crear".
+**Escrita el 10/09/2026. Sin correr:** la migración no está aplicada en staging y la CLI estaba
+enlazada a producción (ver el checkpoint).
+
+Se extendió `scripts/sembrar-escenario.mjs`: dos especiales creadas con `crear_especial()` y una
+publicada con `publicar_especial()` —el camino real, no un insert—, una en Los Leones con precio
+y un borrador en Diaguitas. Quedan **sin reservas y en el futuro**, para no mover ninguno de los
+22 valores esperados de PRD-0010 §11.4. Las tres alumnas con cuenta ya estaban. La fila
+`especial_precio_default_clp` **se borra**, que es la condición del caso "admin no puede crear".
+
+Los casos viven en `scripts/escenario-especiales.mjs`, cada uno en su transacción revertida, con
+el esperado escrito al lado —sacado del PRD, no de correr el código y copiar lo que dio— y una
+tabla en markdown al final para pegar en el PRD §13.
+
+**Novedad de esta fase (Felipe, 10/09):** soltar el cupo es un estado propio, `liberada`
+(PRD-0018 §8.3.b). Se agregó a la migración, que todavía no se aplica en ninguna base, junto con
+el arreglo de bloqueo de PRD-0017 §18. Los casos que lo fijan están abajo.
 
 Por SQL, en transacciones revertidas:
 
@@ -114,7 +128,13 @@ Por SQL, en transacciones revertidas:
 | `acreditar_compra()` de la pendiente | reserva `confirmada`, compra `pagada`, **cero lotes y cero movimientos** de crédito |
 | `acreditar_compra()` de una ya expirada, con cupo | La reactiva |
 | `acreditar_compra()` de una expirada, sin cupo | compra `pagada` sin reserva, marcada para devolver |
-| `cancelar_reserva()` de una confirmada con compra | cupo liberado, compra sigue `pagada`, nada de dinero |
+| `cancelar_reserva()` de una confirmada con compra | cupo liberado, reserva `cancelada`, compra sigue `pagada`, nada de dinero |
+| La alumna suelta una `pendiente_pago` | reserva **`liberada`**, compra `expirada`, cupo liberado al instante |
+| `acreditar_compra()` de una compra cuya reserva quedó `liberada`, con cupo | **no la reactiva**: compra `por_reembolsar` |
+| Reservar de nuevo la misma clase después de soltarla | se puede: el índice único solo mira las que están en pie |
+| `metricas_demanda` → `pendientes` | soltadas y expiradas por separado, y cuántas expiraron por clase cancelada |
+| `expirar_reservas_pendientes()` con la compra ya en otro estado | devuelve **1**: cuenta reservas, no compras |
+| `cancelar_reserva()` de una reserva de parrilla | sigue devolviendo el crédito a su lote, con su movimiento (regresión del bloqueo de PRD-0017 §18) |
 | `registrar_reembolso()` | compra `reembolsada` con monto, autor, fecha; admin sí, alumna no |
 | `update clases set estado = 'cancelada'` | pagadas → `por_reembolsar`; pendientes → `expirada`; las de parrilla siguen devolviendo crédito |
 | `anon` consulta `clases` por REST | ve la publicada, no el borrador |
@@ -123,7 +143,17 @@ Por SQL, en transacciones revertidas:
 | Se carga el default; admin manda `precio_clp` | se ignora, queda el default; owner sí lo fija |
 | `metricas_*` | ingresos y atribución incluyen la compra; `conciliacion` de créditos cuadra porque no la toca |
 
-**Checkpoint:** tabla con resultado real al lado del esperado, pegada en PRD §13.
+**Checkpoint:** `cat supabase/.temp/project-ref` dice staging **antes de cualquier comando** —el
+10/09/2026 decía producción al empezar esta fase, por segunda vez en dos días—, se aplica la
+migración a staging **con aprobación**, y recién ahí:
+
+```bash
+node scripts/sembrar-escenario.mjs && node scripts/escenario-especiales.mjs
+node scripts/verificar-metricas.mjs   # los 22 de PRD-0010 siguen dando
+```
+
+Tabla con resultado real al lado del esperado, pegada en PRD §13. **El SQL de la migración no
+está verificado hasta que esto corra**: acá no hay Postgres local con que parsearlo.
 
 ---
 
@@ -188,6 +218,13 @@ error.
 · `components/MisReservas.tsx` · `components/BandejaCompras.tsx` · `components/GrillaSemanal.tsx`
 · `lib/correo.ts` (plantillas: pendiente con hora de expiración, confirmada)
 
+⚠️ **`quePaso()` de `MisReservas.tsx` termina en "Asististe"** para todo estado que no sea
+`cancelada`. Con los estados nuevos eso es una mentira en pantalla: una `pendiente_pago` diría
+"Asististe", y una `liberada` y una `expirada` también. Hoy no se ve porque nadie puede llegar a
+esos estados sin la interfaz de esta fase, pero es lo primero que hay que arreglar acá, con las
+cuatro frases distintas: "Esperando que confirmemos tu transferencia", "Soltaste el cupo", "Se
+venció el plazo para transferir" y la cancelación de siempre.
+
 **Checkpoint,** el flujo entero con el artefacto real, en staging:
 
 1. Visitante sin cuenta → "Reservar por $X" → `/entrar` → **abre el enlace del correo** → vuelve
@@ -219,9 +256,9 @@ error.
 | Fase | Estado |
 |---|---|
 | 0 — Decisiones | ✅ Cerrada. PRD aprobado el 10/09/2026; PRD-0009 §8 confirmado el mismo día |
-| 1 — Funciones puras y tests | ✅ **Hecha el 10/09/2026**: 9 funciones, 35 tests, `npm test` 72/72 |
-| 2 — Migración | ✅ **Escrita el 10/09/2026**, `20260910120000_clases_especiales.sql`. Sin aplicar: el push a staging espera aprobación |
-| 3 — Escenario en staging | **Siguiente.** Depende de aprobar el push a staging |
+| 1 — Funciones puras y tests | ✅ **Hecha el 10/09/2026**: 10 funciones, 47 tests, `npm test` 84/84 |
+| 2 — Migración | ✅ **Escrita el 10/09/2026**, `20260910120000_clases_especiales.sql`. Sin aplicar: el push a staging espera aprobación. Incluye `liberada` (§8.3.b) y el arreglo de PRD-0017 §18 |
+| 3 — Escenario en staging | ✅ Escrito el 10/09/2026 (20 casos). ⏸ **Sin correr**: falta re-enlazar la CLI a staging y aprobar el push |
 | 4 — Formulario y bandeja | Depende de la 2 |
 | 5 — Público, Planes y privacidad | Depende de la 4 |
 | 6 — Reservar, aprobar, cancelar | Depende de la 3 y la 5 |

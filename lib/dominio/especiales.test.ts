@@ -17,6 +17,7 @@ import {
   codigoDeReel,
   cupoTomado,
   desdePrecio,
+  estadoAlSoltar,
   expiraAt,
   montoAtribuible,
   puedePublicar,
@@ -177,6 +178,35 @@ test("cupoTomado: una pendiente que vence exactamente ahora ya no cuenta (expira
 test("cupoTomado: una pendiente sin expira_at es un dato roto y no cuenta", () => {
   const ahora = utc("2026-09-15T12:00:00");
   assert.equal(cupoTomado([{ estado: "pendiente_pago", expiraAt: null }], ahora), 0);
+});
+
+test("cupoTomado: una liberada no toma cupo, aunque tenga expira_at en el futuro", () => {
+  const ahora = utc("2026-09-15T12:00:00");
+  const reservas = [{ estado: "liberada", expiraAt: utc("2026-09-16T12:00:00") }];
+  assert.equal(cupoTomado(reservas, ahora), 0);
+});
+
+// ---------------------------------------------------------------------------
+// estadoAlSoltar — los tres finales no son el mismo (PRD-0018 §8.3.b)
+// ---------------------------------------------------------------------------
+
+test("estadoAlSoltar: una pendiente de pago queda liberada, no cancelada", () => {
+  assert.equal(estadoAlSoltar("pendiente_pago"), "liberada");
+});
+
+test("estadoAlSoltar: una confirmada queda cancelada, que es la cancelación de siempre", () => {
+  assert.equal(estadoAlSoltar("confirmada"), "cancelada");
+});
+
+test("estadoAlSoltar: nunca devuelve expirada, porque eso lo escribe el tiempo", () => {
+  const todos = ["confirmada", "asistio", "no_asistio", "pendiente_pago"] as const;
+  for (const estado of todos) assert.notEqual(estadoAlSoltar(estado), "expirada");
+});
+
+test("estadoAlSoltar: una que ya se cayó no se toca, y no se pisa su motivo", () => {
+  assert.equal(estadoAlSoltar("liberada"), null);
+  assert.equal(estadoAlSoltar("expirada"), null);
+  assert.equal(estadoAlSoltar("cancelada"), null);
 });
 
 // ---------------------------------------------------------------------------

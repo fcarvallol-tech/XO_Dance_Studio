@@ -112,8 +112,23 @@ export type ProfesoraDemanda = {
   atribucion: GrupoAtribucion[];
 };
 
+/**
+ * Cómo se cayeron las reservas pendientes de pago de las clases especiales
+ * (PRD-0018 §8.3.b). `soltadas` y `expiradas` son estados distintos en la base
+ * a propósito: la primera es la alumna arrepintiéndose, la segunda somos
+ * nosotros no aprobando a tiempo. `vigentes_ahora` no lleva período: es una
+ * foto de los cupos tomados por alguien que todavía no transfiere.
+ */
+export type PendientesDemanda = {
+  soltadas: number;
+  expiradas: number;
+  expiradas_por_clase_cancelada: number;
+  vigentes_ahora: number;
+};
+
 export type Demanda = {
   meta: { desde: string; hasta: string; generado_at: string };
+  pendientes: PendientesDemanda;
   por_clase: ClaseDemanda[];
   por_horario: HorarioDemanda[];
   por_profesora: ProfesoraDemanda[];

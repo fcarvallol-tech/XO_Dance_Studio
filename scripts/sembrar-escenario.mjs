@@ -1,5 +1,6 @@
 /**
- * Siembra el escenario de PRD-0010 §11.4 en STAGING.
+ * Siembra el escenario de PRD-0010 §11.4 en STAGING, más las dos clases
+ * especiales que necesita la fase 3 de PRD-0018.
  *
  * Idempotente: los UUID son fijos y arranca borrando lo suyo, así que se puede
  * correr las veces que haga falta. Ningún dato real de ninguna alumna: cinco
@@ -22,8 +23,21 @@
  *
  * Esas tres eran deuda técnica anotada en ARCHITECTURE.md §10: el flujo de
  * cancelación nunca se había probado con datos porque había 0 reservas.
+ *
+ * LAS ESPECIALES (PRD-0018, fase 3)
+ *
+ * Se crean con `crear_especial()` y se publica una con `publicar_especial()`:
+ * el camino real, no un insert. Quedan **sin reservas** y en el futuro, para no
+ * mover ninguno de los 22 valores esperados de PRD-0010 §11.4 —una clase que no
+ * se dictó no entra en la ocupación y una sin reservas no atribuye—. Todo lo
+ * que reserva, acredita, suelta o cancela vive en `escenario-especiales.mjs`,
+ * dentro de transacciones que se revierten.
+ *
+ * Y se **borra** `especial_precio_default_clp` de `parametros`, a propósito:
+ * sin esa fila, admin no puede crear especiales (§6) y ese es uno de los casos
+ * que hay que probar. El valor confirmado ($12.000) lo carga owner en la fase 7.
  */
-import { conectar } from "./staging.mjs";
+import { conectar, ES } from "./staging.mjs";
 
 const U = {
   ana: "11111111-1111-4111-8111-000000000001",
@@ -124,6 +138,12 @@ try {
     [usuarios],
   );
   await q(`delete from public.clases where id = any($1)`, [Object.values(CL)]);
+  // Las especiales de corridas anteriores, por título. Van antes que los
+  // perfiles: `clases.creada_por` apunta a quien la creó.
+  await q(
+    `delete from public.clases where tipo = 'especial' and titulo = any($1)`,
+    [Object.values(ES)],
+  );
   await q(`delete from public.perfiles where user_id = any($1)`, [usuarios]);
   await q(`delete from auth.users where id = any($1)`, [usuarios]);
 
@@ -360,8 +380,86 @@ try {
     [CL[5]],
   );
 
+  // -------------------------------------------------------------------------
+  // 6. Las dos clases especiales (PRD-0018 fase 3).
+  // -------------------------------------------------------------------------
+  // Sin precio por defecto cargado: es la condición que hace fallar a admin.
+  await q(`delete from public.parametros where clave = 'especial_precio_default_clp'`);
+
+  // Curso, profesora y sede salen de un horario activo real de cada sede: así
+  // la especial es coherente con el catálogo y el solape se puede probar contra
+  // la parrilla que ya existe.
+  const contexto = async (sedeSlug) => {
+    const { rows } = await q(
+      `select h.curso_id, h.profesora_id, h.sede_id
+       from public.horarios h
+       join public.cursos c on c.id = h.curso_id
+       join public.sedes s on s.id = h.sede_id
+       where h.activo and c.slug <> 'teens' and s.slug = $1
+       order by h.id
+       limit 1`,
+      [sedeSlug],
+    );
+    if (!rows[0]) throw new Error(`staging no tiene horario activo en ${sedeSlug}`);
+    return rows[0];
+  };
+
+  // A las 13:00 UTC, o sea temprano en la mañana en Santiago: ninguna clase de
+  // la parrilla está a esa hora, así que la validación de solape no rebota por
+  // una razón que no es la que se quiere probar.
+  const enLaManana = (dias) =>
+    `(date_trunc('day', now() + interval '${dias} days') + interval '13 hours')`;
+
+  const leones = await contexto("seduccion-latina");
+  const diaguitas = await contexto("diaguitas");
+
+  // El precio lo pone owner y es $15.000 a propósito: distinto del default
+  // confirmado ($12.000, PRD-0009 §8), para que en las pruebas se note cuál de
+  // los dos números se está usando.
+  const { rows: espPub } = await q(
+    `select (public.crear_especial(
+       p_actor_user_id => $1,
+       p_titulo => $5,
+       p_curso_id => $2, p_profesora_id => $3, p_sede_id => $4,
+       p_inicio => ${enLaManana(5)},
+       p_duracion_min => 90, p_cupo_maximo => 2,
+       p_cancion => 'Tema de prueba', p_descripcion => 'Clase especial del escenario de staging.',
+       p_dificultad => 'intermedio',
+       p_reel_url => 'https://www.instagram.com/reel/ESCENARIO0018/',
+       p_portada_path => 'escenario/coreo-del-escenario.jpg',
+       p_precio_clp => 15000, p_minimo_alumnas => 5
+     )).id as id`,
+    [U.owner, leones.curso_id, leones.profesora_id, leones.sede_id, ES.publicada],
+  );
+  await q(`select public.publicar_especial($1, $2)`, [U.owner, espPub[0].id]);
+
+  await q(
+    `select public.crear_especial(
+       p_actor_user_id => $1,
+       p_titulo => $5,
+       p_curso_id => $2, p_profesora_id => $3, p_sede_id => $4,
+       p_inicio => ${enLaManana(9)},
+       p_duracion_min => 60, p_cupo_maximo => 22,
+       p_precio_clp => 20000
+     )`,
+    [U.owner, diaguitas.curso_id, diaguitas.profesora_id, diaguitas.sede_id, ES.borrador],
+  );
+
+  const { rows: chequeo } = await q(
+    `select titulo, precio_clp, cupo_maximo,
+            publicada_at is not null as publicada, slug
+     from public.clases where tipo = 'especial' and titulo = any($1) order by inicio`,
+    [Object.values(ES)],
+  );
+
   console.log("Escenario sembrado.");
   console.log("  reserva de Ana en la clase futura:", r1[0].r ? "ok" : "falló");
+  for (const c of chequeo) {
+    console.log(
+      `  especial ${c.publicada ? "publicada" : "borrador "} · ${c.slug} · ` +
+        `$${c.precio_clp} · cupo ${c.cupo_maximo}`,
+    );
+  }
 } catch (e) {
   await q("rollback").catch(() => {});
   console.error("ERROR:", e.message);

@@ -19,6 +19,14 @@
 --   · cupo tomado = confirmada + asistio + (pendiente_pago con expira_at > now())
 --   · solape = bloques [inicio, fin) que se pisan; el fin es abierto
 --   · expira_at = min(declarada + retención, inicio − 2 h)
+--
+-- Una reserva pendiente de pago se puede caer de tres maneras, y no son la
+-- misma cosa (Felipe, 10/09/2026 — PRD-0018 §8.3.b):
+--   · `liberada`  — la alumna soltó el cupo antes de que nadie la aprobara.
+--   · `expirada`  — se venció el plazo, o la academia canceló la clase.
+--   · `cancelada` — se cayó una reserva que ya estaba en pie (confirmada).
+-- Que se arrepienta es señal de la oferta; que expire es señal nuestra. Por
+-- eso el tablero las cuenta por separado (metricas_demanda → `pendientes`).
 
 -- ---------------------------------------------------------------------------
 -- 1. clases
@@ -189,9 +197,10 @@ begin
     execute format('alter table public.reservas drop constraint %I', v_nombre);
   end loop;
 
+  -- `liberada` es un estado propio y no un `cancelada` más: ver la cabecera.
   alter table public.reservas add constraint reservas_estado_valido
     check (estado in ('confirmada', 'cancelada', 'asistio', 'no_asistio',
-                      'pendiente_pago', 'expirada'));
+                      'pendiente_pago', 'expirada', 'liberada'));
 
   -- Una reserva se paga con un crédito o con una compra, nunca las dos.
   if not exists (select 1 from pg_constraint where conname = 'reservas_credito_o_compra') then
@@ -220,6 +229,12 @@ create index reservas_clase_idx
 
 create index if not exists reservas_pendientes_vencen_idx
   on public.reservas (expira_at) where estado = 'pendiente_pago';
+
+comment on column public.reservas.estado is
+  $e$confirmada · asistio · no_asistio · pendiente_pago (especial sin aprobar) · liberada (la alumna soltó el cupo pendiente) · expirada (venció el plazo o cayó la clase) · cancelada (se cayó una que ya estaba en pie). Las tres últimas no son intercambiables: PRD-0018 §8.3.b.$e$;
+
+comment on column public.reservas.cancelada_at is
+  'Cuándo dejó de estar en pie, sea porque la cancelaron, la soltaron o se venció. Lo escriben cancelar_reserva, expirar_reservas_pendientes y devolver_creditos_de_clase, y es el eje temporal del tablero.';
 
 -- ---------------------------------------------------------------------------
 -- 4. parametros
@@ -314,7 +329,7 @@ as $$
 $$;
 
 comment on function public.cupo_tomado(uuid) is
-  'Cupos tomados: confirmadas + asistió + pendientes de pago vigentes (expira_at > now(), estricto). Contrato en lib/dominio/especiales.ts (cupoTomado).';
+  'Cupos tomados: confirmadas + asistió + pendientes de pago vigentes (expira_at > now(), estricto). Una liberada, expirada o cancelada no toma cupo. Contrato en lib/dominio/especiales.ts (cupoTomado).';
 
 -- 7.2 Helpers: slug, código de Reel, solape -------------------------------------
 
@@ -738,21 +753,28 @@ as $$
 declare
   v_n int;
 begin
+  -- `cancelada_at` marca cuándo se cayó, que es lo que el tablero mira para
+  -- separar las que expiraron de las que la alumna soltó (§8.3.b).
   with vencidas as (
     update public.reservas
-    set estado = 'expirada'
+    set estado = 'expirada', cancelada_at = now()
     where estado = 'pendiente_pago'
       and expira_at <= now()
       and (p_clase_id is null or clase_id = p_clase_id)
-    returning compra_id
+    returning id, compra_id
+  ),
+  cerradas as (
+    update public.compras c
+    set estado = 'expirada'
+    from vencidas v
+    where c.id = v.compra_id
+      and c.estado = 'pendiente'
+    returning c.id
   )
-  update public.compras c
-  set estado = 'expirada'
-  from vencidas v
-  where c.id = v.compra_id
-    and c.estado = 'pendiente';
+  -- Cuenta reservas, no compras: antes devolvía el row_count del update de
+  -- `compras`, que es otro número cuando alguna ya no estaba pendiente.
+  select count(*)::int into v_n from vencidas;
 
-  get diagnostics v_n = row_count;
   return v_n;
 end;
 $$;
@@ -962,6 +984,11 @@ $$;
 --   · reserva ya expirada (la alumna transfirió y nadie aprobó a tiempo): si
 --     hay cupo, se reactiva; si no, la compra queda `por_reembolsar` —hay plata
 --     recibida sin cupo que dar— y aparece en la bandeja para devolverla.
+--   · reserva **`liberada`**: no se reactiva nunca, haya cupo o no. La alumna
+--     soltó ese cupo a propósito; si igual transfirió, lo que corresponde es
+--     devolverle la plata, no meterla de vuelta a una clase que no quiere.
+--     Acá se ve para qué sirve el estado propio: con un `cancelada` genérico
+--     esta rama no se podría distinguir de una expiración.
 -- Por eso acá se aceptan compras `expirada` además de `pendiente`.
 
 create or replace function public.acreditar_compra(
@@ -1013,6 +1040,7 @@ begin
       raise exception 'La compra no tiene reserva asociada' using errcode = 'P0002';
     end if;
 
+    -- `liberada` no entra en ninguna de las dos ramas de arriba: cae al else.
     if v_reserva.estado = 'pendiente_pago'
        or (v_reserva.estado = 'expirada'
            and v_clase.estado = 'programada'
@@ -1027,7 +1055,8 @@ begin
       where id = v_compra.id
       returning * into v_compra;
     else
-      -- Plata recibida y ningún cupo que dar: queda marcada para devolver.
+      -- Plata recibida y ningún cupo que dar —o que ella ya no quiere—: queda
+      -- marcada para devolver.
       update public.compras
       set estado = 'por_reembolsar', aprobada_por = v_actor.id, aprobada_at = now()
       where id = v_compra.id
@@ -1068,12 +1097,19 @@ end;
 $$;
 
 -- 7.8 cancelar_reserva(): con compra libera el cupo y no toca plata --------------
--- El camino con crédito queda idéntico. Con compra:
---   · pendiente_pago → cancelada, y la compra pendiente → expirada (nunca se
---     aprobó, no hay plata que devolver).
---   · confirmada → cancelada; la compra sigue `pagada`. La ventana de 30 min
+-- Con compra:
+--   · pendiente_pago → **`liberada`**, y la compra pendiente → `expirada`
+--     (nunca se aprobó, no hay plata que devolver). Estado propio a propósito:
+--     que la alumna se arrepienta no es lo mismo que que no alcancemos a
+--     aprobarle, y esa diferencia se mira en el tablero (§8.3.b).
+--   · confirmada → `cancelada`; la compra sigue `pagada`. La ventana de 30 min
 --     no aplica al dinero (§8.3): si la alumna pide devolución, admin la
 --     registra a mano.
+--
+-- El camino con crédito queda igual salvo **el bloqueo del lote antes de
+-- devolverle la clase**. Es el defecto de PRD-0017 §18: el `for update` se
+-- había puesto donde se descuenta (`reservar`) y no donde se devuelve, y el
+-- `saldo_resultante` que se escribe en el libro se lee justo después.
 
 create or replace function public.cancelar_reserva(
   p_reserva_id uuid,
@@ -1109,7 +1145,9 @@ begin
     raise exception 'Esa reserva no es tuya' using errcode = '42501';
   end if;
 
-  if v_reserva.estado in ('cancelada', 'expirada') then
+  -- Idempotente: una reserva que ya se cayó, se cayó, y el motivo con el que
+  -- se cayó no se pisa.
+  if v_reserva.estado in ('cancelada', 'expirada', 'liberada') then
     return v_reserva;
   end if;
 
@@ -1117,10 +1155,18 @@ begin
 
   -- ----- Reserva pagada con una compra de clase -----
   if v_reserva.compra_id is not null then
+    -- Soltó el cupo antes de que la aprobaran: `liberada`, no `cancelada`.
     if v_reserva.estado = 'pendiente_pago' then
       update public.compras
       set estado = 'expirada'
       where id = v_reserva.compra_id and estado = 'pendiente';
+
+      update public.reservas
+      set estado = 'liberada', cancelada_at = now(), credito_devuelto = false
+      where id = v_reserva.id
+      returning * into v_reserva;
+
+      return v_reserva;
     end if;
 
     update public.reservas
@@ -1140,6 +1186,11 @@ begin
   returning * into v_reserva;
 
   if v_a_tiempo then
+    -- PRD-0017 §18: el lote se bloquea **antes** de devolverle la clase. El
+    -- saldo que va al libro se lee dos líneas más abajo y el libro no se edita.
+    -- Orden de bloqueo reserva → lote, el mismo de devolver_creditos_de_clase.
+    perform 1 from public.creditos where id = v_reserva.credito_id for update;
+
     update public.creditos
     set cantidad_disponible = cantidad_disponible + 1
     where id = v_reserva.credito_id;
@@ -1163,7 +1214,10 @@ $$;
 -- parrilla devuelve créditos, idéntico a antes. Para reservas con compra:
 --   · confirmada y pagada → cancelada; compra → por_reembolsar. Nada de plata
 --     se mueve sola: admin la devuelve y la registra.
---   · pendiente_pago → expirada; compra pendiente → expirada.
+--   · pendiente_pago → expirada; compra pendiente → expirada. Es `expirada` y
+--     no `liberada`: la soltó la academia al caerse la clase, no la alumna
+--     (§8.3.b). Cuáles fueron por clase caída se ve por `clases.estado`.
+-- Las `liberada` no entran: ese cupo ya se había soltado.
 -- Devuelve cuántas reservas tocó.
 
 create or replace function public.devolver_creditos_de_clase(
@@ -1189,7 +1243,7 @@ begin
     if v_reserva.compra_id is not null then
       if v_reserva.estado = 'pendiente_pago' then
         update public.reservas
-        set estado = 'expirada'
+        set estado = 'expirada', cancelada_at = now()
         where id = v_reserva.id;
 
         update public.compras
@@ -1208,6 +1262,10 @@ begin
       update public.reservas
       set estado = 'cancelada', cancelada_at = now(), credito_devuelto = true
       where id = v_reserva.id;
+
+      -- Mismo bloqueo que cancelar_reserva, por lo mismo (PRD-0017 §18): el
+      -- saldo del libro se lee justo después de devolver.
+      perform 1 from public.creditos where id = v_reserva.credito_id for update;
 
       update public.creditos
       set cantidad_disponible = cantidad_disponible + 1
@@ -1283,12 +1341,18 @@ end;
 $$;
 
 -- 7.11 metricas_demanda(): pendientes vigentes en el cupo, compras en la atribución
--- Dos cambios sobre PRD-0010:
+-- Tres cambios sobre PRD-0010:
 --   · `ocupadas` cuenta como cupo_tomado (pendientes vigentes incluidas).
 --   · `atribucion` suma la rama de reservas con compra de clase: monto entero
 --     de la compra, neto de reembolso, con clases_compra = 1. Un reembolso
 --     total deja monto 0. Las canceladas con compra siguen atribuyendo si la
 --     plata no se devolvió (recupero_credito = false).
+--   · `pendientes` es nuevo: cómo terminaron las reservas pendientes de pago.
+--     Soltadas por la alumna, expiradas por plazo, y cuántas de esas expiraron
+--     porque cayó la clase. Es la pregunta de §8.3.b puesta en un número: si
+--     suben las soltadas, el problema es la oferta o el precio; si suben las
+--     expiradas, el problema es que no aprobamos a tiempo. Sin estados
+--     distintos, las dos serían la misma barra.
 -- `por_horario` hace join con horarios y deja fuera a las especiales, que es
 -- lo correcto: no tienen horario.
 
@@ -1375,13 +1439,42 @@ begin
       and co_cl.deleted_at is null
       and co_cl.estado in ('pagada', 'reembolsada', 'por_reembolsar')
     where r.created_at >= p_desde and r.created_at < p_hasta
-      -- Una pendiente o expirada no trajo plata: no atribuye.
-      and r.estado not in ('pendiente_pago', 'expirada')
+      -- Una pendiente, una expirada o una que la alumna soltó no trajo plata:
+      -- no atribuye.
+      and r.estado not in ('pendiente_pago', 'expirada', 'liberada')
     group by cl.profesora_id, 2, 3, r.credito_devuelto, (cl.inicio < now())
+  ),
+  -- Cómo se cayeron las pendientes de pago. El eje del período es
+  -- `cancelada_at` —cuándo dejó de estar en pie—, igual que las cancelaciones
+  -- de metricas_resumen, y no `inicio` como el resto de esta función.
+  pendientes as (
+    select
+      (count(*) filter (where r.estado = 'liberada'))::int as soltadas,
+      (count(*) filter (where r.estado = 'expirada'))::int as expiradas,
+      (count(*) filter (where r.estado = 'expirada' and cl.estado = 'cancelada'))::int
+        as expiradas_por_clase_cancelada
+    from public.reservas r
+    join public.clases cl on cl.id = r.clase_id
+    where r.estado in ('liberada', 'expirada')
+      and r.cancelada_at >= p_desde and r.cancelada_at < p_hasta
+  ),
+  -- Cupos tomados ahora mismo por alguien que todavía no transfiere. No lleva
+  -- período: es una foto, y es lo que hay que mirar antes de decir que una
+  -- clase está llena.
+  pendientes_vigentes as (
+    select count(*)::int as n
+    from public.reservas r
+    where r.estado = 'pendiente_pago' and r.expira_at > now()
   )
 
   select jsonb_build_object(
     'meta', jsonb_build_object('desde', p_desde, 'hasta', p_hasta, 'generado_at', now()),
+    'pendientes', jsonb_build_object(
+      'soltadas', (select soltadas from pendientes),
+      'expiradas', (select expiradas from pendientes),
+      'expiradas_por_clase_cancelada', (select expiradas_por_clase_cancelada from pendientes),
+      'vigentes_ahora', (select n from pendientes_vigentes)
+    ),
     'por_clase', coalesce(
       (select jsonb_agg(jsonb_build_object(
          'clase_id', id, 'fecha', fecha, 'inicio', inicio, 'estado', estado,
@@ -1422,7 +1515,7 @@ end;
 $$;
 
 comment on function public.metricas_demanda(timestamptz, timestamptz) is
-  'Ocupación por clase y por horario, y ranking de profesoras. El cupo cuenta pendientes de pago vigentes; la atribución incluye compras de clases especiales netas de reembolso. Solo owner.';
+  'Ocupación por clase y por horario, ranking de profesoras y desenlace de las pendientes de pago (soltadas vs expiradas). El cupo cuenta pendientes vigentes; la atribución incluye compras de clases especiales netas de reembolso. Solo owner.';
 
 -- ---------------------------------------------------------------------------
 -- 8. Permisos, escritos y no heredados del default
@@ -1493,5 +1586,7 @@ grant execute on function public.metricas_demanda(timestamptz, timestamptz)
 --   expiración perezosa de reservar_especial mantiene el cupo correcto.
 -- · No toca `metricas_resumen`: `pagadas` ya suma toda compra pagada, con o sin
 --   plan, así que los ingresos incluyen las especiales; `por_plan` hace join
---   con planes y las deja fuera, que es lo correcto.
+--   con planes y las deja fuera, que es lo correcto. Su bloque `cancelaciones`
+--   filtra `estado = 'cancelada'`, así que las soltadas y las expiradas no lo
+--   ensucian: se cuentan aparte, en `metricas_demanda.pendientes`.
 -- · No toca `inscritas_de_clase`: lista confirmadas y asistió, sin pendientes.

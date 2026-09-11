@@ -92,7 +92,7 @@ export default async function Metricas() {
           {D ? <BloqueDemanda D={D} /> : null}
           <ErrorDeLectura que="la ocupación y el ranking de profesoras" error={demanda.error} />
           <BloqueAlumnas R={R} />
-          <BloqueOperacion R={R} />
+          <BloqueOperacion R={R} D={D} />
           <BloqueRecortes />
         </>
       ) : null}
@@ -398,7 +398,7 @@ function BloqueAlumnas({ R }: { R: Datos }) {
   );
 }
 
-function BloqueOperacion({ R }: { R: Datos }) {
+function BloqueOperacion({ R, D }: { R: Datos; D: DatosDemanda | null }) {
   return (
     <Bloque titulo="Operación">
       <Rejilla>
@@ -419,6 +419,28 @@ function BloqueOperacion({ R }: { R: Datos }) {
             "reserva",
           )}
         />
+        {/* Soltar y expirar son estados distintos en la base justamente para
+            poder mostrarlos separados: si suben las soltadas, lo que falla es
+            la oferta; si suben las expiradas, somos nosotros aprobando tarde. */}
+        {D ? (
+          <Indicador
+            rotulo="Cupos soltados"
+            valor={String(D.pendientes.soltadas)}
+            denominador={`${D.pendientes.expiradas} expiraron sin que nadie los aprobara`}
+            nota={
+              D.pendientes.expiradas_por_clase_cancelada > 0
+                ? `${D.pendientes.expiradas_por_clase_cancelada} de las expiradas son de clases que canceló XO.`
+                : D.pendientes.vigentes_ahora > 0
+                  ? `${D.pendientes.vigentes_ahora} cupos están tomados ahora mismo esperando transferencia.`
+                  : undefined
+            }
+            sinDatoDesde={
+              D.pendientes.soltadas === 0 && D.pendientes.expiradas === 0
+                ? "Cero este mes: nadie soltó ni dejó vencer un cupo de clase especial."
+                : undefined
+            }
+          />
+        ) : null}
         <SinDato
           rotulo="No-shows"
           porque="Nadie registra asistencia todavía, así que un cero acá no significaría que vinieron todas. Necesita su propio PRD: que la profesora marque quién llegó."

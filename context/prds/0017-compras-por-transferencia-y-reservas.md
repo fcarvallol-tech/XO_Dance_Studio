@@ -742,3 +742,62 @@ sensato y está comentada como excepción deliberada.
 Un fallo de lectura que se ve como ausencia de datos es **peor que el bug que lo causó**: no se
 puede distinguir del caso normal, así que no se reporta y no se busca. Cualquier consulta nueva
 va con su error a la vista.
+
+## 18. Un defecto encontrado tarde: el bloqueo estaba donde se descuenta y no donde se devuelve
+
+**Encontrado el 10/09/2026**, construyendo la fase 3 de PRD-0018, al leer `reservar()` y
+`cancelar_reserva()` una al lado de la otra para extender las dos. No lo encontró un test ni el
+escenario de staging: los tests de `lib/dominio` son puros y no ven concurrencia, y el escenario
+corre en serie. Esta clase de defecto se caza leyendo, o no se caza.
+
+### Qué estaba mal
+
+`reservar()` bloquea **dos** filas antes de escribir:
+
+- la clase, con `select ... from clases where id = ... for update`, que es donde se resuelve la
+  pelea por el último cupo, y está comentado como tal;
+- el lote de crédito, con `select ... from creditos ... for update`, antes de descontarle una
+  clase.
+
+`cancelar_reserva()` bloquea **una**: la reserva. El crédito lo devuelve con un `update creditos
+set cantidad_disponible = cantidad_disponible + 1` suelto y, dos líneas después, lee
+`saldo_creditos(perfil_id)` para escribir `saldo_resultante` en `movimientos_credito`.
+`devolver_creditos_de_clase()` hace lo mismo: bloquea las reservas con `for update` y el lote no.
+
+### Qué no pasa, y qué sí
+
+**No hay doble devolución.** La reserva sí está bloqueada y el estado se revisa antes de tocar
+nada, así que dos cancelaciones simultáneas de la misma reserva devuelven un crédito, no dos. Esa
+parte estaba bien.
+
+Lo que sí puede pasar es que **el libro quede mal escrito**. Dos operaciones de la misma alumna
+sobre lotes distintos —una cancelación y un `acreditar_compra`, por ejemplo— no comparten ningún
+bloqueo: las dos leen el saldo antes de que la otra confirme y las dos escriben la misma cifra en
+`saldo_resultante`. El saldo real no se pierde, lo guarda `creditos.cantidad_disponible`; lo que
+queda mal es la fila del libro que debía explicarlo, en un libro que **nunca se edita, solo se
+agrega**. Es un asiento que miente, y es justo el que alguien va a mirar cuando reclamen.
+
+Hay un segundo efecto, menor y **aceptado a propósito**: como cancelar no pasa por la
+serialización de la clase, `reservar()` puede ver lleno un cupo que se acaba de liberar y decir
+"la clase está llena" de más. Se reintenta y listo. Bloquear también la clase en
+`cancelar_reserva` invertiría el orden respecto de `devolver_creditos_de_clase`, que la toma
+antes que las reservas, y abriría un deadlock entre la alumna cancelando su reserva y la academia
+cancelando la clase. Un falso "llena" es más barato que eso.
+
+### Arreglo
+
+El lote se bloquea también en los dos caminos que devuelven, con el orden que esos caminos ya
+usan —reserva, después lote—, así que no se cruza con el de `reservar()` (clase, después lote).
+Va en `supabase/migrations/20260910120000_clases_especiales.sql`, que reescribe las dos funciones
+y **todavía no se aplicó en ninguna base**: el arreglo llega antes que el defecto a producción.
+
+### La lección
+
+**El bloqueo se puso donde se descontaba cupo y no donde se devolvía crédito.** Al revisar
+concurrencia uno mira la operación que quita —ahí está la carrera evidente: el último cupo, el
+último crédito— y la que devuelve parece inofensiva porque "solo suma". Pero suma sobre lo mismo,
+y encima escribe en el libro.
+
+Las dos mitades de una operación reversible se revisan juntas, y **la que devuelve se revisa con
+el mismo cuidado que la que descuenta**. Lo mismo vale para las que compensan: acreditar y
+reembolsar, inscribir y dar de baja.

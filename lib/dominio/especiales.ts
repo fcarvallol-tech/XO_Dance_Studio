@@ -72,6 +72,22 @@ export function seSolapan(a: Bloque, b: Bloque): boolean {
   return a.inicio.getTime() < b.fin.getTime() && b.inicio.getTime() < a.fin.getTime();
 }
 
+/**
+ * Los estados que puede tener una reserva. Los tres finales de una pendiente
+ * de pago —`liberada`, `expirada`, `cancelada`— son distintos a propósito
+ * (PRD-0018 §8.3.b): que la alumna suelte el cupo no es lo mismo que que se
+ * venza el plazo, y ninguna de las dos es cancelar una reserva que ya estaba
+ * en pie.
+ */
+export type EstadoReserva =
+  | "confirmada"
+  | "asistio"
+  | "no_asistio"
+  | "pendiente_pago"
+  | "liberada"
+  | "expirada"
+  | "cancelada";
+
 export type ReservaCupo = {
   estado: string;
   /** Solo tiene sentido en `pendiente_pago`. */
@@ -87,7 +103,8 @@ export type ReservaCupo = {
  *
  * La comparación es estricta, `expira_at > now()`: una pendiente que vence
  * exactamente ahora ya no cuenta. Una pendiente sin `expira_at` es un dato roto
- * y no cuenta, para que el error no tome cupos.
+ * y no cuenta, para que el error no tome cupos. Una `liberada` tampoco cuenta:
+ * ese cupo volvió a estar disponible en el momento en que ella lo soltó.
  */
 export function cupoTomado(reservas: ReservaCupo[], ahora: Date): number {
   let tomados = 0;
@@ -98,6 +115,29 @@ export function cupoTomado(reservas: ReservaCupo[], ahora: Date): number {
     }
   }
   return tomados;
+}
+
+/**
+ * En qué estado queda una reserva cuando la alumna la suelta —o cuando admin la
+ * suelta a su pedido—. `null` significa "no se toca": ya se había caído, y el
+ * motivo por el que se cayó no se pisa.
+ *
+ * Es el contrato que replica `cancelar_reserva()` en la base:
+ *
+ * | Antes | Después | Por qué |
+ * |---|---|---|
+ * | `pendiente_pago` | `liberada` | Soltó el cupo antes de que nadie aprobara |
+ * | `confirmada`, `asistio`, `no_asistio` | `cancelada` | Se cae una que estaba en pie |
+ * | `liberada`, `expirada`, `cancelada` | `null` | Ya se había caído |
+ *
+ * Lo que **nunca** sale de acá es `expirada`: esa la escribe el tiempo
+ * (`expirar_reservas_pendientes`) o la academia al cancelar la clase, y es
+ * justamente la diferencia que el tablero necesita ver.
+ */
+export function estadoAlSoltar(estado: EstadoReserva): EstadoReserva | null {
+  if (estado === "liberada" || estado === "expirada" || estado === "cancelada") return null;
+  if (estado === "pendiente_pago") return "liberada";
+  return "cancelada";
 }
 
 // ---------------------------------------------------------------------------

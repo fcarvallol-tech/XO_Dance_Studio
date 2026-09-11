@@ -29,6 +29,17 @@ if (staging.SUPABASE_PROJECT_REF !== STAGING_REF) {
   );
 }
 
+/**
+ * Las dos clases especiales del escenario de PRD-0018 fase 3, identificadas por
+ * **título**: el id lo genera `crear_especial()` y forzarlo sería inventar un
+ * camino que en producción no existe. Viven acá y no en la siembra para que el
+ * verificador las pueda nombrar sin importar un script que siembra al cargarse.
+ */
+export const ES = {
+  publicada: "Coreo del escenario",
+  borrador: "Borrador del escenario",
+};
+
 export async function conectar() {
   const hosts = [
     `aws-0-sa-east-1.pooler.supabase.com`,
