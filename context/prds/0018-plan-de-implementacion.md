@@ -251,6 +251,9 @@ venció el plazo para transferir" y la cancelación de siempre.
 
 ## Fase 7 — Producción
 
+0. 🔴 **PRD-0019 implementado.** El correo de reserva pendiente lleva el plazo del cupo y hoy no
+   tiene registro ni reintento: si falla, no queda ni a quién había que escribirle. No se publica
+   la primera especial sin eso.
 1. `npm run build` y `npm test` en verde en la rama.
 2. `cat supabase/.temp/project-ref` dice producción. `db push --dry-run` muestra solo esta migración.
 3. **`db push` con aprobación de Felipe en ese mensaje.**

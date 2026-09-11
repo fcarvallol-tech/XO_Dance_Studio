@@ -6,7 +6,7 @@
 | **Autor** | Propuesto por Claude a pedido de Felipe Carvalho. Decisiones de §8: Felipe |
 | **Fecha** | 8 de septiembre de 2026 · decisiones cerradas el 9 · Reel y alcance de fase 0 resueltos el 10 |
 | **Hito** | Hito 3 — Reservas (extiende el calendario) · Hito 4 — Portales (formulario en admin) |
-| **PRDs relacionados** | PRD-0006 (calendario y reservas) · PRD-0009 (portal de administración: parámetros y pago de la profesora, §8) · PRD-0010 (métricas: atribución y ocupación; liquidación, parte 3) · PRD-0014 (sección Planes) · PRD-0016 (horarios y sedes) · PRD-0017 (compras, créditos, `clases`) · ADR-0002 (créditos universales) |
+| **PRDs relacionados** | PRD-0006 (calendario y reservas) · PRD-0009 (portal de administración: parámetros y pago de la profesora, §8) · PRD-0010 (métricas: atribución y ocupación; liquidación, parte 3) · PRD-0014 (sección Planes) · PRD-0016 (horarios y sedes) · PRD-0017 (compras, créditos, `clases`) · **PRD-0019 (correo con registro y reintento: bloquea publicar la primera especial)** · ADR-0002 (créditos universales) |
 
 > **Nombre público: "Clases especiales"** (decidido el 09/09/2026). Felipe las llamó al principio
 > "clases sueltas", y ese nombre ya está tomado por el plan de 1 clase de la tabla `planes`, que
@@ -585,6 +585,9 @@ Se prueban **con el artefacto que toca la persona**, en staging, antes del `db p
 - [ ] La portada en la página pública se sirve con URL firmada. La misma ruta del bucket sin
       token responde error; el bucket no lista objetos para `anon`.
 - [ ] `npm run build` y `npm test` en verde. `anon` no ve borradores por la API REST.
+- [ ] 🔴 **Bloqueante antes de publicar la primera especial: PRD-0019 implementado.** El correo
+      de reserva pendiente lleva el plazo del cupo (§8.2) y hoy, si falla, no queda registro ni
+      reintento. Publicar antes es prometer un plazo por un canal que puede fallar en silencio.
 
 ## 11. Métrica de éxito
 
@@ -738,7 +741,11 @@ formulario de admin). Lo que quedó y lo que eso implica:
 - [x] 11/09/2026: fase 5 escrita —lista, página propia, Open Graph, fachada del Reel y fila en
       Planes—, **sin renderizar nunca**. Ver §13.
 - [ ] **Fase 4 sigue pendiente**: sin el formulario de admin no hay cómo crear una especial, así
-      que no hay nada que mirar en las páginas nuevas.
+      que no hay nada que mirar en las páginas nuevas. Nada de `app/(admin)/admin/especiales/`,
+      `FormularioEspecial.tsx` ni `app/api/especiales/portada/route.ts` existe todavía, y
+      `lib/acciones.ts` no tiene ninguna acción de especiales (verificado el 11/09/2026).
+- [ ] 🔴 **PRD-0019 (correo que no se pierde) es bloqueante** para publicar la primera especial.
+      Escrito el 11/09/2026, sin aprobar.
 - [ ] **Re-enlazar la CLI a staging** (`npx supabase link --project-ref ybopuahlzbjkkwumkllk`) y
       verificar con `cat supabase/.temp/project-ref` antes de cualquier cosa.
 - [ ] Push a staging: **necesita aprobación de Felipe en el mensaje.** Después, correr el

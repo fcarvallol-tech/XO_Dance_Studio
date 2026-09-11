@@ -217,5 +217,10 @@ trabajo con su propio alcance y no un parche dentro de PRD-0018.
 Mientras tanto, la promesa de §5 está **escrita pero no cumplida**, y así queda marcada acá para
 que nadie la lea como si existiera.
 
+**Tiene PRD desde el 11/09/2026: PRD-0019 — Correo que no se pierde**, con las tres piezas
+(registro, reintento y visibilidad de los que fallaron) y una regla que salió de mirar el caso de
+las especiales: un aviso con plazo que se reintenta tarde miente, así que se descarta con motivo
+en vez de mandarse. Queda **bloqueante antes de publicar la primera clase especial**.
+
 > Sigue pendiente además el correo de **clase cancelada por XO** (§10): un trigger no puede
 > mandarlo. Son dos huecos distintos del mismo tema, y los dos esperan el mismo trabajo.
