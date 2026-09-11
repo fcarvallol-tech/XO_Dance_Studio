@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | ✅ **Aprobado por Felipe el 10/09/2026.** Fases 1 y 2 hechas; fase 3 escrita y **sin correr**, esperando el push a staging. Precio por defecto ($12.000) y sin sueldo base confirmados en PRD-0009 §8. Bucket privado y embed tras un clic decididos el mismo día (§7.6, §8.7). Soltar el cupo tiene estado propio desde el 10/09 (§8.3.b) |
+| **Estado** | ✅ **Aprobado por Felipe el 10/09/2026.** Fases 1, 2, 3 y 5 hechas: la migración corre en **staging** desde el 11/09 y el escenario da 20/20. Falta la **fase 4** (formulario de admin), que es lo que permite crear una especial. Precio por defecto ($12.000) y sin sueldo base confirmados en PRD-0009 §8. Bucket privado y embed tras un clic decididos el mismo día (§7.6, §8.7). Soltar el cupo tiene estado propio desde el 10/09 (§8.3.b) |
 | **Autor** | Propuesto por Claude a pedido de Felipe Carvalho. Decisiones de §8: Felipe |
 | **Fecha** | 8 de septiembre de 2026 · decisiones cerradas el 9 · Reel y alcance de fase 0 resueltos el 10 |
 | **Hito** | Hito 3 — Reservas (extiende el calendario) · Hito 4 — Portales (formulario en admin) |
@@ -645,9 +645,9 @@ Lo que decidió más fino que el texto de arriba, para que el texto no mienta:
 - **El barrido diario** (`expirar_reservas_pendientes()` desde el cron) es código y va después
   de que la migración corra en producción: si se despliega antes, el cron falla.
 
-**Fase 3 — escenario escrito el 10/09/2026, sin correr.** Bloqueado: la migración no está
-aplicada en staging y la CLI estaba enlazada a **producción** ese día (ver §14). Lo que quedó
-listo:
+**Fase 3 — escenario escrito el 10/09/2026 y corrido el 11/09.** El día que se escribió estaba
+bloqueado: la migración no estaba aplicada y la CLI apuntaba a **producción** (ver §14). Lo que
+quedó listo ese día:
 
 - `scripts/escenario-especiales.mjs`: 20 casos, cada uno en una transacción que se revierte,
   con el esperado escrito al lado y sacado del PRD, no de correr el código y copiar lo que dio.
@@ -657,10 +657,57 @@ listo:
   para no mover los 22 valores de PRD-0010 §11.4, y **borra**
   `especial_precio_default_clp` a propósito, que es la condición del caso "admin no puede crear".
   Las identifica por título: el id lo genera la función.
-- La migración incorpora `liberada` (§8.3.b) y el arreglo de bloqueo de **PRD-0017 §18**. Nada de
-  esto se ejecutó todavía contra una base: el SQL no está verificado hasta que corra en staging.
+- La migración incorpora `liberada` (§8.3.b) y el arreglo de bloqueo de **PRD-0017 §18**.
 - El conteo de `expirar_reservas_pendientes()` devolvía el `row_count` del update de `compras` y
   no cuántas reservas expiró. Corregido en la misma migración, con su caso en el escenario.
+
+**Fase 3 — corrida en staging el 11/09/2026, con la migración ya aplicada.** El `db push` a
+staging lo aprobó Felipe ese día; `migration list` mostraba las 17 aplicadas y solo
+`20260910120000` local. Aplicó sin error: es la primera vez que estas 1.500 líneas de SQL se
+ejecutan contra un Postgres.
+
+**20 de 20 casos dan lo que dice el PRD.** Esperado y real, uno al lado del otro:
+
+| Caso | Esperado | Real | |
+|---|---|---|---|
+| reservar_especial() toma el cupo y deja la compra pendiente | compra pendiente con clase · $15000 · reserva pendiente_pago · expira en 24 h · cupo 0→1 | compra pendiente con clase · $15000 · reserva pendiente_pago · expira en 24 h · cupo 0→1 | ✓ |
+| con el cupo lleno de pendientes vigentes, la siguiente no entra | 23514 · La clase está llena | 23514 · La clase está llena | ✓ |
+| una pendiente vencida suelta el cupo sola, sin esperar al cron | la de Ana expirada · Cata entra · cupo 2 | la de Ana expirada · Cata entra · cupo 2 | ✓ |
+| acreditar una compra de clase confirma la reserva y no crea ni un crédito | reserva confirmada · compra pagada · lotes 0 · movimientos 0 | reserva confirmada · compra pagada · lotes 0 · movimientos 0 | ✓ |
+| si transfirió y nadie aprobó a tiempo, admin la reactiva cuando hay cupo | reserva confirmada · compra pagada | reserva confirmada · compra pagada | ✓ |
+| expirada y sin cupo: la plata queda registrada para devolver, no se inventa un lugar | reserva expirada · compra por_reembolsar | reserva expirada · compra por_reembolsar | ✓ |
+| la alumna suelta el cupo: queda `liberada`, no `cancelada` ni `expirada` | reserva liberada · compra expirada · cupo 1→0 | reserva liberada · compra expirada · cupo 1→0 | ✓ |
+| una liberada no se reactiva aunque sobre cupo: si transfirió, se le devuelve | reserva liberada · compra por_reembolsar · cupo 0 | reserva liberada · compra por_reembolsar · cupo 0 | ✓ |
+| soltar no la deja afuera: puede volver a reservar la misma clase | segunda reserva pendiente_pago · cupo 1 | segunda reserva pendiente_pago · cupo 1 | ✓ |
+| cancelar una confirmada es `cancelada`, y la plata no se mueve sola | reserva cancelada · compra pagada · sin reembolso · cupo 0 | reserva cancelada · compra pagada · sin reembolso · cupo 0 | ✓ |
+| el reembolso lo registra admin a mano, y la alumna no puede | compra reembolsada $15000 con autor y fecha · alumna: 42501 · Se necesita rol admin o superior | compra reembolsada $15000 con autor y fecha · alumna: 42501 · Se necesita rol admin o superior | ✓ |
+| cuando cancela la academia: la pagada queda por reembolsar y la pendiente expira, no liberada | pagada → reserva cancelada + compra por_reembolsar · pendiente → reserva expirada + compra expirada | pagada → reserva cancelada + compra por_reembolsar · pendiente → reserva expirada + compra expirada | ✓ |
+| sin sesión se ve la publicada y no el borrador | anon ve 1 de 2 | anon ve 1 de 2 | ✓ |
+| una especial que se pisa con la parrilla no se guarda (§9.3: la duración manda) | 23514 · Se pisa con otra clase en esa sede o de esa profesora a esa hora | 23514 · Se pisa con otra clase en esa sede o de esa profesora a esa hora | ✓ |
+| sin precio por defecto cargado, admin no puede crear y owner sí | admin: 23514 · Falta el precio por defecto · owner: $15000 | admin: 23514 · Falta el precio por defecto · owner: $15000 | ✓ |
+| con el default cargado, el precio que manda admin se ignora y el de owner no | admin $12000 · owner $99000 | admin $12000 · owner $99000 | ✓ |
+| expirar_reservas_pendientes() cuenta reservas, no compras | expiró 1 | expiró 1 | ✓ |
+| cancelar una reserva de la parrilla sigue devolviendo el crédito a su lote | crédito +1 · 1 movimiento de cancelacion | crédito +1 · 1 movimiento de cancelacion | ✓ |
+| el tablero separa lo que la alumna soltó de lo que dejamos vencer | soltadas 1 · expiradas 1 · por clase cancelada 0 | soltadas 1 · expiradas 1 · por clase cancelada 0 | ✓ |
+| una compra de especial entra en los ingresos y no descuadra la conciliación de créditos | ingresos +15000 · conciliación cuadra | ingresos +15000 · conciliación cuadra | ✓ |
+
+Dos casos fallaron en la primera corrida y **los dos eran defectos del escenario, no de la
+migración**. Vale anotarlos porque uno de ellos es del tipo que se cuela:
+
+- `expirar_reservas_pendientes() cuenta reservas, no compras` se caía en la **preparación**, no en
+  la función: ponía la compra en `rechazada` sin motivo y chocaba con
+  `compras_rechazo_con_motivo` (PRD-0017). O sea que ese caso **nunca llegó a llamar a la
+  función que decía probar**. Un caso que se cae antes de ejercitar lo que prueba se ve igual que
+  uno que encontró un bug, y es la misma trampa de siempre: el ✗ hay que leerlo, no contarlo.
+- El otro era el texto esperado: decía "un movimiento" y la función escribe "1 movimiento". El
+  comportamiento estaba bien desde el principio.
+
+**Y `verificar-metricas` destapó una deriva del escenario de PRD-0010.** "Ocupación promedio
+dictadas" daba 5 de 110 en vez de 5 de 66, sin que nadie tocara una métrica: staging tiene las
+clases de parrilla **reales** que generó la migración de Pau, y cada día que pasa una más queda en
+el pasado y entra en "las dictadas del mes". El numerador no se movió —las dos clases nuevas
+tienen cero reservas—, así que no era una regresión de esta migración. Se ancló la medición a las
+cinco clases del escenario, que es sobre lo que se calculó el número a mano. **25 de 25.**
 
 **Fase 5 — lo público, escrito el 11/09/2026 fuera de orden** (antes que la fase 4, que es el
 formulario de admin). Lo que quedó y lo que eso implica:
@@ -740,14 +787,16 @@ formulario de admin). Lo que quedó y lo que eso implica:
       como definición de precio (§8.4), y la migración los carga.
 - [x] 11/09/2026: fase 5 escrita —lista, página propia, Open Graph, fachada del Reel y fila en
       Planes—, **sin renderizar nunca**. Ver §13.
+- [x] 11/09/2026: **migración aplicada a staging** con aprobación de Felipe. Escenario 20/20 y
+      `verificar-metricas` 25/25. `npm run build` sigue fallando contra producción, que es donde
+      apunta `.env.local` y donde la migración **no** está aplicada.
 - [ ] **Fase 4 sigue pendiente**: sin el formulario de admin no hay cómo crear una especial, así
       que no hay nada que mirar en las páginas nuevas. Nada de `app/(admin)/admin/especiales/`,
       `FormularioEspecial.tsx` ni `app/api/especiales/portada/route.ts` existe todavía, y
       `lib/acciones.ts` no tiene ninguna acción de especiales (verificado el 11/09/2026).
 - [ ] 🔴 **PRD-0019 (correo que no se pierde) es bloqueante** para publicar la primera especial.
       Escrito el 11/09/2026, sin aprobar.
-- [ ] **Re-enlazar la CLI a staging** (`npx supabase link --project-ref ybopuahlzbjkkwumkllk`) y
-      verificar con `cat supabase/.temp/project-ref` antes de cualquier cosa.
-- [ ] Push a staging: **necesita aprobación de Felipe en el mensaje.** Después, correr el
-      escenario de la fase 3 y pegar su tabla en §13.
+- [x] 11/09/2026: CLI re-enlazada a **staging** (`ybopuahlzbjkkwumkllk`) y verificada antes de
+      cada comando. Ojo al volver: para `npm run build` y para producción hay que re-enlazar.
+- [ ] Push a **producción**: fase 7, y con PRD-0019 antes (§10).
 - [ ] Despliegues Preview en Error en Vercel de los últimos días, sin revisar.

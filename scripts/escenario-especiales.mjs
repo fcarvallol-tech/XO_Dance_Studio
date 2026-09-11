@@ -424,7 +424,12 @@ caso(
     // nada, con la reserva expirada igual.
     const e = await especial(ES.publicada);
     const r = await reservar(e.id, U.ana);
-    await q(`update public.compras set estado = 'rechazada' where id = $1`, [r.compra_id]);
+    await q(
+      `update public.compras
+       set estado = 'rechazada', motivo_rechazo = 'No llegó la transferencia'
+       where id = $1`,
+      [r.compra_id],
+    );
     await q(`update public.reservas set expira_at = now() - interval '1 second' where id = $1`, [r.id]);
     const { n } = await una(`select public.expirar_reservas_pendientes($1) as n`, [e.id]);
     return `expiró ${n}`;
@@ -433,7 +438,7 @@ caso(
 
 caso(
   "cancelar una reserva de la parrilla sigue devolviendo el crédito a su lote",
-  "crédito +1 · un movimiento de cancelacion",
+  "crédito +1 · 1 movimiento de cancelacion",
   async () => {
     // Regresión del bloqueo que se agregó en cancelar_reserva (PRD-0017 §18):
     // lo que no puede pasar es que devolver deje de devolver.

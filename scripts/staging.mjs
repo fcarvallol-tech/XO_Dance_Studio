@@ -30,6 +30,21 @@ if (staging.SUPABASE_PROJECT_REF !== STAGING_REF) {
 }
 
 /**
+ * Las cinco clases del escenario de PRD-0010 §11.4. Viven acá, y no solo en la
+ * siembra, porque el verificador necesita poder distinguirlas de las clases de
+ * parrilla **reales** que staging genera sola: las suyas envejecen con los días
+ * y se van sumando a "las dictadas del mes", que no es lo que miden los valores
+ * calculados a mano del PRD.
+ */
+export const CLASES_ESCENARIO = [
+  "22222222-2222-4222-8222-000000000001",
+  "22222222-2222-4222-8222-000000000002",
+  "22222222-2222-4222-8222-000000000003",
+  "22222222-2222-4222-8222-000000000004",
+  "22222222-2222-4222-8222-000000000005",
+];
+
+/**
  * Las dos clases especiales del escenario de PRD-0018 fase 3, identificadas por
  * **título**: el id lo genera `crear_especial()` y forzarlo sería inventar un
  * camino que en producción no existe. Viven acá y no en la siembra para que el

@@ -102,8 +102,9 @@ código: el corredor falló por módulo inexistente y después pasó.
 
 ## Fase 3 — Escenario en staging, sin interfaz
 
-**Escrita el 10/09/2026. Sin correr:** la migración no está aplicada en staging y la CLI estaba
-enlazada a producción (ver el checkpoint).
+**Escrita el 10/09/2026 y corrida el 11/09: 20 de 20.** La migración se aplicó a staging con
+aprobación de Felipe y el escenario completo está en PRD-0018 §13, con el real al lado del
+esperado.
 
 Se extendió `scripts/sembrar-escenario.mjs`: dos especiales creadas con `crear_especial()` y una
 publicada con `publicar_especial()` —el camino real, no un insert—, una en Los Leones con precio
@@ -272,9 +273,9 @@ venció el plazo para transferir" y la cancelación de siempre.
 |---|---|
 | 0 — Decisiones | ✅ Cerrada. PRD aprobado el 10/09/2026; PRD-0009 §8 confirmado el mismo día |
 | 1 — Funciones puras y tests | ✅ **Hecha el 10/09/2026**: 10 funciones, 47 tests, `npm test` 84/84 |
-| 2 — Migración | ✅ **Escrita el 10/09/2026**, `20260910120000_clases_especiales.sql`. Sin aplicar: el push a staging espera aprobación. Incluye `liberada` (§8.3.b) y el arreglo de PRD-0017 §18 |
-| 3 — Escenario en staging | ✅ Escrito el 10/09/2026 (20 casos). ⏸ **Sin correr**: falta re-enlazar la CLI a staging y aprobar el push |
-| 4 — Formulario y bandeja | Depende de la 2 |
+| 2 — Migración | ✅ Escrita el 10/09/2026 y **aplicada a staging el 11/09** con aprobación. Incluye `liberada` (§8.3.b) y el arreglo de PRD-0017 §18. Producción: fase 7 |
+| 3 — Escenario en staging | ✅ **20/20 el 11/09/2026.** `verificar-metricas` 25/25 tras anclar la ocupación a las clases del escenario |
+| 4 — Formulario y bandeja | **Siguiente, y es lo único que falta para poder ver algo.** Nada de `app/(admin)/admin/especiales/` existe todavía |
 | 5 — Público, Planes y privacidad | ✅ Escrita el 11/09/2026, fuera de orden. ⏸ **Sin renderizar**: falta la migración aplicada y la fase 4 para tener qué mostrar |
 | 6 — Reservar, aprobar, cancelar | Depende de la 3 y la 5 |
 | 7 — Producción | Depende de todo, y de aprobación del push |

@@ -11,7 +11,7 @@
  * que va a usar la página. Reimplementarlas en el verificador probaría que dos
  * copias coinciden, no que la que se usa está bien.
  */
-import { conectar } from "./staging.mjs";
+import { CLASES_ESCENARIO, conectar } from "./staging.mjs";
 import {
   atribuir,
   brecha,
@@ -84,8 +84,25 @@ const conc = conciliacion(R.conciliacion.libro, R.conciliacion.lotes);
 const top = planesMasVendidos(
   R.venta.por_plan.map((p) => ({ slug: p.slug, nombre: p.nombre, compras: p.compras })),
 );
+/**
+ * La ocupación se mide **solo sobre las clases del escenario**.
+ *
+ * El 11/09/2026 este valor empezó a dar 5 de 110 en vez de 5 de 66 sin que
+ * nadie cambiara una métrica: staging tiene clases de parrilla de verdad
+ * —las que generó la migración de Pau— y cada día que pasa una más queda en el
+ * pasado y entra en "dictadas". El número esperado se calculó a mano sobre las
+ * cinco clases sembradas, así que comparar contra todo el mes era comparar
+ * contra algo que crece solo.
+ *
+ * Restringirlo no debilita la prueba: los valores los sigue calculando el SQL y
+ * la ocupación la sigue calculando `lib/dominio`. Lo único que se fija es sobre
+ * qué clases.
+ */
+const delEscenario = new Set(CLASES_ESCENARIO);
 const ocup = ocupacionPromedio(
-  D.por_clase.filter((c) => c.dictada).map((c) => ({ reservas: c.reservas, cupo: c.cupo })),
+  D.por_clase
+    .filter((c) => c.dictada && delEscenario.has(c.clase_id))
+    .map((c) => ({ reservas: c.reservas, cupo: c.cupo })),
 );
 const atrib = atribuir(
   D.por_profesora.flatMap((p) =>
