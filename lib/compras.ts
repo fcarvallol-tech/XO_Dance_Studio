@@ -5,7 +5,15 @@
  * `compras-consultas.ts` y las escrituras en las acciones de servidor.
  */
 
-export type EstadoCompra = "pendiente" | "pagada" | "rechazada" | "reembolsada";
+export type EstadoCompra =
+  | "pendiente"
+  | "pagada"
+  | "rechazada"
+  | "reembolsada"
+  /** Nadie acreditó a tiempo y la reserva soltó el cupo (PRD-0018 §8.2). */
+  | "expirada"
+  /** Plata recibida que hay que devolver: la academia canceló, o no había cupo. */
+  | "por_reembolsar";
 
 export type Compra = {
   id: string;
@@ -16,6 +24,8 @@ export type Compra = {
   medioPago: string;
   declaradaAt: string;
   motivoRechazo: string | null;
+  /** La clase especial que se está pagando, si la compra es de una (PRD-0018). */
+  especial: { titulo: string; inicio: string } | null;
   /** Solo en la bandeja de admin. */
   alumna?: string | null;
   correoAlumna?: string | null;
@@ -47,6 +57,10 @@ export type ReservaPropia = {
   sedeDireccion: string;
   estado: string;
   creditoDevuelto: boolean;
+  /** Hasta cuándo una `pendiente_pago` retiene el cupo. Null en las demás. */
+  expiraAt: string | null;
+  /** Una especial se llama por su coreografía, no por el curso. */
+  esEspecial: boolean;
   /** La academia canceló la clase. Distinto de que la haya cancelado ella. */
   claseCancelada: boolean;
   motivoCancelacion: string | null;
@@ -57,6 +71,8 @@ export const NOMBRE_ESTADO: Record<EstadoCompra, string> = {
   pagada: "Confirmada",
   rechazada: "Rechazada",
   reembolsada: "Reembolsada",
+  expirada: "Venció sin confirmar",
+  por_reembolsar: "Hay que devolver la plata",
 };
 
 export function lugaresLibres(clase: ClaseDelCalendario): number {

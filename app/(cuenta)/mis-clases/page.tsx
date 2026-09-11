@@ -32,10 +32,14 @@ export default async function MisClases() {
   // Una clase que la academia canceló va arriba aunque la reserva figure como
   // cancelada: es una noticia que ella todavía no vio y que cambia su semana.
   // Antes caía entre las pasadas, o directamente no aparecía.
+  // Una `pendiente_pago` vigente también va arriba: es un cupo que tiene
+  // tomado y sobre el que hay que hacer algo antes de que se venza.
   const proximas = reservas.datos.filter(
     (r) =>
       r.inicio > ahora &&
-      (r.estado === "confirmada" || (r.claseCancelada && r.creditoDevuelto)),
+      (r.estado === "confirmada" ||
+        (r.estado === "pendiente_pago" && (r.expiraAt ?? "") > ahora) ||
+        (r.claseCancelada && r.creditoDevuelto)),
   );
   const pasadas = reservas.datos.filter((r) => !proximas.includes(r));
 

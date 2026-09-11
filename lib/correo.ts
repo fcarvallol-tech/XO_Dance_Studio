@@ -157,3 +157,59 @@ export async function avisarReserva(datos: {
     ),
   });
 }
+
+/**
+ * A la alumna: reservó una clase especial y el cupo le queda tomado hasta una
+ * hora concreta (PRD-0018 §8.2).
+ *
+ * ⚠️ **Este es el correo del que habla PRD-0019.** Lleva un plazo, y hoy, si
+ * Resend falla, no queda registro ni reintento: la alumna se queda sin saber
+ * hasta cuándo tiene el cupo. Por eso PRD-0019 es bloqueante antes de publicar
+ * la primera especial de verdad.
+ */
+export async function avisarEspecialPendiente(datos: {
+  para: string;
+  nombre: string | null;
+  titulo: string;
+  cuando: string;
+  sede: string;
+  monto: number;
+  expira: string;
+}): Promise<boolean> {
+  return enviar({
+    para: datos.para,
+    asunto: `Te guardamos el cupo: ${datos.titulo}`,
+    html: plantilla(
+      "Tu cupo está tomado",
+      `<p ${P}>${datos.nombre ? `${datos.nombre}, te` : "Te"} guardamos un lugar en <strong>${datos.titulo}</strong>.</p>
+       <p ${P}>${datos.cuando} · ${datos.sede}</p>
+       <p ${P}>Transfiere <strong>${clp(datos.monto)}</strong> con los datos que viste al reservar. Apenas confirmemos el abono, tu lugar queda cerrado.</p>
+       <p style="margin:20px 0 0;padding:14px 16px;background:#1a1a1a;border-left:3px solid #f7adbf;font-size:15px;line-height:1.6;color:#f7f7f7;">
+         El cupo te queda tomado hasta el <strong style="color:#f2d0dc;">${datos.expira}</strong>. Después se libera para otra persona.
+       </p>`,
+    ),
+  });
+}
+
+/** A la alumna: confirmamos su transferencia y la clase especial quedó reservada. */
+export async function avisarEspecialConfirmada(datos: {
+  para: string;
+  nombre: string | null;
+  titulo: string;
+  cuando: string;
+  profesora: string;
+  sede: string;
+  direccion: string;
+}): Promise<boolean> {
+  return enviar({
+    para: datos.para,
+    asunto: `Confirmada: ${datos.titulo} · ${datos.cuando}`,
+    html: plantilla(
+      "Tu clase especial está confirmada",
+      `<p ${P}>${datos.nombre ? `${datos.nombre}, confirmamos` : "Confirmamos"} tu transferencia. Tu lugar en <strong>${datos.titulo}</strong> quedó cerrado.</p>
+       <p ${P}>${datos.cuando}</p>
+       <p ${P}>Con ${datos.profesora}<br>${datos.sede}<br>${datos.direccion}</p>
+       <p style="margin:20px 0 0;font-size:13px;color:#f7f7f7;opacity:.6;">Si no puedes ir, avísanos: el cupo se libera para otra persona. La devolución del dinero la vemos caso a caso por WhatsApp.</p>`,
+    ),
+  });
+}

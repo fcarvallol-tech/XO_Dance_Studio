@@ -237,6 +237,10 @@ esos estados sin la interfaz de esta fase, pero es lo primero que hay que arregl
 cuatro frases distintas: "Esperando que confirmemos tu transferencia", "Soltaste el cupo", "Se
 venció el plazo para transferir" y la cancelación de siempre.
 
+**Verificado el 11/09/2026 con `scripts/verificar-fase6.mjs`**, que maneja un Chromium de verdad:
+25 de 25 pasos. La tabla está en PRD-0018 §13. Lo que **no** cubre es que el correo llegue —las
+cuentas del escenario son `@ejemplo.invalid`—, y eso es PRD-0019.
+
 **Checkpoint,** el flujo entero con el artefacto real, en staging:
 
 1. Visitante sin cuenta → "Reservar por $X" → `/entrar` → **abre el enlace del correo** → vuelve
@@ -275,7 +279,7 @@ venció el plazo para transferir" y la cancelación de siempre.
 | 1 — Funciones puras y tests | ✅ **Hecha el 10/09/2026**: 10 funciones, 47 tests, `npm test` 84/84 |
 | 2 — Migración | ✅ Escrita el 10/09/2026 y **aplicada a staging el 11/09** con aprobación. Incluye `liberada` (§8.3.b) y el arreglo de PRD-0017 §18. Producción: fase 7 |
 | 3 — Escenario en staging | ✅ **20/20 el 11/09/2026.** `verificar-metricas` 25/25 tras anclar la ocupación a las clases del escenario |
-| 4 — Formulario y bandeja | **Siguiente, y es lo único que falta para poder ver algo.** Nada de `app/(admin)/admin/especiales/` existe todavía |
+| 4 — Formulario y bandeja | ✅ **Hecha el 11/09/2026.** Formulario, subida de portada con la service role, publicar, bandeja con la clase al lado |
 | 5 — Público, Planes y privacidad | ✅ Escrita el 11/09/2026, fuera de orden. ⏸ **Sin renderizar**: falta la migración aplicada y la fase 4 para tener qué mostrar |
-| 6 — Reservar, aprobar, cancelar | Depende de la 3 y la 5 |
-| 7 — Producción | Depende de todo, y de aprobación del push |
+| 6 — Reservar, aprobar, cancelar | ✅ **Verificada con clics el 11/09/2026: 25/25**, con `scripts/verificar-fase6.mjs` contra staging. Falta el correo, que es PRD-0019 |
+| 7 — Producción | 🔴 Depende de **PRD-0019** (el comprobante que no se pierde) y de aprobación del push |

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mesAnterior, mesEnCurso, nombreDelMes } from "./periodo.ts";
+import { instanteEnSantiago, mesAnterior, mesEnCurso, nombreDelMes } from "./periodo.ts";
 
 /** Qué hora de Santiago es un instante UTC, para leer los asertos. */
 const enSantiago = (d: Date) =>
@@ -62,4 +62,32 @@ test("el mes anterior a marzo es febrero completo, con sus 28 días", () => {
   assert.equal(enSantiago(anterior.hasta), "2026-03-01 00:00:00");
   const dias = (anterior.hasta.getTime() - anterior.desde.getTime()) / 864e5;
   assert.equal(dias, 28);
+});
+
+// ---------------------------------------------------------------------------
+// instanteEnSantiago — la hora que alguien teclea en el formulario
+// ---------------------------------------------------------------------------
+
+test("instanteEnSantiago: en septiembre Chile está en -03:00", () => {
+  // 2026 adelanta el reloj el primer sábado de septiembre.
+  assert.equal(
+    instanteEnSantiago("2026-09-20T20:00")?.toISOString(),
+    "2026-09-20T23:00:00.000Z",
+  );
+});
+
+test("instanteEnSantiago: en pleno invierno está en -04:00, y por eso no se puede fijar el desfase", () => {
+  assert.equal(
+    instanteEnSantiago("2026-07-15T20:00")?.toISOString(),
+    "2026-07-16T00:00:00.000Z",
+  );
+});
+
+test("instanteEnSantiago: acepta el formato con espacio y el texto roto devuelve null", () => {
+  assert.equal(
+    instanteEnSantiago("2026-09-20 20:00")?.toISOString(),
+    "2026-09-20T23:00:00.000Z",
+  );
+  assert.equal(instanteEnSantiago("20 de septiembre"), null);
+  assert.equal(instanteEnSantiago(""), null);
 });

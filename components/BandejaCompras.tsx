@@ -67,6 +67,9 @@ export function BandejaCompras({ pendientes }: { pendientes: Compra[] }) {
                 </p>
                 <p className="text-sm text-xo-gris">
                   {compra.planNombre} · declarada {cuandoLegible(compra.declaradaAt)}
+                  {compra.especial
+                    ? ` · clase especial del ${cuandoLegible(compra.especial.inicio)}`
+                    : ""}
                 </p>
                 {compra.correoAlumna &&
                 !compra.correoAlumna.endsWith(".invalid") ? (

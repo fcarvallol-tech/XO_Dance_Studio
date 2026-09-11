@@ -138,6 +138,7 @@ function gruposPara(rol: Rol): Grupo[] {
       de: "Administración",
       enlaces: [
         { href: "/admin/compras", texto: "Transferencias" },
+        { href: "/admin/especiales", texto: "Clases especiales" },
         { href: "/admin/solicitudes", texto: "Horarios pedidos" },
         { href: "/admin", texto: "Personas" },
         { href: "/admin/leads", texto: "Leads" },

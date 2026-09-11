@@ -33,9 +33,10 @@
  * que reserva, acredita, suelta o cancela vive en `escenario-especiales.mjs`,
  * dentro de transacciones que se revierten.
  *
- * Y se **borra** `especial_precio_default_clp` de `parametros`, a propósito:
- * sin esa fila, admin no puede crear especiales (§6) y ese es uno de los casos
- * que hay que probar. El valor confirmado ($12.000) lo carga owner en la fase 7.
+ * `especial_precio_default_clp` queda en **$12.000**, que es como lo deja la
+ * migración. El caso de "admin no puede crear sin el valor de arranque" se
+ * borra la fila él mismo, dentro de su transacción revertida: así el escenario
+ * no depende de un efecto secundario de la siembra.
  */
 import { conectar, ES } from "./staging.mjs";
 
@@ -383,8 +384,16 @@ try {
   // -------------------------------------------------------------------------
   // 6. Las dos clases especiales (PRD-0018 fase 3).
   // -------------------------------------------------------------------------
-  // Sin precio por defecto cargado: es la condición que hace fallar a admin.
-  await q(`delete from public.parametros where clave = 'especial_precio_default_clp'`);
+  // El valor de arranque queda como lo deja la migración en producción: $12.000.
+  // Antes esta línea lo **borraba**, para que el escenario pudiera probar que
+  // admin no puede crear sin él; ese caso ahora se borra la fila él mismo,
+  // dentro de su transacción revertida, y staging queda pareja con producción.
+  await q(
+    `insert into public.parametros (clave, valor, descripcion)
+     values ('especial_precio_default_clp', '12000',
+             'Precio con el que nace el formulario de una clase especial. PRD-0018 §8.4.')
+     on conflict (clave) do update set valor = excluded.valor`,
+  );
 
   // Curso, profesora y sede salen de un horario activo real de cada sede: así
   // la especial es coherente con el catálogo y el solape se puede probar contra

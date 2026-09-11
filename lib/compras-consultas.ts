@@ -146,14 +146,24 @@ type FilaCompra = {
   declarada_at: string;
   motivo_rechazo: string | null;
   perfil_id?: string;
+  clase_id?: string | null;
   planes: { nombre: string } | null;
+  clases?: { titulo: string | null; inicio: string } | null;
   perfiles?: { nombre: string | null; email: string | null } | null;
 };
 
 function aCompra(fila: FilaCompra): Compra {
   return {
     id: fila.id,
-    planNombre: fila.planes?.nombre ?? `${fila.cantidad_clases} clases`,
+    // Una compra de clase especial no tiene plan: se llama por su coreografía.
+    // Sin esto la bandeja decía "1 clases".
+    planNombre:
+      fila.planes?.nombre ??
+      fila.clases?.titulo ??
+      `${fila.cantidad_clases} clases`,
+    especial: fila.clases
+      ? { titulo: fila.clases.titulo ?? "Clase especial", inicio: fila.clases.inicio }
+      : null,
     clases: fila.cantidad_clases,
     monto: fila.monto_clp,
     estado: fila.estado as EstadoCompra,
@@ -166,10 +176,14 @@ function aCompra(fila: FilaCompra): Compra {
   };
 }
 
+// `clases` entra en las dos: una compra de especial no tiene plan, y sin el
+// título la bandeja no dice qué se está pagando. El embed es inequívoco —hay
+// una sola llave foránea de compras a clases—, que es justo lo que faltaba
+// cuando la bandeja apareció vacía (PRD-0017 §17).
 const CAMPOS_COMPRA =
-  "id, cantidad_clases, monto_clp, estado, medio_pago, declarada_at, motivo_rechazo, planes ( nombre )";
+  "id, cantidad_clases, monto_clp, estado, medio_pago, declarada_at, motivo_rechazo, clase_id, planes ( nombre ), clases ( titulo, inicio )";
 const CAMPOS_COMPRA_ADMIN =
-  `id, perfil_id, cantidad_clases, monto_clp, estado, medio_pago, declarada_at, motivo_rechazo, planes ( nombre ), ${ALUMNA_DE_COMPRA} ( nombre, email )`;
+  `id, perfil_id, cantidad_clases, monto_clp, estado, medio_pago, declarada_at, motivo_rechazo, clase_id, planes ( nombre ), clases ( titulo, inicio ), ${ALUMNA_DE_COMPRA} ( nombre, email )`;
 
 export async function getMisCompras(perfilId: string): Promise<Lectura<Compra[]>> {
   const supabase = await clienteServidor();
@@ -318,9 +332,12 @@ type FilaReserva = {
   clase_id: string;
   estado: string;
   credito_devuelto: boolean;
+  expira_at: string | null;
   clases: {
     inicio: string;
     estado: string;
+    tipo: string;
+    titulo: string | null;
     motivo_cancelacion: string | null;
     cursos: { nombre: string } | null;
     profesoras: { nombre: string } | null;
@@ -335,7 +352,7 @@ export async function getMisReservas(
   const { data, error } = await supabase
     .from("reservas")
     .select(
-      "id, clase_id, estado, credito_devuelto, clases ( inicio, estado, motivo_cancelacion, cursos ( nombre ), profesoras ( nombre ), sedes ( nombre, direccion ) )",
+      "id, clase_id, estado, credito_devuelto, expira_at, clases ( inicio, estado, tipo, titulo, motivo_cancelacion, cursos ( nombre ), profesoras ( nombre ), sedes ( nombre, direccion ) )",
     )
     .eq("perfil_id", perfilId)
     .order("created_at", { ascending: false });
@@ -351,12 +368,14 @@ export async function getMisReservas(
         id: r.id,
         claseId: r.clase_id,
         inicio: r.clases!.inicio,
-        cursoNombre: r.clases!.cursos?.nombre ?? "",
+        cursoNombre: r.clases!.titulo ?? r.clases!.cursos?.nombre ?? "",
         profesoraNombre: r.clases!.profesoras?.nombre ?? "",
         sedeNombre: r.clases!.sedes?.nombre ?? "",
         sedeDireccion: r.clases!.sedes?.direccion ?? "",
         estado: r.estado,
         creditoDevuelto: r.credito_devuelto,
+        expiraAt: r.expira_at,
+        esEspecial: r.clases!.tipo === "especial",
         claseCancelada: r.clases!.estado === "cancelada",
         motivoCancelacion: r.clases!.motivo_cancelacion,
       }))

@@ -69,6 +69,19 @@ export function MisReservas({
                   {reserva.sedeNombre} · {reserva.sedeDireccion}
                 </p>
 
+                {reserva.estado === "pendiente_pago" && reserva.expiraAt ? (
+                  <div className="mt-2 border-l-2 border-xo-rosa pl-3">
+                    <p className="text-sm font-medium text-xo-negro">
+                      Te guardamos el cupo hasta el{" "}
+                      {cuandoLegible(reserva.expiraAt)}.
+                    </p>
+                    <p className="mt-1 text-sm text-xo-gris">
+                      Estamos revisando tu transferencia. Si no alcanzamos a
+                      verla antes de esa hora, el cupo se libera.
+                    </p>
+                  </div>
+                ) : null}
+
                 {reserva.claseCancelada ? (
                   <div className="mt-2 border-l-2 border-xo-negro pl-3">
                     <p className="text-sm font-medium text-xo-negro">
@@ -106,7 +119,11 @@ export function MisReservas({
                   }}
                   className="xo-eyebrow self-center rounded-full border border-xo-negro/20 px-4 py-2 whitespace-nowrap text-xo-negro transition-colors hover:border-xo-negro/50 disabled:opacity-50"
                 >
-                  {ocupada === reserva.id ? "…" : "Cancelar"}
+                  {ocupada === reserva.id
+                    ? "…"
+                    : reserva.estado === "pendiente_pago"
+                      ? "Soltar el cupo"
+                      : "Cancelar"}
                 </button>
               )}
             </li>
@@ -148,6 +165,12 @@ function quePaso(reserva: ReservaPropia): string {
       ? "La cancelamos nosotras · clase devuelta"
       : "La cancelamos nosotras";
   }
+  // Los tres finales de una pendiente de pago son distintos a propósito
+  // (PRD-0018 §8.3.b) y acá se leen distinto: soltaste, se venció, o la
+  // cancelaste estando en pie. Antes las tres caían en "Asististe".
+  if (reserva.estado === "liberada") return "Soltaste el cupo";
+  if (reserva.estado === "expirada") return "Se venció el plazo para transferir";
+  if (reserva.estado === "pendiente_pago") return "Quedó sin confirmar";
   if (reserva.estado === "cancelada") {
     return reserva.creditoDevuelto
       ? "Cancelaste · clase devuelta"

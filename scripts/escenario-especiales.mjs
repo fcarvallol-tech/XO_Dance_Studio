@@ -366,6 +366,9 @@ caso(
   "admin: 23514 · Falta el precio por defecto · owner: $15000",
   async () => {
     const e = await especial(ES.publicada);
+    // Autocontenido: no depende de que la siembra haya borrado la fila. Esa
+    // dependencia invisible se rompió el 11/09 apenas alguien la restituyó.
+    await q(`delete from public.parametros where clave = 'especial_precio_default_clp'`);
     const negado = await rechazo(
       `select public.crear_especial(
          p_actor_user_id => $1, p_titulo => 'La de admin sin default',

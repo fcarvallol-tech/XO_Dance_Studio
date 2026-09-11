@@ -65,10 +65,10 @@ export default async function ClaseEspecial({ params }: Props) {
   const { especial, lugaresLibres } = dato;
   const llena = lugaresLibres <= 0;
 
-  // Quien llega desde una historia no tiene sesión: el primer paso real es
-  // entrar, y después vuelve exactamente a esta clase. La pantalla de
-  // transferencia la conecta la fase 6.
-  const reservar = `/entrar?volver=${encodeURIComponent(`/clases-especiales/${especial.slug}`)}`;
+  // Quien llega desde una historia no tiene sesión: el proxy la manda a
+  // `/entrar` con `?volver=` puesto y vuelve **a la pantalla de reserva**, no a
+  // esta ficha. Con sesión, entra derecho.
+  const reservar = `/reservar-especial/${especial.slug}`;
 
   return (
     <>

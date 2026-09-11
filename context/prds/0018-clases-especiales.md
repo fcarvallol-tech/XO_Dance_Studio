@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | ✅ **Aprobado por Felipe el 10/09/2026.** Fases 1, 2, 3 y 5 hechas: la migración corre en **staging** desde el 11/09 y el escenario da 20/20. Falta la **fase 4** (formulario de admin), que es lo que permite crear una especial. Precio por defecto ($12.000) y sin sueldo base confirmados en PRD-0009 §8. Bucket privado y embed tras un clic decididos el mismo día (§7.6, §8.7). Soltar el cupo tiene estado propio desde el 10/09 (§8.3.b) |
+| **Estado** | ✅ **Aprobado por Felipe el 10/09/2026.** Fases 1 a 6 hechas y verificadas en **staging**: escenario por SQL 20/20 y recorrido con clics 25/25 (§13). Falta la **fase 7** (producción), y antes va **PRD-0019**, que es bloqueante. Precio por defecto ($12.000) y sin sueldo base confirmados en PRD-0009 §8. Bucket privado y embed tras un clic decididos el mismo día (§7.6, §8.7). Soltar el cupo tiene estado propio desde el 10/09 (§8.3.b) |
 | **Autor** | Propuesto por Claude a pedido de Felipe Carvalho. Decisiones de §8: Felipe |
 | **Fecha** | 8 de septiembre de 2026 · decisiones cerradas el 9 · Reel y alcance de fase 0 resueltos el 10 |
 | **Hito** | Hito 3 — Reservas (extiende el calendario) · Hito 4 — Portales (formulario en admin) |
@@ -709,6 +709,67 @@ el pasado y entra en "las dictadas del mes". El numerador no se movió —las do
 tienen cero reservas—, así que no era una regresión de esta migración. Se ancló la medición a las
 cinco clases del escenario, que es sobre lo que se calculó el número a mano. **25 de 25.**
 
+**Fases 4 y 6 — construidas y verificadas con clics el 11/09/2026.** La fase 4 no existía —eso se
+aclaró mirando el repo, no la memoria— y sin ella la 6 no se podía recorrer, así que se
+construyeron juntas: formulario de admin, subida de portada por Route Handler con la service role,
+publicar, la pantalla de reserva de la alumna, la bandeja con la clase al lado y el correo propio
+de las especiales.
+
+**La verificación es el punto.** `scripts/verificar-fase6.mjs` maneja un Chromium de verdad contra
+el sitio levantado apuntando a staging: abre **el enlace que llegaría por correo** (`token_hash`,
+la forma que viaja entre dispositivos), llena los campos y aprieta los botones. No llama a una sola
+función de la base para avanzar; el SQL solo mira el resultado. **25 de 25:**
+
+| Caso | Esperado | Obtenido | |
+|---|---|---|---|
+| admin abre el enlace del correo y cae en el formulario | http://localhost:3000/admin/especiales/nueva | http://localhost:3000/admin/especiales/nueva | ✓ |
+| a admin el precio le aparece bloqueado | true | true | ✓ |
+| sin el valor de arranque cargado, admin no puede crear | true | true | ✓ |
+| la clase se creó con el título del formulario | Coreo de la fase 6 45943 | Coreo de la fase 6 45943 | ✓ |
+| la hora quedó donde se escribió, en hora de Santiago | 2026-10-15 09:30 | 2026-10-15 09:30 | ✓ |
+| admin no fija precio: queda el valor de arranque | 12000 | 12000 | ✓ |
+| nace como borrador | sin publicar | sin publicar | ✓ |
+| la portada queda en el bucket privado, nombrada por la clase | c45388a3-b8a8-42e8-973b-0ea299a119de.jpg | c45388a3-b8a8-42e8-973b-0ea299a119de.jpg | ✓ |
+| publicar la deja publicada | publicada | publicada | ✓ |
+| la ficha pública muestra el título | true | true | ✓ |
+| y cuántos lugares quedan | true | true | ✓ |
+| antes de tocar: cero peticiones a instagram.com | 0 | 0 | ✓ |
+| al tocar, recién ahí se habla con Instagram | true | true | ✓ |
+| el botón de reservar lleva a la pantalla de transferencia | http://localhost:3000/reservar-especial/coreo-de-la-fase-6-45943-20261015 | http://localhost:3000/reservar-especial/coreo-de-la-fase-6-45943-20261015 | ✓ |
+| la reserva nace pendiente de pago | pendiente_pago | pendiente_pago | ✓ |
+| con compra pendiente, de clase y por el precio de la clase | pendiente/true/12000 | pendiente/true/12000 | ✓ |
+| EL CUPO QUEDA TOMADO con la compra todavía sin aprobar | 1 | 1 | ✓ |
+| en Mis clases ve hasta cuándo le guardan el cupo | true | true | ✓ |
+| y el botón dice soltar el cupo, no cancelar | true | true | ✓ |
+| la segunda alumna se topa con la clase llena | true | true | ✓ |
+| la bandeja dice de qué clase es la transferencia | true | true | ✓ |
+| aprobar confirma la reserva y paga la compra | confirmada/pagada | confirmada/pagada | ✓ |
+| una compra de clase no acredita ni un crédito | 0 | 0 | ✓ |
+| el cupo sigue tomado, ahora confirmado | 1 | 1 | ✓ |
+| la ficha pública ya dice Llena | true | true | ✓ |
+
+Lo que apareció al recorrerlo, y que ninguna lectura de código iba a dar:
+
+- **El caso "admin no puede crear sin el valor de arranque" se vio por el formulario**, no por SQL:
+  apareció solo, porque la siembra borraba esa fila. Quedó como paso verificado.
+- **El escenario de la fase 3 dependía de un efecto secundario de la siembra.** Ese caso daba por
+  hecho que la fila estaba borrada; al restituirla —que es como queda producción tras la
+  migración— habría fallado sin que nadie tocara la migración. Ahora el caso borra la fila dentro
+  de su propia transacción revertida, y la siembra deja $12.000 como producción.
+- **La pantalla de reserva se niega a pedir plata sin datos de transferencia cargados**, que es lo
+  correcto y lo que PRD-0017 dejó a propósito. Cortó el recorrido hasta cargarlos en staging con
+  datos evidentemente falsos.
+- **`quePaso()` de MisReservas decía "Asististe"** para cualquier estado que no fuera `cancelada`:
+  una pendiente, una soltada y una vencida mentían en pantalla. Estaba anotado como riesgo en el
+  plan de la fase 6 y acá se arregló con sus cuatro frases.
+- **La hora del formulario no puede llevar un `-03:00` fijo.** Chile cambia de hora dos veces al
+  año. Se resolvió con `instanteEnSantiago()` en `lib/dominio/periodo.ts`, con tests, y el paso
+  "la hora quedó donde se escribió" lo comprueba contra la base.
+
+**Lo que esta verificación no prueba: que el correo llegue.** Las cuentas del escenario usan
+`@ejemplo.invalid` y el código, con razón, no les escribe. Que ese correo salga y se pueda
+reintentar es **PRD-0019**, bloqueante antes de publicar la primera especial de verdad.
+
 **Fase 5 — lo público, escrito el 11/09/2026 fuera de orden** (antes que la fase 4, que es el
 formulario de admin). Lo que quedó y lo que eso implica:
 
@@ -790,10 +851,9 @@ formulario de admin). Lo que quedó y lo que eso implica:
 - [x] 11/09/2026: **migración aplicada a staging** con aprobación de Felipe. Escenario 20/20 y
       `verificar-metricas` 25/25. `npm run build` sigue fallando contra producción, que es donde
       apunta `.env.local` y donde la migración **no** está aplicada.
-- [ ] **Fase 4 sigue pendiente**: sin el formulario de admin no hay cómo crear una especial, así
-      que no hay nada que mirar en las páginas nuevas. Nada de `app/(admin)/admin/especiales/`,
-      `FormularioEspecial.tsx` ni `app/api/especiales/portada/route.ts` existe todavía, y
-      `lib/acciones.ts` no tiene ninguna acción de especiales (verificado el 11/09/2026).
+- [x] 11/09/2026: **fases 4 y 6 construidas y verificadas con clics** (25/25). El formulario de
+      admin, la subida de portada, publicar, la pantalla de reserva, la bandeja con la clase y los
+      correos propios de las especiales. Ver §13.
 - [ ] 🔴 **PRD-0019 (correo que no se pierde) es bloqueante** para publicar la primera especial.
       Escrito el 11/09/2026, sin aprobar.
 - [x] 11/09/2026: CLI re-enlazada a **staging** (`ybopuahlzbjkkwumkllk`) y verificada antes de

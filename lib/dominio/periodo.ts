@@ -89,3 +89,34 @@ export function nombreDelMes(periodo: Periodo): string {
     year: "numeric",
   }).format(periodo.desde);
 }
+
+/**
+ * El instante UTC de una hora escrita en Santiago, como la teclea alguien en un
+ * `datetime-local`: "2026-09-20T20:00".
+ *
+ * **No se puede pegar un `-03:00` fijo.** Chile cambia de hora dos veces al
+ * año, así que la misma hora escrita vale un instante distinto en julio que en
+ * diciembre, y una clase agendada con el desfase equivocado queda una hora
+ * corrida. Itera dos veces por lo mismo que `medianocheEnSantiago`: el desfase
+ * depende del instante que se está calculando.
+ *
+ * Devuelve `null` si el texto no tiene la forma esperada, para que el error no
+ * se convierta en una fecha inventada.
+ */
+export function instanteEnSantiago(local: string): Date | null {
+  const m = local.trim().match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  if (!m) return null;
+
+  const [, anio, mes, dia, hora, minuto] = m;
+  const nominal = Date.UTC(
+    Number(anio),
+    Number(mes) - 1,
+    Number(dia),
+    Number(hora),
+    Number(minuto),
+  );
+
+  let instante = nominal;
+  for (let i = 0; i < 2; i++) instante = nominal - desfase(new Date(instante));
+  return new Date(instante);
+}
