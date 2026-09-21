@@ -709,7 +709,26 @@ el pasado y entra en "las dictadas del mes". El numerador no se movió —las do
 tienen cero reservas—, así que no era una regresión de esta migración. Se ancló la medición a las
 cinco clases del escenario, que es sobre lo que se calculó el número a mano. **25 de 25.**
 
-**Fase 7 — todo listo menos el push, que espera aprobación (11/09/2026).**
+**Fase 7 — la migración corre en producción desde el 21/09/2026**, con aprobación de Felipe para
+`20260910120000_clases_especiales.sql` dicha para esa migración. Cómo quedó, verificado después
+de aplicarla:
+
+| Qué | Cómo quedó |
+|---|---|
+| `migration list` | 18 locales, **18 aplicadas**, ninguna pendiente |
+| `especial_precio_default_clp` | **12000**, con su descripción: "Precio con el que nace el formulario… no es el precio de las especiales" |
+| `especial_retencion_horas` | 24 |
+| Bucket `portadas-especiales` | **privado**, `image/jpeg` y `image/webp`, tope 1 MB |
+| Un objeto del bucket sin token | HTTP 400 |
+| Lo que ve `anon` de `clases?tipo=eq.especial` | `[]` — no hay ninguna todavía, y la política no se cae |
+| `npm run build` contra producción | ✅ **verde**. Cierra la falla deliberada que estaba abierta desde la fase 5 |
+
+⚠️ **La CLI quedó sin enlazar, no en staging.** Al intentar devolverla, staging respondió
+`LegacyProjectPausedError: project is paused` —lleva diez días sin uso—, así que se hizo
+`supabase unlink`: sin enlace, cualquier `db push` falla pidiendo uno, que es más seguro que
+dejarla apuntando a producción. Para volver a usar staging hay que despausarlo desde el panel.
+
+**Fase 7 — preparación del 11/09/2026.**
 
 - `npm run build` **pasa apuntando a staging**, donde la migración existe: prerenderizó
   `/clases-especiales/coreo-del-escenario-20260916` desde `generateStaticParams`. Contra
@@ -882,9 +901,11 @@ formulario de admin). Lo que quedó y lo que eso implica:
       cada comando. Ojo al volver: para `npm run build` y para producción hay que re-enlazar.
 - [x] 11/09/2026: fase 7 preparada. Build verde contra staging, dry-run contra producción con una
       sola migración pendiente, barrido del cron escrito y probado, `ARCHITECTURE.md` al día.
-- [ ] **`db push` a producción: necesita la aprobación de Felipe en ese mismo mensaje.** No se
-      hereda de un "dale con la fase 7" (`CLAUDE.md`).
-- [ ] Después del push: verificar `especial_precio_default_clp` = 12000, crear la primera especial
-      real con Carla y repetir el checkpoint de la fase 5 **desde un teléfono**.
+- [x] **21/09/2026: migración aplicada a producción** con aprobación explícita dicha para esa
+      migración. 18/18, parámetros verificados, bucket privado, `npm run build` verde. Ver §13.
+- [ ] ⚠️ **Staging está pausado** (`LegacyProjectPausedError`) y la CLI quedó **sin enlazar**.
+      Despausarlo desde el panel antes de volver a sembrar o verificar ahí.
+- [ ] Crear la primera especial real con Carla y repetir el checkpoint de la fase 5 **desde un
+      teléfono**. Publicarla espera a PRD-0019.
 - [ ] 🔴 **PRD-0019 antes de publicar la primera especial de verdad.**
 - [ ] Despliegues Preview en Error en Vercel de los últimos días, sin revisar.

@@ -259,16 +259,19 @@ cuentas del escenario son `@ejemplo.invalid`—, y eso es PRD-0019.
 0. 🔴 **PRD-0019 implementado.** El correo de reserva pendiente lleva el plazo del cupo y hoy no
    tiene registro ni reintento: si falla, no queda ni a quién había que escribirle. No se publica
    la primera especial sin eso. **Bloquea el paso 4, no el push.**
-1. ✅ `npm test` 87/87 y `npm run build` verde **apuntando a staging**. Contra producción el build
-   falla a propósito hasta que la migración esté aplicada: es la misma situación de PRD-0017.
+1. ✅ `npm test` 87/87. `npm run build` pasó primero apuntando a staging y, **ya aplicada la
+   migración, también contra producción (21/09)**: se cerró la falla deliberada que venía de la
+   fase 5.
 2. ✅ Hecho el 11/09: con la CLI en producción, `migration list` mostró 17 aplicadas y una sin
    aplicar, y `db push --dry-run` solo `20260910120000_clases_especiales.sql`. **La CLI se dejó de
    vuelta en staging**: es el estado seguro por defecto, y ya se apuntó sola a producción dos
    veces en dos días.
-3. **`db push` con aprobación de Felipe en ese mensaje.**
-4. Verificar que `especial_precio_default_clp` quedó en **12000** —lo carga la migración— y que
-   owner lo puede cambiar desde el Table Editor sin desplegar. Crear la primera especial real con
-   Carla, con **su** precio, que puede no ser 12000.
+3. ✅ **Hecho el 21/09/2026** con aprobación dicha para esa migración. Aplicó sin error y
+   `migration list` quedó 18/18. ⚠️ La CLI se dejó **sin enlazar**: al devolverla a staging
+   respondió `LegacyProjectPausedError`, y dejarla en producción es justo lo que no se quiere.
+4. ✅ Verificado el 21/09 en producción: `especial_precio_default_clp` = **12000**,
+   `especial_retencion_horas` = 24, bucket privado con tope de 1 MB y un objeto sin token en 400.
+   Falta **crear la primera especial real con Carla**, con **su** precio, que puede no ser 12000.
 5. Repetir el checkpoint de la fase 5 contra producción, desde un teléfono.
 6. Actualizar PRD §13 y estado, `ROADMAP.md`, `ARCHITECTURE.md` §5.3 (clases sin horario, compras
    por clase, reservas pendientes) y `CONTEXT.md` §5.b si hace falta (ya dice "de la parrilla").
@@ -286,4 +289,4 @@ cuentas del escenario son `@ejemplo.invalid`—, y eso es PRD-0019.
 | 4 — Formulario y bandeja | ✅ **Hecha el 11/09/2026.** Formulario, subida de portada con la service role, publicar, bandeja con la clase al lado |
 | 5 — Público, Planes y privacidad | ✅ Escrita el 11/09/2026, fuera de orden. ⏸ **Sin renderizar**: falta la migración aplicada y la fase 4 para tener qué mostrar |
 | 6 — Reservar, aprobar, cancelar | ✅ **Verificada con clics el 11/09/2026: 25/25**, con `scripts/verificar-fase6.mjs` contra staging. Falta el correo, que es PRD-0019 |
-| 7 — Producción | ⏸ **Preparada el 11/09/2026**: build verde contra staging, dry-run contra producción, cron probado, `ARCHITECTURE.md` al día. Falta el `db push` **con aprobación en el mensaje**, y 🔴 **PRD-0019** antes de publicar la primera especial |
+| 7 — Producción | ✅ **Migración aplicada el 21/09/2026** con aprobación: 18/18, parámetros y bucket verificados, `npm run build` verde contra producción. Falta crear la primera especial con Carla, y 🔴 **PRD-0019** antes de publicarla |
