@@ -5,13 +5,20 @@
 >
 > Rama propuesta: `prd-0019-correo`. Nada se mezcla a `main` hasta que pase la fase 7.
 >
-> **Estado: propuesta.** El PRD sigue en borrador; este plan se escribe para decidir sobre algo
-> concreto. Las tres preguntas de la fase 0 cambian el diseño, así que no se escribe código hasta
-> que estén contestadas.
+> **Estado: en curso.** Las tres decisiones de la fase 0 las contestó Felipe el 22/09/2026 y la
+> fase 1 está hecha. Lo que sigue depende de que **staging se despause**.
 
 ---
 
-## Fase 0 — Tres decisiones, y una es grande
+## Fase 0 — Tres decisiones, y una es grande ✅ cerrada el 22/09/2026
+
+| # | Decisión | Estado |
+|---|---|---|
+| 1 | Cadencia del reintento | ✅ **Camino D: diario**, con el texto que no promete más. Vercel Pro y Supabase Pro se pagan antes de publicar la primera especial, no ahora. **Escrito para que subir de plan sea solo editar `vercel.json`** |
+| 2 | Qué caduca y con qué | ✅ Tal cual la propuesta: el pendiente con `expira_at`, los comprobantes con el inicio de la clase |
+| 3 | Qué ve la alumna si el correo no sale | ✅ El mensaje en gris, sin alarma (PRD §8.6) |
+
+Lo que sigue es el razonamiento con que se decidió, que conviene no perder.
 
 ### 1. 🔴 El reintento no puede ser cada 5 minutos con lo que hay hoy
 
@@ -57,7 +64,10 @@ Hoy la pantalla dice "listo" igual. Propuesta: la reserva se confirma en pantall
 gris, *"No pudimos mandarte el comprobante por correo. Tu cupo está igual de tomado y lo
 reintentamos."* Sin alarma: la reserva **sí** quedó.
 
-**Checkpoint de la fase 0:** las tres contestadas por Felipe. La 1 es la que bloquea.
+**Checkpoint:** ✅ las tres contestadas el 22/09/2026. Se eligió **D**, y con una condición que
+cambia cómo se escribe el backoff: **que pasar a cada cinco minutos sea solo ajustar
+`vercel.json`**. Por eso `proximoIntento` calcula una hora real y el barrido toma lo vencido, en
+vez de contar pasadas del cron.
 
 ---
 
@@ -77,18 +87,23 @@ falla en producción**. Un test que simula el fallo de Resend no prueba nada; ap
 
 **Archivos:** `lib/dominio/envios.ts` · `lib/dominio/envios.test.ts`
 
+**✅ Hecha el 22/09/2026.** `npm test` 113/113, 26 de este módulo, con el test escrito antes que
+el código: el corredor falló primero por módulo inexistente.
+
 | Función | Qué resuelve |
 |---|---|
-| `proximoIntento(intentos, ahora)` | El backoff de la decisión 1. Devuelve `null` cuando se agotaron |
+| `proximoIntento(intentos, ahora)` | El backoff de la decisión 1, **en tiempo real**: envío inicial más 5 reintentos a 5 min, 30 min, 2 h, 12 h y 24 h, y `null` cuando se agotaron |
 | `caduco(envio, ahora)` | Si el aviso ya no es cierto (decisión 2). Es la regla que evita mandar una promesa vencida |
 | `debeReintentar(envio, ahora)` | `fallido` o `pendiente` viejo, con `proximo_intento_at` pasado y sin caducar |
 | `claveDeEvento(tipo, id)` | `reserva:<uuid>`, `compra-aprobada:<uuid>`. Dos veces el mismo hecho, un solo correo |
 | `aPurgar(envio, ahora)` | `enviado` con más de 30 días: se le borra el contenido, no la fila |
 | `esCorreoReal(direccion)` | `.invalid` y vacío no se intentan: nacen `descartado` con motivo |
 
-**Checkpoint:** `npm test` en verde con los bordes escritos antes que el código: un envío que
-vence exactamente ahora, uno con 5 intentos, uno caducado y fallido a la vez (gana caducado), y
-un `pendiente` que quedó colgado porque el proceso murió.
+**Checkpoint:** ✅ 113/113. Los bordes que quedaron cubiertos: un envío que vence exactamente
+ahora (no se manda) y otro que vence en un segundo (sí), uno caducado **y** fallido a la vez
+—gana caducado y se descarta—, los reintentos agotados devolviendo `null` en vez de una fecha
+lejana, un `pendiente` colgado hace una hora que se trata como fallido y otro de hace un minuto
+que se deja en paz, y una fila ya purgada que no se vuelve a purgar.
 
 ---
 
@@ -199,9 +214,9 @@ Se extiende `scripts/verificar-fase6.mjs` o se escribe su hermano, con Chromium 
 
 | Fase | Estado |
 |---|---|
-| 0 — Tres decisiones | ⏸ **Esperando a Felipe.** La cadencia del reintento bloquea la fase 5 |
-| 1 — Funciones puras y tests | Se puede empezar apenas se conteste la 1 |
-| 2 — Migración | Depende de la 1. Necesita staging despausado |
+| 0 — Tres decisiones | ✅ **Cerrada el 22/09/2026.** Reintento diario (camino D), escrito para que subir de plan sea solo `vercel.json` |
+| 1 — Funciones puras y tests | ✅ **Hecha el 22/09/2026**: 6 funciones, 26 tests, `npm test` 113/113 |
+| 2 — Migración | **Siguiente.** ⏸ Necesita **staging despausado** |
 | 3 — Escenario por SQL | Depende de la 2 |
 | 4 — `lib/correo.ts` | Depende de la 2 |
 | 5 — Reintento y purga | Depende de la decisión 1 |

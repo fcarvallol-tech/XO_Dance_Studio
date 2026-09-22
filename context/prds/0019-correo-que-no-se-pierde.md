@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | **Borrador.** Propuesto el 11/09/2026 a pedido de Felipe. Necesita aprobación antes de escribir código |
+| **Estado** | ✅ **Aprobado por Felipe el 22/09/2026**, con la cadencia del reintento decidida (§8.4). Fase 1 hecha: `lib/dominio/envios.ts` con 26 tests |
 | **Autor** | Claude, a pedido de Felipe Carvallo |
 | **Fecha** | 11 de septiembre de 2026 |
 | **Hito** | Hito 3 — Reservas. **Bloquea la publicación de la primera clase especial** (PRD-0018) |
@@ -179,15 +179,42 @@ Entonces: **cada plantilla declara si caduca y con qué**. El aviso de reserva p
 caduca. El reintento que encuentra un envío caducado lo deja en `descartado` con motivo, y el
 portal de admin lo muestra: alguien tiene que hablar con esa persona, y no por correo.
 
-### 8.4 Reintentos con tope
+### 8.4 Reintentos con tope, y una cadencia que hoy es diaria
 
-Hasta 5 intentos, espaciados 5 min, 30 min, 2 h, 12 h y 24 h. Después queda `fallido` y se
-resuelve a mano. Un reintento infinito contra un correo que no existe es ruido.
+**El envío inicial más hasta 5 reintentos**, espaciados 5 min, 30 min, 2 h, 12 h y 24 h. Después
+queda `fallido` y se resuelve a mano: un reintento infinito contra un correo que no existe es
+ruido. (La primera redacción decía "hasta 5 intentos" con cinco esperas, que se leía de dos
+maneras; queda escrito así.)
+
+**Decisión de Felipe, 22/09/2026: el barrido corre una vez al día.** Vercel Pro y Supabase Pro se
+pagan cuando el sitio esté listo para usarse —antes de publicar la primera clase especial—, y
+hasta entonces el plan solo permite un cron diario. Así que las esperas de arriba son **pisos, no
+horarios**: un envío que falla a las 20:00 se reintenta en la pasada del otro día.
+
+**Y está escrito para que subir de plan sea solo editar `vercel.json`.** Cada envío guarda su
+`proximo_intento_at` calculado en tiempo real y el barrido toma todo lo que ya venció; con
+`*/5 * * * *` las mismas filas se toman a los cinco minutos, con las mismas esperas y sin tocar
+una línea de código. Lo dice el encabezado de `lib/dominio/envios.ts`, que es donde alguien lo va
+a leer.
+
+**Consecuencia mientras el cron sea diario, y hay que tenerla clara:** un aviso que caduca en 24 h
+—justamente el del cupo tomado— alcanza **un** reintento antes de que se lo descarte. Por eso el
+texto de §8.6 no promete que el correo llegue pronto.
 
 ### 8.5 Idempotencia por evento
 
 La clave la arma quien encola, con lo que identifica el hecho: `reserva:<id>`,
 `compra-aprobada:<id>`. Dos veces el mismo hecho, un solo correo.
+
+### 8.6 Qué ve la alumna cuando el correo no sale (Felipe, 22/09/2026)
+
+La reserva se confirma en pantalla como siempre —porque **sí** quedó hecha— y debajo, en gris, sin
+alarma:
+
+> No pudimos mandarte el comprobante por correo. Tu cupo está igual de tomado y lo reintentamos.
+
+No dice "en cinco minutos" ni "enseguida": con el cron diario sería mentira. Dice lo único que es
+cierto y lo que a ella le importa, que es que el cupo está tomado.
 
 ## 9. Criterios de aceptación
 
