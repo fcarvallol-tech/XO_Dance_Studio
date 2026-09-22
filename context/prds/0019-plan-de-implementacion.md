@@ -3,7 +3,9 @@
 > El PRD dice **qué** y **por qué**. Esto dice **en qué orden** y **cómo se sabe que cada paso
 > quedó bien**. Se lee junto a `0019-correo-que-no-se-pierde.md`.
 >
-> Rama propuesta: `prd-0019-correo`. Nada se mezcla a `main` hasta que pase la fase 7.
+> **Se trabaja sobre `main`**, y no en una rama aparte: PRD-0018 ya se mergeó, no hay nada que
+> aislar, y una migración sin aplicar no cambia el comportamiento de nada. Lo que sí se aísla es
+> la **aplicación**: ninguna migración toca una base sin aprobación caso a caso.
 >
 > **Estado: en curso.** Las tres decisiones de la fase 0 las contestó Felipe el 22/09/2026 y la
 > fase 1 está hecha. Lo que sigue depende de que **staging se despause**.
@@ -109,10 +111,11 @@ que se deja en paz, y una fila ya purgada que no se vuelve a purgar.
 
 ## Fase 2 — La migración
 
-**Archivo:** `supabase/migrations/2026MMDDHHMMSS_envios_correo.sql`
+**Archivo:** `supabase/migrations/20260922120000_envios_correo.sql` · **escrita el 22/09/2026,
+sin aplicar.**
 
-0. **Antes de nada:** `cat supabase/.temp/project-ref`. Hoy la CLI está **sin enlazar** y staging
-   **pausado**: hay que despausarlo antes de esta fase.
+0. ✅ Staging despausado, CLI enlazada y **ref verificado** (`ybopuahlzbjkkwumkllk`) antes de
+   cualquier comando.
 1. Tabla `envios_correo` de §7, con su índice parcial por `proximo_intento_at`.
 2. **RLS desde el primer día**: sin política para `anon` ni `authenticated`; lectura solo
    `tiene_nivel('admin')`; escritura solo `service_role`. Es la tabla que guarda correos, nombres
@@ -122,9 +125,20 @@ que se deja en paz, y una fila ya purgada que no se vuelve a purgar.
    `descartar_envio`, `purgar_envios_viejos`.
 4. `reintentar_envio(id, actor)` para el botón de admin: valida rol adentro, como todo lo demás.
 
-**Checkpoint:** `db push --dry-run` contra staging muestra solo esta migración. Push **con
-aprobación**. Después, `GET /rest/v1/envios_correo` con la llave publishable tiene que responder
-vacío o error, nunca datos.
+Dos decisiones que se tomaron al escribirla y conviene no perder:
+
+- **`destinatario` es nullable**, y un check exige que solo pueda estar vacío si hay `purgado_at`.
+  La purga de los 30 días tiene que poder vaciar el contenido sin borrar la fila, y un `not null`
+  lo habría impedido; dejarlo nullable a secas habría permitido filas rotas por otra razón.
+- **El backoff y la caducidad no se recalculan en SQL.** Las funciones reciben el
+  `proximo_intento_at` y el `caduca_at` que ya decidió `lib/dominio/envios.ts`. Tener la misma
+  regla en dos lenguajes es tener dos versiones de la misma decisión, y la de allá tiene tests.
+  Por lo mismo `envios_por_intentar` **filtra ancho**: trae candidatos y quién se reintenta de
+  verdad lo decide `debeReintentar()`.
+
+**Checkpoint:** ✅ `db push --dry-run` contra staging muestra **solo** `20260922120000_envios_correo.sql`.
+⏸ El push **espera aprobación de Felipe dicha para esta migración**. Después: `GET
+/rest/v1/envios_correo` con la llave publishable tiene que responder vacío o error, nunca datos.
 
 ---
 
@@ -216,7 +230,7 @@ Se extiende `scripts/verificar-fase6.mjs` o se escribe su hermano, con Chromium 
 |---|---|
 | 0 — Tres decisiones | ✅ **Cerrada el 22/09/2026.** Reintento diario (camino D), escrito para que subir de plan sea solo `vercel.json` |
 | 1 — Funciones puras y tests | ✅ **Hecha el 22/09/2026**: 6 funciones, 26 tests, `npm test` 113/113 |
-| 2 — Migración | **Siguiente.** ⏸ Necesita **staging despausado** |
+| 2 — Migración | ✅ **Escrita el 22/09/2026.** ⏸ Sin aplicar: el push a staging espera aprobación |
 | 3 — Escenario por SQL | Depende de la 2 |
 | 4 — `lib/correo.ts` | Depende de la 2 |
 | 5 — Reintento y purga | Depende de la decisión 1 |
