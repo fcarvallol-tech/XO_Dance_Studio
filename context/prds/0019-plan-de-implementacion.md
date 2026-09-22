@@ -144,7 +144,23 @@ Dos decisiones que se tomaron al escribirla y conviene no perder:
 
 ## Fase 3 — Escenario por SQL, en transacciones revertidas
 
-**Archivo:** `scripts/escenario-envios.mjs`, con la forma que ya funcionó en PRD-0018.
+**Archivo:** `scripts/escenario-envios.mjs`, con la forma que ya funcionó en PRD-0018. **Escrito
+y corrido el 22/09/2026 contra staging, con la migración aplicada: 11 de 12.**
+
+El ✗ que queda es un **defecto encontrado por el escenario**, y vale contarlo porque es la tercera
+vez que pasa lo mismo en este proyecto: `20260922120000` escribió
+`grant select ... to authenticated` y **se olvidó del rol del servidor**. Verificado por REST:
+`compras`, `reservas` y `clases` responden 200 a `service_role`; `envios_correo`, 403.
+
+Ya había pasado con `perfiles` y con `parametros` (PRD-0017 §16). Lo que lo hace escurridizo es
+siempre lo mismo: **no se nota**, porque las funciones son `security definer` y corren como su
+dueño. Lo que falla es la primera lectura directa que alguien escriba desde el servidor, meses
+después, con un error de permisos que no se parece en nada a su causa.
+
+Por eso el caso "quién puede leer la tabla" prueba **los cuatro roles de una vez**: es una línea
+que convierte un descuido recurrente en algo que se cae en la corrida. Corregido en
+`20260922130000_envios_correo_grant_service_role.sql`, archivo nuevo porque la anterior ya corrió
+—`supabase/README.md`—, y ese archivo **espera aprobación**.
 
 | Caso | Esperado |
 |---|---|
@@ -154,7 +170,8 @@ Dos decisiones que se tomaron al escribirla y conviene no perder:
 | Un envío caducado que tocaba reintentar | `descartado` con motivo, sin intentarse |
 | `purgar_envios_viejos` | El `enviado` viejo conserva la fila y pierde `datos` y `destinatario` |
 | Un `pendiente` de hace una hora | Se trata como fallido: el proceso murió entre el insert y el envío |
-| `anon` y `authenticated` leyendo la tabla | Nada |
+| El botón de reintentar | Admin sí, alumna 42501; un descartado no se reintenta |
+| **Quién puede leer la tabla** | `anon` no · una alumna con sesión, 0 filas · admin ve · **service_role ve** |
 
 ---
 
@@ -230,8 +247,8 @@ Se extiende `scripts/verificar-fase6.mjs` o se escribe su hermano, con Chromium 
 |---|---|
 | 0 — Tres decisiones | ✅ **Cerrada el 22/09/2026.** Reintento diario (camino D), escrito para que subir de plan sea solo `vercel.json` |
 | 1 — Funciones puras y tests | ✅ **Hecha el 22/09/2026**: 6 funciones, 26 tests, `npm test` 113/113 |
-| 2 — Migración | ✅ **Escrita el 22/09/2026.** ⏸ Sin aplicar: el push a staging espera aprobación |
-| 3 — Escenario por SQL | Depende de la 2 |
+| 2 — Migración | ✅ **Aplicada a staging el 22/09/2026** con aprobación. ⏸ Le falta el grant a `service_role`, en `20260922130000` |
+| 3 — Escenario por SQL | ✅ **11/12 el 22/09/2026.** El ✗ es el grant a `service_role` que faltaba, corregido en una migración nueva que espera aprobación |
 | 4 — `lib/correo.ts` | Depende de la 2 |
 | 5 — Reintento y purga | Depende de la decisión 1 |
 | 6 — Visibilidad en admin | Depende de la 4 |
