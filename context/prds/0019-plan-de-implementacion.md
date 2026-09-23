@@ -236,7 +236,23 @@ por caducidad van en su propia lista: ahí no hay que reintentar, hay que hablar
 por otro lado.
 
 El enlace en el menú de administración muestra **cuántos hay fallidos**, porque una sección que
-hay que acordarse de visitar es una sección que no se visita.
+hay que acordarse de visitar es una sección que no se visita. Cuesta una llamada más por página de
+admin y se paga a propósito.
+
+**Checkpoint:** ✅ **22/09/2026**, con Chromium contra staging y la llave de Resend inválida:
+
+| Qué se probó | Resultado |
+|---|---|
+| El menú | `Correos (1)` |
+| La lista | Muestra el fallido, con `API key is invalid` a la vista |
+| Los descartados | En su propia lista, con el motivo |
+| "Reintentar ahora" | Un envío con 6 intentos y el próximo a 20 h quedó en 0 intentos y al día |
+
+**Un defecto propio, encontrado al abrir la página:** `BandejaCorreos` es cliente e importaba los
+tipos desde `envios-consultas.ts`, que toca `next/headers`. Eso arrastra el servidor al bundle y
+rompe la compilación. El repo ya tenía resuelto ese reparto —`compras.ts` para lo que usa el
+cliente, `compras-consultas.ts` para las consultas— y faltaba respetarlo: los tipos y los rótulos
+se fueron a `lib/envios.ts`.
 
 ---
 
@@ -274,8 +290,8 @@ Se extiende `scripts/verificar-fase6.mjs` o se escribe su hermano, con Chromium 
 | 1 — Funciones puras y tests | ✅ **Hecha el 22/09/2026**: 6 funciones, 26 tests, `npm test` 113/113 |
 | 2 — Migración | ✅ **Aplicada a staging el 22/09/2026** con aprobación. ⏸ Le falta el grant a `service_role`, en `20260922130000` |
 | 3 — Escenario por SQL | ✅ **11/12 el 22/09/2026.** El ✗ es el grant a `service_role` que faltaba, corregido en una migración nueva que espera aprobación |
-| 4 — `lib/correo.ts` | Depende de la 2 |
+| 4 — `lib/correo.ts` | ✅ **Hecha el 22/09/2026.** Las seis plantillas encolan antes de enviar; el recorrido de PRD-0018 sigue en 25/25 |
 | 5 — Reintento y purga | ✅ **Hecha el 22/09/2026**, `/api/correos` con su entrada diaria en `vercel.json`, probada por HTTP |
-| 6 — Visibilidad en admin | Depende de la 4 |
-| 7 — Verificación real | Depende de todo, y de un buzón de verdad |
+| 6 — Visibilidad en admin | ✅ **Hecha el 22/09/2026**, verificada con clics: `/admin/correos`, el contador en el menú y el botón de reintentar |
+| 7 — Verificación real | ⏸ **Siguiente, y necesita a Felipe**: un buzón de verdad y la llave buena de Resend |
 | 8 — Producción | Desbloquea publicar la primera especial |

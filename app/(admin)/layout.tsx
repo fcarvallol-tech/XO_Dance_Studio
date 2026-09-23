@@ -1,5 +1,6 @@
 import { Portal } from "@/components/Portal";
 import { requiereNivel } from "@/lib/sesion";
+import { contarEnviosFallidos } from "@/lib/envios-consultas";
 
 /**
  * Grupo (admin): nivel admin o más.
@@ -22,5 +23,12 @@ export default async function LayoutAdmin({
   // Segundo argumento: el grupo que cubre este layout, para que el guard no
   // pueda redirigir a una ruta suya. Ver PRD-0004 §12.
   const perfil = await requiereNivel("admin", "admin");
-  return <Portal perfil={perfil}>{children}</Portal>;
+  // Una llamada más por página de admin, y se paga a propósito: es lo que hace
+  // que alguien entre a mirar los correos que no salieron (PRD-0019 §3.5).
+  const correosFallidos = await contarEnviosFallidos();
+  return (
+    <Portal perfil={perfil} correosFallidos={correosFallidos}>
+      {children}
+    </Portal>
+  );
 }

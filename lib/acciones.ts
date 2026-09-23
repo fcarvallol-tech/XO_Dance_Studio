@@ -630,3 +630,27 @@ export async function reservarEspecial(datos: FormData): Promise<Resultado> {
   revalidatePath(`/clases-especiales/${slug}`);
   return { ok: true, correoEnviado };
 }
+
+/**
+ * El botón "Reintentar ahora" del portal (PRD-0019 fase 6).
+ *
+ * Solo agenda: pone el envío al día y el barrido lo toma. Mandar desde acá
+ * dejaría a quien aprieta esperando un HTTP a Resend, y el correo ya demostró
+ * que sabe fallar.
+ */
+export async function reintentarEnvio(envioId: string): Promise<Resultado> {
+  const actor = await perfilActual();
+  if (!actor || !tieneNivel(actor.rol, "admin")) {
+    return { ok: false, mensaje: "No tienes permiso." };
+  }
+
+  const { error } = await clienteAdmin().rpc("reintentar_envio", {
+    p_id: envioId,
+    p_actor_user_id: actor.userId,
+  });
+
+  if (error) return { ok: false, mensaje: comoMensaje(error) };
+
+  revalidatePath("/admin/correos");
+  return { ok: true };
+}

@@ -16,11 +16,14 @@ import type { Perfil } from "@/lib/sesion";
 export function Portal({
   perfil,
   children,
+  correosFallidos = 0,
 }: {
   perfil: Perfil;
   children: React.ReactNode;
+  /** Cuántos correos no salieron. Va al lado del enlace, no escondido adentro. */
+  correosFallidos?: number;
 }) {
-  const grupos = gruposPara(perfil.rol);
+  const grupos = gruposPara(perfil.rol, correosFallidos);
 
   return (
     <div className="min-h-dvh bg-xo-blanco text-xo-negro">
@@ -108,7 +111,7 @@ type Grupo = { de: string | null; enlaces: { href: string; texto: string }[] };
  * Dos arreglos: los nombres dicen **en calidad de qué** es cada cosa, y los
  * grupos van separados para que se lean como bloques y no como una lista larga.
  */
-function gruposPara(rol: Rol): Grupo[] {
+function gruposPara(rol: Rol, correosFallidos = 0): Grupo[] {
   const grupos: Grupo[] = [
     {
       // Lo que hace cualquiera con cuenta. Sin etiqueta: es lo de base.
@@ -139,6 +142,13 @@ function gruposPara(rol: Rol): Grupo[] {
       enlaces: [
         { href: "/admin/compras", texto: "Transferencias" },
         { href: "/admin/especiales", texto: "Clases especiales" },
+        // El número va en el enlace y no adentro de la página: una sección que
+        // hay que acordarse de visitar es una sección que no se visita, y el
+        // cron que reintenta ya se cayó una vez semanas sin que nadie mirara.
+        {
+          href: "/admin/correos",
+          texto: correosFallidos > 0 ? `Correos (${correosFallidos})` : "Correos",
+        },
         { href: "/admin/solicitudes", texto: "Horarios pedidos" },
         { href: "/admin", texto: "Personas" },
         { href: "/admin/leads", texto: "Leads" },
