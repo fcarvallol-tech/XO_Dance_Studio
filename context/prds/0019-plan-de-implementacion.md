@@ -145,7 +145,8 @@ Dos decisiones que se tomaron al escribirla y conviene no perder:
 ## Fase 3 — Escenario por SQL, en transacciones revertidas
 
 **Archivo:** `scripts/escenario-envios.mjs`, con la forma que ya funcionó en PRD-0018. **Escrito
-y corrido el 22/09/2026 contra staging, con la migración aplicada: 11 de 12.**
+y corrido el 22/09/2026 contra staging: 11 de 12. ✅ 12/12 el 23/09**, una vez aplicado el grant
+que faltaba.
 
 El ✗ que queda es un **defecto encontrado por el escenario**, y vale contarlo porque es la tercera
 vez que pasa lo mismo en este proyecto: `20260922120000` escribió
@@ -160,7 +161,14 @@ después, con un error de permisos que no se parece en nada a su causa.
 Por eso el caso "quién puede leer la tabla" prueba **los cuatro roles de una vez**: es una línea
 que convierte un descuido recurrente en algo que se cae en la corrida. Corregido en
 `20260922130000_envios_correo_grant_service_role.sql`, archivo nuevo porque la anterior ya corrió
-—`supabase/README.md`—, y ese archivo **espera aprobación**.
+—`supabase/README.md`—, **aplicado a staging el 23/09/2026** con aprobación.
+
+Después de aplicarlo, por los dos caminos:
+
+```
+escenario de la fase 3                    12/12
+REST · service_role → HTTP 200   ·   anon → HTTP 401
+```
 
 | Caso | Esperado |
 |---|---|
@@ -289,7 +297,7 @@ Se extiende `scripts/verificar-fase6.mjs` o se escribe su hermano, con Chromium 
 | 0 — Tres decisiones | ✅ **Cerrada el 22/09/2026.** Reintento diario (camino D), escrito para que subir de plan sea solo `vercel.json` |
 | 1 — Funciones puras y tests | ✅ **Hecha el 22/09/2026**: 6 funciones, 26 tests, `npm test` 113/113 |
 | 2 — Migración | ✅ **Aplicada a staging el 22/09/2026** con aprobación. ⏸ Le falta el grant a `service_role`, en `20260922130000` |
-| 3 — Escenario por SQL | ✅ **11/12 el 22/09/2026.** El ✗ es el grant a `service_role` que faltaba, corregido en una migración nueva que espera aprobación |
+| 3 — Escenario por SQL | ✅ **12/12 el 23/09/2026**, con el grant a `service_role` aplicado. El ✗ del 22/09 era ese grant, que el propio escenario encontró |
 | 4 — `lib/correo.ts` | ✅ **Hecha el 22/09/2026.** Las seis plantillas encolan antes de enviar; el recorrido de PRD-0018 sigue en 25/25 |
 | 5 — Reintento y purga | ✅ **Hecha el 22/09/2026**, `/api/correos` con su entrada diaria en `vercel.json`, probada por HTTP |
 | 6 — Visibilidad en admin | ✅ **Hecha el 22/09/2026**, verificada con clics: `/admin/correos`, el contador en el menú y el botón de reintentar |
