@@ -28,6 +28,7 @@ export function FormularioReservaEspecial({
   const router = useRouter();
   const [fallo, setFallo] = useState<string | null>(null);
   const [listo, setListo] = useState(false);
+  const [sinCorreo, setSinCorreo] = useState(false);
   const [enviando, iniciar] = useTransition();
 
   if (listo) {
@@ -40,9 +41,19 @@ export function FormularioReservaEspecial({
           Te guardamos el lugar
         </h2>
         <p className="mt-5 leading-relaxed text-xo-gris">
-          Te llegó un correo con hasta cuándo te lo guardamos. Cuando veamos la
-          transferencia en la cuenta, te confirmamos y queda cerrado.
+          {sinCorreo
+            ? "Cuando veamos la transferencia en la cuenta, te confirmamos y queda cerrado."
+            : "Te llegó un correo con hasta cuándo te lo guardamos. Cuando veamos la transferencia en la cuenta, te confirmamos y queda cerrado."}
         </p>
+
+        {/* PRD-0019 §8.6: sin alarma y sin prometer cuándo. La reserva **sí**
+            quedó hecha, que es lo único que le importa en este momento. */}
+        {sinCorreo ? (
+          <p className="mt-4 text-sm leading-relaxed text-xo-gris">
+            No pudimos mandarte el comprobante por correo. Tu cupo está igual de
+            tomado y lo reintentamos.
+          </p>
+        ) : null}
         <button
           type="button"
           onClick={() => router.push("/mis-clases")}
@@ -88,8 +99,10 @@ export function FormularioReservaEspecial({
             setFallo(null);
             iniciar(async () => {
               const resultado = await reservarEspecial(datosForm);
-              if (resultado.ok) setListo(true);
-              else setFallo(resultado.mensaje);
+              if (resultado.ok) {
+                setSinCorreo(resultado.correoEnviado === false);
+                setListo(true);
+              } else setFallo(resultado.mensaje);
             });
           }}
         >

@@ -32,6 +32,7 @@ export function Calendario({
   const [profesora, setProfesora] = useState<string | null>(null);
   const [ocupada, setOcupada] = useState<string | null>(null);
   const [fallo, setFallo] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
   const [, iniciar] = useTransition();
 
   const profesoras = [
@@ -45,14 +46,22 @@ export function Calendario({
   }
 
   function accion(
-    fn: () => Promise<{ ok: true } | { ok: false; mensaje: string }>,
+    fn: () => Promise<{ ok: true; correoEnviado?: boolean } | { ok: false; mensaje: string }>,
     id: string,
   ) {
     setFallo(null);
+    setAviso(null);
     setOcupada(id);
     iniciar(async () => {
       const resultado = await fn();
       if (!resultado.ok) setFallo(resultado.mensaje);
+      // La reserva quedó: esto no es un error, es una cortesía que no llegó
+      // (PRD-0019 §8.6). Por eso va aparte del mensaje de fallo.
+      else if (resultado.correoEnviado === false) {
+        setAviso(
+          "Reservaste, pero no pudimos mandarte el comprobante por correo. Tu clase está igual de reservada y lo reintentamos.",
+        );
+      }
       setOcupada(null);
     });
   }
@@ -81,6 +90,14 @@ export function Calendario({
           className="mb-6 border-l-2 border-xo-negro pl-4 text-sm text-xo-negro"
         >
           {fallo}
+        </p>
+      ) : null}
+
+      {/* No es un error: la operación salió bien y el correo no. Va en gris y
+          sin `role="alert"` justamente por eso (PRD-0019 §8.6). */}
+      {aviso ? (
+        <p role="status" className="mb-6 text-sm leading-relaxed text-xo-gris">
+          {aviso}
         </p>
       ) : null}
 

@@ -186,8 +186,20 @@ Las **seis** plantillas pasan por el mismo camino: `avisarTransferenciaDeclarada
 - ⚠️ **El correo sigue fuera de la transacción de plata.** Si encolar falla, la reserva vale
   igual. Esa regla no se toca: es la mitad que sí funcionaba.
 
-**Checkpoint:** con `RESEND_API_KEY` inválida, reservar por la interfaz deja la reserva hecha y
-una fila `fallido` con el error de Resend.
+**Checkpoint:** ✅ **22/09/2026.** Con `RESEND_API_KEY` inválida se corrió el recorrido completo
+de PRD-0018 con Chromium (`scripts/verificar-fase6.mjs`): **25/25**, o sea que registrar antes de
+enviar no rompió nada del flujo. Y en `envios_correo` quedaron las tres filas que antes no
+existían:
+
+```
+especialConfirmada      descartado   0 intentos · sin correo real
+transferenciaDeclarada  fallido      1 intento  · Resend rechazó el envío: API key is invalid
+especialPendiente       descartado   0 intentos · sin correo real
+```
+
+Las dos `descartado` son de `@ejemplo.invalid`: antes ese caso **no dejaba rastro** —un `if` se lo
+tragaba en silencio— y ahora queda dicho que había algo que decirle a alguien. La `fallido` tiene
+el error de Resend y su próximo intento agendado.
 
 ---
 

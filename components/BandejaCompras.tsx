@@ -17,6 +17,7 @@ export function BandejaCompras({ pendientes }: { pendientes: Compra[] }) {
   const [rechazando, setRechazando] = useState<string | null>(null);
   const [motivo, setMotivo] = useState("");
   const [fallo, setFallo] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
   const [, iniciar] = useTransition();
 
   if (pendientes.length === 0) {
@@ -29,14 +30,22 @@ export function BandejaCompras({ pendientes }: { pendientes: Compra[] }) {
   }
 
   function correr(
-    fn: () => Promise<{ ok: true } | { ok: false; mensaje: string }>,
+    fn: () => Promise<{ ok: true; correoEnviado?: boolean } | { ok: false; mensaje: string }>,
     id: string,
   ) {
     setFallo(null);
+    setAviso(null);
     setOcupada(id);
     iniciar(async () => {
       const resultado = await fn();
       if (!resultado.ok) setFallo(resultado.mensaje);
+      // La compra se acreditó igual. Que el correo no haya salido es otra cosa,
+      // y quien aprueba tiene que enterarse acá y no en un log (PRD-0019 §1).
+      else if (resultado.correoEnviado === false) {
+        setAviso(
+          "Quedó acreditada, pero el correo a la alumna no salió. Está registrado y se reintenta; lo puedes ver en Correos.",
+        );
+      }
       else {
         setRechazando(null);
         setMotivo("");
@@ -53,6 +62,14 @@ export function BandejaCompras({ pendientes }: { pendientes: Compra[] }) {
           className="mb-6 border-l-2 border-xo-negro pl-4 text-sm text-xo-negro"
         >
           {fallo}
+        </p>
+      ) : null}
+
+      {/* No es un error: la operación salió bien y el correo no. Va en gris y
+          sin `role="alert"` justamente por eso (PRD-0019 §8.6). */}
+      {aviso ? (
+        <p role="status" className="mb-6 text-sm leading-relaxed text-xo-gris">
+          {aviso}
         </p>
       ) : null}
 

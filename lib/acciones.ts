@@ -30,7 +30,15 @@ import { fechaLegible } from "./planes";
  * cambia el de la acción: un aviso que no salió no revierte una acreditación.
  */
 
-export type Resultado = { ok: true } | { ok: false; mensaje: string };
+/**
+ * `correoEnviado` es opcional y solo lo ponen las acciones que mandan un aviso.
+ * `false` **no** significa que la operación falló: la reserva quedó y la compra
+ * se acreditó igual. Significa que hay que decírselo a la persona en vez de
+ * callarlo, que es lo que se hacía antes (PRD-0019 §1).
+ */
+export type Resultado =
+  | { ok: true; correoEnviado?: boolean }
+  | { ok: false; mensaje: string };
 
 /** Traduce un error de Postgres a algo que se pueda mostrar. */
 function comoMensaje(error: { message: string; code?: string } | null): string {
@@ -68,15 +76,21 @@ export async function declararTransferencia(datos: FormData): Promise<Resultado>
     plan.precio_promocional !== null && plan.promo_hasta !== null && plan.promo_hasta >= hoy;
   const monto = enPromo ? plan.precio_promocional! : plan.precio_clp;
 
-  const { error } = await supabase.from("compras").insert({
-    perfil_id: perfil.id,
-    plan_id: plan.id,
-    cantidad_clases: plan.cantidad_clases,
-    monto_clp: monto,
-    medio_pago: "transferencia",
-    titular_declarado: titular,
-    nota_alumna: nota,
-  });
+  // Se pide el id de vuelta: es la clave de idempotencia del aviso, y sin ella
+  // dos clics seguidos mandarían dos correos a la academia (PRD-0019 §8.5).
+  const { data: creada, error } = await supabase
+    .from("compras")
+    .insert({
+      perfil_id: perfil.id,
+      plan_id: plan.id,
+      cantidad_clases: plan.cantidad_clases,
+      monto_clp: monto,
+      medio_pago: "transferencia",
+      titular_declarado: titular,
+      nota_alumna: nota,
+    })
+    .select("id")
+    .maybeSingle();
 
   if (error) return { ok: false, mensaje: comoMensaje(error) };
 
@@ -94,10 +108,13 @@ export async function declararTransferencia(datos: FormData): Promise<Resultado>
       plan: plan.nombre,
       monto,
       titular,
+      compraId: creada?.id ?? null,
     });
   }
 
   revalidatePath("/mis-clases");
+  // Este aviso es para la academia, no para la alumna: si no sale, la compra
+  // igual está en la bandeja. No se le muestra nada a ella.
   return { ok: true };
 }
 
@@ -124,6 +141,11 @@ export async function aprobarCompra(compraId: string): Promise<Resultado> {
     estado: string;
   } | null;
 
+  // Lo que se le devuelve a la pantalla: la compra se acreditó igual, pero si
+  // el comprobante no salió, la persona que aprueba tiene que saberlo
+  // (PRD-0019 §3.6). Antes esto se perdía en un log.
+  let correoEnviado = true;
+
   if (compra) {
     const { data: alumna } = await admin
       .from("perfiles")
@@ -131,18 +153,25 @@ export async function aprobarCompra(compraId: string): Promise<Resultado> {
       .eq("id", compra.perfil_id)
       .maybeSingle();
 
-    // Las importadas tienen correo temporal .invalid: no se les escribe.
+    // El filtro de los correos `.invalid` se fue a `lib/correo.ts`: allá no
+    // solo se evita el envío, se **registra** que había algo que decirle a
+    // alguien. Acá ya no hay un `if` que se lo trague en silencio.
     const correo = alumna?.email ?? "";
 
     if (compra.clase_id) {
       // Una compra de clase especial no acredita créditos: confirma una
       // reserva. Mandarle "quedaste con 1 clase para reservar" sería mentirle
       // sobre lo que acaba de pasar.
-      const { data: clase } = await admin
-        .from("clases")
-        .select("titulo, inicio, profesoras ( nombre ), sedes ( nombre, direccion )")
-        .eq("id", compra.clase_id)
-        .maybeSingle();
+      const [{ data: clase }, { data: reserva }] = await Promise.all([
+        admin
+          .from("clases")
+          .select("titulo, inicio, profesoras ( nombre ), sedes ( nombre, direccion )")
+          .eq("id", compra.clase_id)
+          .maybeSingle(),
+        // El id de la reserva es la clave de idempotencia del correo: sin él,
+        // aprobar dos veces mandaría dos comprobantes (PRD-0019 §8.5).
+        admin.from("reservas").select("id").eq("compra_id", compraId).maybeSingle(),
+      ]);
 
       const c = clase as unknown as {
         titulo: string | null;
@@ -153,8 +182,8 @@ export async function aprobarCompra(compraId: string): Promise<Resultado> {
 
       // `por_reembolsar` es plata recibida sin cupo que dar: no se le escribe
       // "confirmada" a alguien que no tiene lugar. Lo resuelve admin a mano.
-      if (correo && !correo.endsWith(".invalid") && c && compra.estado === "pagada") {
-        await avisarEspecialConfirmada({
+      if (c && reserva && compra.estado === "pagada") {
+        correoEnviado = await avisarEspecialConfirmada({
           para: correo,
           nombre: alumna?.nombre ?? null,
           titulo: c.titulo ?? "tu clase especial",
@@ -162,6 +191,11 @@ export async function aprobarCompra(compraId: string): Promise<Resultado> {
           profesora: c.profesoras?.nombre ?? "",
           sede: c.sedes?.nombre ?? "",
           direccion: c.sedes?.direccion ?? "",
+          reservaId: reserva.id,
+          claseId: compra.clase_id,
+          compraId,
+          perfilId: compra.perfil_id,
+          inicioClase: c.inicio,
         });
       }
     } else {
@@ -171,22 +205,23 @@ export async function aprobarCompra(compraId: string): Promise<Resultado> {
         .eq("compra_id", compraId)
         .maybeSingle();
 
-      if (correo && !correo.endsWith(".invalid")) {
-        await avisarCompraAprobada({
-          para: correo,
-          nombre: alumna?.nombre ?? null,
-          clases: compra.cantidad_clases,
-          vence: lote?.fecha_vencimiento
-            ? fechaLegible(lote.fecha_vencimiento.slice(0, 10))
-            : "60 días",
-        });
-      }
+      correoEnviado = await avisarCompraAprobada({
+        para: correo,
+        nombre: alumna?.nombre ?? null,
+        clases: compra.cantidad_clases,
+        vence: lote?.fecha_vencimiento
+          ? fechaLegible(lote.fecha_vencimiento.slice(0, 10))
+          : "60 días",
+        compraId,
+        perfilId: compra.perfil_id,
+      });
     }
   }
 
   revalidatePath("/admin/compras");
   revalidatePath("/mis-clases");
-  return { ok: true };
+  revalidatePath("/admin/correos");
+  return { ok: true, correoEnviado };
 }
 
 export async function rechazarCompra(
@@ -209,6 +244,8 @@ export async function rechazarCompra(
   if (error) return { ok: false, mensaje: comoMensaje(error) };
 
   const compra = data as { perfil_id: string } | null;
+  let correoEnviado = true;
+
   if (compra) {
     const { data: alumna } = await admin
       .from("perfiles")
@@ -216,18 +253,18 @@ export async function rechazarCompra(
       .eq("id", compra.perfil_id)
       .maybeSingle();
 
-    const correo = alumna?.email ?? "";
-    if (correo && !correo.endsWith(".invalid")) {
-      await avisarCompraRechazada({
-        para: correo,
-        nombre: alumna?.nombre ?? null,
-        motivo: motivo.trim(),
-      });
-    }
+    correoEnviado = await avisarCompraRechazada({
+      para: alumna?.email ?? "",
+      nombre: alumna?.nombre ?? null,
+      motivo: motivo.trim(),
+      compraId,
+      perfilId: compra.perfil_id,
+    });
   }
 
   revalidatePath("/admin/compras");
-  return { ok: true };
+  revalidatePath("/admin/correos");
+  return { ok: true, correoEnviado };
 }
 
 /** Reservar. El cupo y el crédito los resuelve la base, en una transacción. */
@@ -236,7 +273,9 @@ export async function reservarClase(claseId: string): Promise<Resultado> {
   if (!perfil) return { ok: false, mensaje: "Necesitas iniciar sesión." };
 
   const admin = clienteAdmin();
-  const { error } = await admin.rpc("reservar", {
+  // La reserva que devuelve la función es la clave del comprobante: dos clics
+  // en Reservar no pueden mandar dos correos (PRD-0019 §8.5).
+  const { data: fila, error } = await admin.rpc("reservar", {
     p_clase_id: claseId,
     p_actor_user_id: perfil.userId,
     p_perfil_id: null,
@@ -253,27 +292,33 @@ export async function reservarClase(claseId: string): Promise<Resultado> {
     .eq("id", claseId)
     .maybeSingle();
 
-  const correo = perfil.email ?? "";
-  if (clase && correo && !correo.endsWith(".invalid")) {
+  const reserva = fila as { id: string } | null;
+  let correoEnviado = true;
+
+  if (clase && reserva) {
     const c = clase as unknown as {
       inicio: string;
       cursos: { nombre: string } | null;
       profesoras: { nombre: string } | null;
       sedes: { nombre: string; direccion: string } | null;
     };
-    await avisarReserva({
-      para: correo,
+    correoEnviado = await avisarReserva({
+      para: perfil.email ?? "",
       curso: c.cursos?.nombre ?? "tu clase",
       cuando: cuandoLegible(c.inicio),
       profesora: c.profesoras?.nombre ?? "",
       sede: c.sedes?.nombre ?? "",
       direccion: c.sedes?.direccion ?? "",
+      reservaId: reserva.id,
+      claseId,
+      perfilId: perfil.id,
+      inicioClase: c.inicio,
     });
   }
 
   revalidatePath("/reservar");
   revalidatePath("/mis-clases");
-  return { ok: true };
+  return { ok: true, correoEnviado };
 }
 
 export async function cancelarReserva(reservaId: string): Promise<Resultado> {
@@ -536,24 +581,31 @@ export async function reservarEspecial(datos: FormData): Promise<Resultado> {
 
   if (error) return { ok: false, mensaje: comoMensaje(error) };
 
-  const fila = reserva as { expira_at: string } | null;
+  const fila = reserva as { id: string; expira_at: string; compra_id: string } | null;
   const c = clase as unknown as {
     titulo: string | null;
     inicio: string;
     precio_clp: number | null;
     sedes: { nombre: string } | null;
   };
-  const correo = perfil.email ?? "";
+  let correoEnviado = true;
 
-  if (correo && !correo.endsWith(".invalid") && fila) {
-    await avisarEspecialPendiente({
-      para: correo,
+  if (fila) {
+    correoEnviado = await avisarEspecialPendiente({
+      para: perfil.email ?? "",
       nombre: perfil.nombre,
       titulo: c.titulo ?? "la clase especial",
       cuando: cuandoLegible(c.inicio),
       sede: c.sedes?.nombre ?? "",
       monto: c.precio_clp ?? 0,
       expira: cuandoLegible(fila.expira_at),
+      reservaId: fila.id,
+      // Caduca con el cupo: pasado esto, el correo mandaría a transferir por un
+      // lugar que ya se soltó (PRD-0019 §8.3).
+      expiraAt: fila.expira_at,
+      claseId: clase.id,
+      compraId: fila.compra_id,
+      perfilId: perfil.id,
     });
   }
 
@@ -576,5 +628,5 @@ export async function reservarEspecial(datos: FormData): Promise<Resultado> {
 
   revalidatePath("/mis-clases");
   revalidatePath(`/clases-especiales/${slug}`);
-  return { ok: true };
+  return { ok: true, correoEnviado };
 }
