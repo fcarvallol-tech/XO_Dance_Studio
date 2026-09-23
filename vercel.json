@@ -3,6 +3,10 @@
     {
       "path": "/api/generar-clases",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/correos",
+      "schedule": "30 6 * * *"
     }
   ]
 }

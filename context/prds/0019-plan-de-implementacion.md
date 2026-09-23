@@ -209,8 +209,21 @@ Depende de la decisión 1. En el camino B: ruta nueva `/api/correos`, su entrada
 mismo patrón de secreto en cabecera que las otras dos.
 
 - El barrido toma los que `debeReintentar`, descarta los caducados y reintenta el resto.
-- La purga corre en la misma pasada.
-- **Su fallo no tumba nada más**, igual que el barrido de reservas de PRD-0018.
+- La purga corre en la misma pasada: es barata y no tiene sentido darle su propio cron.
+- Vive en **ruta propia** y no dentro de `/api/generar-clases` justamente para que subir la
+  frecuencia sea cambiar un `schedule`. Si algún día el plan no admitiera dos crons, se llama
+  desde aquella y la lógica no cambia.
+
+**Checkpoint:** ✅ **22/09/2026**, probado por HTTP contra staging con la llave de Resend
+inválida:
+
+| Qué se probó | Resultado |
+|---|---|
+| Sin secreto | 401 |
+| Un `fallido` al que ya le tocaba | `reintentados: 1` · quedó en 2 intentos, próximo a los 30 min, con el error de Resend guardado |
+| Uno caducado que tocaba reintentar | `descartados: 1` · **no se mandó**, quedó con "El aviso caducó antes de poder mandarlo" |
+| Un `enviado` de hace 31 días | `purgados: 1` · la fila vive, `destinatario` y `datos` en null |
+| Uno cuyo próximo intento es futuro | Ni se toca: `mirados: 2, reintentados: 0` |
 
 ---
 
@@ -262,7 +275,7 @@ Se extiende `scripts/verificar-fase6.mjs` o se escribe su hermano, con Chromium 
 | 2 — Migración | ✅ **Aplicada a staging el 22/09/2026** con aprobación. ⏸ Le falta el grant a `service_role`, en `20260922130000` |
 | 3 — Escenario por SQL | ✅ **11/12 el 22/09/2026.** El ✗ es el grant a `service_role` que faltaba, corregido en una migración nueva que espera aprobación |
 | 4 — `lib/correo.ts` | Depende de la 2 |
-| 5 — Reintento y purga | Depende de la decisión 1 |
+| 5 — Reintento y purga | ✅ **Hecha el 22/09/2026**, `/api/correos` con su entrada diaria en `vercel.json`, probada por HTTP |
 | 6 — Visibilidad en admin | Depende de la 4 |
 | 7 — Verificación real | Depende de todo, y de un buzón de verdad |
 | 8 — Producción | Desbloquea publicar la primera especial |
