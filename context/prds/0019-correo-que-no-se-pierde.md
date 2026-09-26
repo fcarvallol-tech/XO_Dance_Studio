@@ -254,7 +254,36 @@ calcular, que es justamente el problema.
 
 ## 12. Notas de implementación
 
-Se llena al terminar.
+**Fases 1 a 7 hechas entre el 22 y el 26/09/2026.** El detalle por fase está en
+`0019-plan-de-implementacion.md`; acá queda lo que cambió respecto de lo que este
+PRD decía, para que el texto no mienta.
+
+- **El backoff quedó por tiempo, no por pasada del cron** (§8.4). El cron es
+  diario hasta que se pague Vercel Pro, y subir a cada cinco minutos es solo
+  editar `vercel.json`: cada envío guarda la hora real de su próximo intento.
+- **"Hasta 5 intentos" se precisó** a envío inicial más cinco reintentos, que es
+  lo que usa las cinco esperas listadas.
+- **El texto del plazo se reescribió después de abrir el correo de verdad**
+  (§8.6). Decía "el cupo te queda tomado hasta el domingo 27" para una clase de
+  noviembre. Dice ahora: "Tienes hasta el domingo 27… para transferir. Después el
+  cupo se libera". Mismo arreglo en "Mis clases".
+- **El idioma se declara en las tablas y no solo en el `<html>`**: Gmail borra el
+  documento y ofrecía traducir un correo en español.
+- **`reintentar_envio` reinicia la cuenta de intentos**, porque es la decisión de
+  una persona y no otra pasada del cron: sin eso, un envío agotado no se podría
+  volver a mandar nunca.
+- **Un `descartado` no se reintenta desde el portal.** Si caducó, lo que
+  corresponde es hablarle a esa persona, no mandarle un aviso que ya no es
+  cierto.
+- **Pendiente, anotado:** `envios_correo` tiene llaves foráneas a `clases`,
+  `compras` y `reservas`, y `borrar_borrador_especial` hace un `DELETE` real. Hoy
+  no se cruzan, pero si algún día se cruzaran el borrado fallaría con un error de
+  FK en vez de un mensaje.
+- **Del arnés de pruebas:** `auth.admin.generateLink` **crea el usuario si no
+  existe**, y el que crea no tiene perfil completo, así que el login termina en
+  `/completar-perfil` y la prueba se cae lejos de su causa. Los scripts piden el
+  enlace siempre con el correo de la cuenta sembrada, aunque el destinatario del
+  aviso sea otro.
 
 ---
 

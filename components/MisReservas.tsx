@@ -71,9 +71,13 @@ export function MisReservas({
 
                 {reserva.estado === "pendiente_pago" && reserva.expiraAt ? (
                   <div className="mt-2 border-l-2 border-xo-rosa pl-3">
+                    {/* Lo que vence es el plazo para transferir, no el cupo de
+                        la clase. Decir "te guardamos el cupo hasta el domingo"
+                        para una clase de noviembre se lee como si la clase fuera
+                        el domingo (Felipe, 26/09/2026). */}
                     <p className="text-sm font-medium text-xo-negro">
-                      Te guardamos el cupo hasta el{" "}
-                      {cuandoLegible(reserva.expiraAt)}.
+                      Tienes hasta el {cuandoLegible(reserva.expiraAt)} para
+                      transferir.
                     </p>
                     <p className="mt-1 text-sm text-xo-gris">
                       Estamos revisando tu transferencia. Si no alcanzamos a

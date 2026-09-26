@@ -264,7 +264,52 @@ se fueron a `lib/envios.ts`.
 
 ---
 
-## Fase 7 — Verificación con el artefacto real
+## Fase 7 — Verificación con el artefacto real ✅ cerrada el 26/09/2026
+
+**Los correos llegaron a bandeja de entrada, sin spam**, desde
+`hola@xodancestudio.cl` a un buzón de verdad. Felipe los abrió y confirmó
+remitente y formato. Lo que se probó, en dos mitades:
+
+**La mitad del fallo (7/7, sin necesitar a nadie).** Con la llave de Resend
+inválida y clics de verdad: la reserva se confirma en pantalla igual, aparece el
+aviso en gris **sin prometer cuándo**, queda una fila `fallido` con el error de
+Resend y su caducidad puesta, y admin la ve con el contador en el menú.
+
+**La mitad que necesitaba un buzón.** Dos caminos distintos, los dos por HTTP:
+
+| Camino | Resultado |
+|---|---|
+| Reintento: falla, espera sus 5 min, el barrido lo encuentra vencido | `reintentados: 1, salieron: 1` → `enviado`, 2 intentos. **No salió en la primera pasada del barrido**, porque su hora no había llegado: el backoff manda de verdad |
+| Primer intento, con la llave buena | `enviado`, 1 intento, sin error |
+
+Y dos cosas que aparecieron solas:
+
+- El barrido **descartó un aviso del 22/09** que ya había pasado sus 24 h de
+  caducidad. La regla del aviso viejo funcionando sobre una fila real de cuatro
+  días antes, sin fabricarla.
+- Borrar una clase de prueba falló por una llave foránea nueva: `envios_correo`
+  apunta a `clases`. En producción no se borra en duro, pero
+  `borrar_borrador_especial` **sí hace un `DELETE` real**: si un borrador llegara
+  a tener un envío registrado, fallaría con un error de FK poco claro en vez de
+  un mensaje. Hoy no puede pasar —un borrador no tiene reservas y esas plantillas
+  solo existen para clases publicadas—, pero queda anotado.
+
+**Lo que Felipe cazó abriendo el correo, y que ninguna lectura de código iba a
+dar:**
+
+1. **El plazo estaba mal explicado.** Decía *"el cupo te queda tomado hasta el
+   domingo 27"* para una clase del **20 de noviembre**, y eso se lee como si la
+   clase fuera el domingo. Lo que vence es el plazo para transferir, no el cupo
+   de la clase. Ahora dice: *"Tienes hasta el domingo 27 de septiembre, 10:11
+   para transferir. Después el cupo se libera."* Se corrigió **también en
+   "Mis clases"**, que tenía la misma frase.
+2. **Faltaba declarar el idioma donde el correo lo conserva.** La plantilla ya
+   tenía `<html lang="es-CL">`, pero Gmail tira `<html>` y `<body>` y se queda
+   con lo de adentro, así que el idioma no le llegaba y ofrecía traducir un
+   correo que ya estaba en español. Ahora `lang="es-CL"` y `dir="ltr"` van
+   **en las tablas**, que es lo que sobrevive.
+
+El correo corregido se mandó de nuevo y salió al **primer intento**.
 
 Lo demás de este plan se prueba con datos. Esto no:
 
@@ -301,5 +346,5 @@ Se extiende `scripts/verificar-fase6.mjs` o se escribe su hermano, con Chromium 
 | 4 — `lib/correo.ts` | ✅ **Hecha el 22/09/2026.** Las seis plantillas encolan antes de enviar; el recorrido de PRD-0018 sigue en 25/25 |
 | 5 — Reintento y purga | ✅ **Hecha el 22/09/2026**, `/api/correos` con su entrada diaria en `vercel.json`, probada por HTTP |
 | 6 — Visibilidad en admin | ✅ **Hecha el 22/09/2026**, verificada con clics: `/admin/correos`, el contador en el menú y el botón de reintentar |
-| 7 — Verificación real | ⏸ **Siguiente, y necesita a Felipe**: un buzón de verdad y la llave buena de Resend |
-| 8 — Producción | Desbloquea publicar la primera especial |
+| 7 — Verificación real | ✅ **Cerrada el 26/09/2026.** Llegaron a bandeja de entrada; Felipe encontró dos cosas en el correo —el plazo mal explicado y el idioma sin declarar— y las dos están corregidas |
+| 8 — Producción | **Siguiente.** Dos migraciones de correo esperando `db push` con aprobación. Desbloquea publicar la primera especial |

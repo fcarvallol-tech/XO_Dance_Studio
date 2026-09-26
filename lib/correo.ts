@@ -209,11 +209,15 @@ export async function reintentarEnvioRegistrado(fila: {
  * mismos tokens de BRAND.md, escritos a mano porque acá no llega Tailwind.
  */
 function plantilla(titulo: string, cuerpo: string): string {
+  // `lang` va **también en la tabla**, y no solo en el <html>, porque los
+  // clientes de correo tiran el documento y se quedan con lo de adentro: Gmail
+  // borra <html> y <body>, así que el idioma declarado ahí no le llega y ofrece
+  // traducir un correo que ya está en español (Felipe lo vio, 26/09/2026).
   return `<!doctype html>
 <html lang="es-CL"><body style="margin:0;padding:0;background:#1a1a1a;font-family:Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;padding:32px 16px;">
+  <table role="presentation" lang="es-CL" dir="ltr" width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;padding:32px 16px;">
     <tr><td align="center">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#232323;border-radius:8px;padding:32px;">
+      <table role="presentation" lang="es-CL" dir="ltr" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#232323;border-radius:8px;padding:32px;">
         <tr><td>
           <p style="margin:0 0 24px;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:#f7adbf;">XO Dance Studio</p>
           <h1 style="margin:0 0 20px;font-size:24px;line-height:1.2;color:#f7f7f7;">${titulo}</h1>
@@ -301,7 +305,7 @@ const CUERPOS: Cuerpos = {
        <p ${P}>${d.cuando} · ${d.sede}</p>
        <p ${P}>Transfiere <strong>${clp(Number(d.monto ?? 0))}</strong> con los datos que viste al reservar. Apenas confirmemos el abono, tu lugar queda cerrado.</p>
        <p style="margin:20px 0 0;padding:14px 16px;background:#1a1a1a;border-left:3px solid #f7adbf;font-size:15px;line-height:1.6;color:#f7f7f7;">
-         El cupo te queda tomado hasta el <strong style="color:#f2d0dc;">${d.expira}</strong>. Después se libera para otra persona.
+         Tienes hasta el <strong style="color:#f2d0dc;">${d.expira}</strong> para transferir. Después el cupo se libera.
        </p>`,
     ),
   }),
@@ -411,13 +415,18 @@ export async function avisarReserva(datos: {
 }
 
 /**
- * A la alumna: reservó una clase especial y el cupo le queda tomado hasta una
- * hora concreta (PRD-0018 §8.2).
+ * A la alumna: reservó una clase especial y tiene un plazo para transferir
+ * (PRD-0018 §8.2).
+ *
+ * **El texto dice que lo que vence es el plazo para transferir, no el cupo de la
+ * clase.** La primera versión decía "el cupo te queda tomado hasta el domingo
+ * 27" para una clase del 20 de noviembre, y eso se lee como si la clase fuera el
+ * domingo. Felipe lo cazó abriendo el correo de verdad (26/09/2026): es
+ * exactamente el tipo de cosa que no se ve leyendo código.
  *
  * **Es el correo que motivó PRD-0019.** Lleva un plazo, así que caduca con
  * `expira_at`: si el reintento cae después, no se manda. Mandar el viernes un
- * "tu cupo queda tomado hasta el jueves" hace transferir por un lugar que ya se
- * soltó.
+ * aviso con el plazo del jueves hace transferir por un lugar que ya se soltó.
  */
 export async function avisarEspecialPendiente(datos: {
   para: string;
