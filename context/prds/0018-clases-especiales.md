@@ -857,6 +857,12 @@ formulario de admin). Lo que quedó y lo que eso implica:
 
 **Cron de generación de clases**
 
+> 🔴 **Se cayó otra vez, y otra vez por una variable de entorno (26/09/2026).** En producción
+> `/api/generar-clases` devuelve **503 "No configurado"**: `CRON_SECRETO` está vacío en el runtime.
+> Medido: la última clase se creó el 21/09 a las 06:19 UTC y llega hasta el 30/11, que es
+> exactamente 21/09 + 70 días, así que **no corre desde el 21/09**. Lo mismo `/api/revalidar`
+> (`REVALIDAR_SECRETO`) y la ruta nueva `/api/correos`. Ver PRD-0019, fase 8.
+
 - [x] Arreglado el 09/09/2026: `CRON_SECRET` en Vercel con el mismo valor que `CRON_SECRETO`. Una
       invocación disparada por Vercel respondió **200**. Creó 0 porque la migración ya había
       materializado hasta el 17/11. **La primera corrida que debería agregar algo es la del 10/09

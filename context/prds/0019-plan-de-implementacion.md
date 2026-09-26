@@ -327,11 +327,54 @@ Se extiende `scripts/verificar-fase6.mjs` o se escribe su hermano, con Chromium 
 
 ## Fase 8 — Producción
 
-1. `npm run build` y `npm test` en verde.
-2. `cat supabase/.temp/project-ref` dice producción. `db push --dry-run` muestra solo esta.
-3. **`db push` con aprobación de Felipe en ese mismo mensaje.**
-4. Dejar la CLI de vuelta en staging.
-5. Recién ahí, **publicar la primera clase especial**: es lo que este PRD venía a desbloquear.
+1. ✅ `npm run build` y `npm test` en verde.
+2. ✅ Ref verificado (`wpjiwqeirdsspdfwwumv`) y dry-run mostrando **solo las dos** de correo.
+3. ✅ **`db push` aplicado el 26/09/2026** con aprobación: `migration list` quedó 20/20, y por REST
+   la tabla responde 200 a `service_role` y 401 a `anon`.
+4. ✅ CLI de vuelta en staging.
+5. 🔴 **BLOQUEADO: los crons de producción no corren.** Falta antes de publicar la primera
+   especial. Ver abajo.
+
+### 🔴 Lo que apareció al ir a confirmar que el cron quedó activo (26/09/2026)
+
+La ruta **está desplegada** —`/api/correos` responde con `x-matched-path: /api/correos`, no 404—,
+pero responde **503 `{"mensaje":"No configurado."}`**, que en el código es una sola cosa:
+`CRON_SECRETO` está vacío en el runtime de producción. Y no es solo la ruta nueva:
+
+| Ruta | Variable que necesita | Producción |
+|---|---|---|
+| `/api/correos` | `CRON_SECRETO` | **503** |
+| `/api/generar-clases` | `CRON_SECRETO` | **503** |
+| `/api/revalidar` | `REVALIDAR_SECRETO` | **503** |
+| `/api/lead` | `SUPABASE_SERVICE_ROLE_KEY` | 400 con cuerpo vacío → **la variable sí está** |
+
+O sea que faltan dos secretos, no todos: lo que se rompió es específico.
+
+**La consecuencia está medida, no supuesta.** `generar_clases` materializa `generar_dias` días por
+delante, que por defecto son **70**. En producción la última clase se **creó el 21/09 a las 06:19
+UTC** —la hora del cron— y llega hasta el **30/11**, que es exactamente 21/09 + 70. Si hubiera
+corrido el 22 llegaría al 01/12, y así. **El cron de generación no corre desde el 21/09: cinco
+días.** Hoy debería llegar al 05/12.
+
+Es la tercera vez que este cron se cae en silencio y la segunda por una variable de entorno
+(PRD-0018 §14 documentó la primera, `CRON_SECRET` vs `CRON_SECRETO`). Y es **la misma forma de
+fallo que este PRD vino a arreglar para el correo**: algo falla, devuelve un código a un
+programador automático que nadie mira, y no deja rastro en ninguna pantalla. La diferencia es que
+los correos ahora sí lo dejan.
+
+**Lo que hay que hacer, y lo tiene que hacer Felipe** (son variables de Vercel, no del repo):
+
+1. En Vercel → Settings → Environment Variables, para **Production**: `CRON_SECRETO` y
+   `REVALIDAR_SECRETO`. Y confirmar que exista `CRON_SECRET` **con el mismo valor** que
+   `CRON_SECRETO`: Vercel solo manda la cabecera `Authorization` cuando la variable se llama
+   exactamente así (PRD-0018 §14).
+2. **Redesplegar**: un cambio de variable no toma efecto en los despliegues que ya existen.
+3. Verificar que las tres rutas pasen de **503** a **401** sin secreto. 401 significa "existe y
+   pide el secreto"; 503 significa "no está configurada".
+
+**Anotado para después, no hecho:** que un cron falle en silencio es exactamente el problema de
+este PRD. Merece el mismo tratamiento —dejar rastro de cada corrida y que se vea— y eso es otro
+PRD, no un parche acá.
 
 ---
 
@@ -347,4 +390,4 @@ Se extiende `scripts/verificar-fase6.mjs` o se escribe su hermano, con Chromium 
 | 5 — Reintento y purga | ✅ **Hecha el 22/09/2026**, `/api/correos` con su entrada diaria en `vercel.json`, probada por HTTP |
 | 6 — Visibilidad en admin | ✅ **Hecha el 22/09/2026**, verificada con clics: `/admin/correos`, el contador en el menú y el botón de reintentar |
 | 7 — Verificación real | ✅ **Cerrada el 26/09/2026.** Llegaron a bandeja de entrada; Felipe encontró dos cosas en el correo —el plazo mal explicado y el idioma sin declarar— y las dos están corregidas |
-| 8 — Producción | **Siguiente.** Dos migraciones de correo esperando `db push` con aprobación. Desbloquea publicar la primera especial |
+| 8 — Producción | ✅ Migraciones aplicadas el 26/09/2026 (20/20). 🔴 **Bloqueado**: faltan `CRON_SECRETO` y `REVALIDAR_SECRETO` en Vercel, así que los tres crons devuelven 503 y el de generación no corre desde el 21/09 |
