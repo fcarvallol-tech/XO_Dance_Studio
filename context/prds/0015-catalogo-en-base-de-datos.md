@@ -382,6 +382,12 @@ varios, el entregable hizo su trabajo aunque no tenga interfaz propia.
 - **Supabase pausado rompe el build.** En plan gratuito el proyecto se suspende tras ~1 semana sin
   actividad (`CONTEXT.md` §11). Con el catálogo en base de datos, eso pasa de "el formulario no
   guarda" a "el deploy falla". Es un argumento más para subir a Pro antes del lanzamiento.
+> 🔴 **Nunca se creó, confirmado por Felipe el 26/09/2026.** La ruta existe y responde 401 en
+> producción —pide su secreto—, pero no hay ningún webhook llamándola. Así que el camino rápido
+> nunca estuvo operativo y lo único que refresca el catálogo es el `revalidate = 3600`: **un cambio
+> en el Table Editor tarda hasta una hora en verse.** Justo el caso que la fila de §5 preveía.
+> Anotado en `ARCHITECTURE.md` §10.
+
 - **El webhook es configuración de panel, no código.** Si nadie lo crea, todo sigue funcionando
   pero los cambios tardan hasta una hora. Conviene que quede escrito en `ARCHITECTURE.md` §2 junto
   con las variables de entorno, porque es del mismo tipo: algo que el repo no puede garantizar.
