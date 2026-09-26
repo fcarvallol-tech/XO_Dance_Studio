@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { BotonInscripcion } from "./BotonInscripcion";
 
 const SECCIONES = [
@@ -10,9 +11,17 @@ const SECCIONES = [
 ];
 
 /**
- * Barra fija: logo, secciones y el CTA siempre a la vista.
- * En móvil los enlaces se ocultan —no caben a 375px y la página es un solo
- * scroll—, pero el botón se queda, que es lo único que tiene que estar.
+ * Barra fija: logo, secciones, "Entrar" y el CTA siempre a la vista.
+ *
+ * En móvil los enlaces de sección se ocultan —no caben a 375px y la página es un
+ * solo scroll—, pero **"Entrar" no se oculta**: quien vuelve a reservar entra
+ * desde el teléfono, y ese es el caso que importa.
+ *
+ * "Entrar" va como texto y no como botón a propósito. El CTA rosa es uno solo y
+ * es para quien todavía no es alumna; poner dos botones al lado obliga a decidir
+ * entre dos cosas que no compiten. PRD-0004 ya decía que `/entrar` es "la puerta
+ * desde la landing" y el enlace simplemente nunca se agregó: adentro no había
+ * nada que ver. Ahora sí.
  */
 export function Barra() {
   return (
@@ -51,9 +60,18 @@ export function Barra() {
           </ul>
         </nav>
 
-        <BotonInscripcion origen="barra" tamano="compacto">
-          Reservar clase
-        </BotonInscripcion>
+        <div className="flex items-center gap-4 sm:gap-5">
+          <Link
+            href="/entrar"
+            className="xo-eyebrow whitespace-nowrap text-xo-blanco/65 transition-colors hover:text-xo-rosa"
+          >
+            Entrar
+          </Link>
+
+          <BotonInscripcion origen="barra" tamano="compacto">
+            Reservar clase
+          </BotonInscripcion>
+        </div>
       </div>
     </header>
   );

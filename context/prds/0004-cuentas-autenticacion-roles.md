@@ -237,6 +237,18 @@ Decisiones tomadas al implementar:
 - **Los portales van en claro y la pantalla de entrar en negro.** `BRAND.md` §8 pide modo claro
   para el ERP; `/entrar` es la puerta desde la landing, así que se queda en negro. Ojo con el rosa
   en los portales: sobre fondo claro da 1.7:1 y solo sirve como fondo de botón o borde.
+- **La puerta no tenía picaporte hasta el 26/09/2026.** Este PRD decía que `/entrar` era "la
+  puerta desde la landing", pero **la landing no la enlazaba desde ninguna parte**: ni la barra ni
+  el pie tenían cómo llegar. Se entraba escribiendo la URL. Tenía sentido mientras adentro no
+  hubiera nada; con reservas, compras y "mis clases" construidos, dejó de tenerlo.
+  - **"Entrar" en la barra, como texto y no como botón.** El CTA rosa es uno solo y es para quien
+    todavía no es alumna. Dos botones al lado obligan a elegir entre dos cosas que no compiten.
+  - **En móvil no se oculta**, a diferencia de los enlaces de sección: quien vuelve a reservar lo
+    hace desde el teléfono, y ese es justamente el caso. Verificado a 375 px, con las dos cosas
+    visibles y sin scroll horizontal.
+  - **"Entrar a mi cuenta" también en el pie**, junto a los legales: es donde mira alguien que
+    llegó al final de la página sin encontrarlo. Ahí el texto va completo porque no hay contexto
+    alrededor.
 - **Las rutas con sesión son `force-dynamic` declarado**, no deducido del uso de `cookies()`. Sin
   eso el build intenta prerenderizar una página que depende de quién la pide, y se cae.
 - **La lectura de `perfiles` y `leads` en las páginas de admin va con la sesión de quien mira**,

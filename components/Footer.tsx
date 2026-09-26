@@ -46,9 +46,19 @@ export function Footer() {
       </div>
 
       {/* Legales aparte del contacto: no compiten con el CTA y quedan donde
-          se las busca, al final de todo. */}
+          se las busca, al final de todo. Y con ellos el acceso a la cuenta: es
+          el otro lugar donde alguien que ya es alumna busca entrar cuando llegó
+          al final de la página sin encontrarlo. */}
       <div className="relative mx-auto mt-12 max-w-6xl border-t border-xo-blanco/10 pt-6">
         <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <li>
+            <Link
+              href="/entrar"
+              className="text-xo-blanco/60 underline-offset-4 transition-colors hover:text-xo-rosa hover:underline"
+            >
+              Entrar a mi cuenta
+            </Link>
+          </li>
           <li>
             <Link
               href="/privacidad"
