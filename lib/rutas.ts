@@ -13,7 +13,14 @@ export type Grupo = "cuenta" | "profesora" | "admin" | "owner";
 
 /** Las rutas que cubre el layout de cada grupo. */
 export const RUTAS_DE_GRUPO: Record<Grupo, string[]> = {
-  cuenta: ["/mi-perfil", "/comprar", "/reservar", "/reservar-especial", "/mis-clases"],
+  // `/comprar` **no** está acá desde PRD-0020: es la vitrina pública, y el paso
+  // que sí exige sesión vive en `/transferir/<oferta>`. Se resolvió así, y no
+  // con excepciones dentro de `/comprar`, porque `empiezaEn` compara **por
+  // prefijo**: cualquier regla que intentara abrir `/comprar/pack-4` dejando
+  // cerrado `/comprar/pack-4/transferir` sería justamente el tipo de lógica que
+  // en este proyecto ya produjo un bucle de redirección (PRD-0004 §12). Con dos
+  // raíces distintas no hay nada que afinar.
+  cuenta: ["/mi-perfil", "/transferir", "/reservar", "/reservar-especial", "/mis-clases"],
   profesora: ["/profesora"],
   admin: ["/admin"],
   owner: ["/owner"],

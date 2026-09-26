@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | **Borrador.** Propuesto el 26/09/2026 a pedido de Felipe. No se escribe código hasta que apruebe §8 |
+| **Estado** | ✅ **Implementado el 26/09/2026.** Aprobado por Felipe ese día, con §8.4 confirmada. Ver §13 |
 | **Autor** | Claude, a pedido de Felipe Carvallo |
 | **Fecha** | 26 de septiembre de 2026 |
 | **Hito** | Hito 2 — Venta de clases |
@@ -212,4 +212,61 @@ que entraron navegando. Si nadie usa el link, el problema no era la falta de lin
 
 ## 13. Notas de implementación
 
-Se llena al terminar.
+Hecho el 26/09/2026. Lo que se desvió de lo escrito arriba, para que el texto no mienta:
+
+### La ruta privada quedó en otra raíz, no debajo de `/comprar`
+
+§8.3 proponía `/comprar/<oferta>/transferir`. **Quedó en `/transferir/<oferta>`.**
+
+La razón es la que ese mismo §8.3 advertía: `exigeSesion` compara **por prefijo**. Con `/comprar`
+público, cerrar solo una nieta obligaba a escribir una excepción dentro del guard —"esta rama sí,
+esta no"—, que es justo la clase de lógica que ya produjo un bucle de redirección (PRD-0004 §12).
+Con dos raíces distintas no hay nada que afinar: `lib/rutas.ts` cambió **una línea**, de
+`/comprar` a `/transferir`, y el resto del guard quedó intacto.
+
+El link que se comparte sigue siendo `/comprar/pack-4`, que es lo que importaba.
+
+### Un lugar menos donde se calculaba el precio
+
+`declararTransferencia` recibía `plan` y **recalculaba la promoción a mano** —`promo_hasta >= hoy`—
+además de lo que ya hacía `lib/planes.ts`. Ahora recibe `oferta` y el precio sale de
+`resolverOferta`, que es el único lugar donde vive esa regla. Era una segunda fuente del mismo dato
+en el camino de la plata.
+
+### Otras cosas
+
+- **`FormularioCompra` se borró.** Su mitad de abajo es `FormularioTransferencia`, con la oferta
+  fija; la de arriba —el selector de packs— ya no existe, porque el link dice qué se compra.
+- **`getPlanes` ahora filtra `activo` y `deleted_at` en la consulta**, aunque la política de RLS ya
+  lo hacía. Defensa en profundidad, como el resto del proyecto.
+- **`/admin/planes`** es donde vive el botón de copiar, y es el lugar natural para la edición de
+  precios cuando llegue PRD-0012.
+- La vitrina y la página de oferta son **estáticas**: el build prerenderiza `/comprar` y las cuatro
+  ofertas.
+
+### Cómo se verificó
+
+Lo que pidió Felipe explícitamente: **abrir cada ruta privada sin sesión y ver a dónde llega**, no
+que compile.
+
+| Qué | Resultado |
+|---|---|
+| 12 rutas privadas sin sesión | Cada una a `/entrar` con **su propio** `volver`. `/transferir/pack-4` → `volver=%2Ftransferir%2Fpack-4` |
+| ¿Bucles? | Una sola redirección en las tres que se siguieron hasta el final, terminando en 200 |
+| 7 rutas públicas sin sesión | 200, incluidas `/comprar` y `/comprar/pack-4` |
+| Una oferta inexistente | 404 |
+
+Y el recorrido completo con Chromium a 390 px, **13 de 13**: el link se abre sin cuenta, dice qué
+se compra, cuánto, cuánto por clase y los 60 días, sin scroll horizontal; "Comprar por $28.000"
+manda a `/entrar?volver=%2Ftransferir%2Fpack-4`; **al volver del enlace del correo cae en la oferta
+y no en un selector**; declara y queda una compra `pendiente` de $28.000, 4 clases, `pack-4`; y la
+imagen de vista previa responde `200 image/png`.
+
+### Pendiente, anotado
+
+- **Nada valida que el link compartido sea el vigente.** Si Carla pega un link de una promoción
+  que ya venció, la página muestra el precio normal —correcto por §8.5— pero el mensaje del DM
+  sigue diciendo otra cosa. Es un problema de comunicación, no del sistema, y se resuelve mirando
+  `/admin/planes` antes de mandar.
+- **Sin métricas por link.** No se sabe cuántas compras entraron por un link compartido, que es la
+  métrica de éxito de §11. Hace falta marcar el origen en la compra, y es un cambio de esquema.

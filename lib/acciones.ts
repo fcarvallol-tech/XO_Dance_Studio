@@ -15,6 +15,7 @@ import {
 } from "./correo";
 import { cuandoLegible } from "./compras";
 import { instanteEnSantiago } from "./dominio/periodo";
+import { resolverOferta } from "./ofertas-consultas";
 import { fechaLegible } from "./planes";
 
 /**
@@ -56,25 +57,27 @@ export async function declararTransferencia(datos: FormData): Promise<Resultado>
   const perfil = await perfilActual();
   if (!perfil) return { ok: false, mensaje: "Necesitas iniciar sesión." };
 
-  const planSlug = String(datos.get("plan") ?? "");
+  const ofertaSlug = String(datos.get("oferta") ?? "");
   const titular = String(datos.get("titular") ?? "").trim() || null;
   const nota = String(datos.get("nota") ?? "").trim() || null;
+
+  // **El monto lo calcula el servidor, nunca llega del formulario**: si viniera
+  // del cliente, cualquiera podría declarar que pagó $1. Y lo calcula
+  // `resolverOferta`, que es el único lugar donde vive la regla de qué precio
+  // está vigente: antes esa cuenta estaba también acá, duplicada (PRD-0020 §7).
+  const oferta = await resolverOferta(ofertaSlug);
+  if (!oferta) {
+    return { ok: false, mensaje: "Esa oferta no existe o ya no está disponible." };
+  }
 
   const supabase = await clienteServidor();
   const { data: plan } = await supabase
     .from("planes")
-    .select("id, nombre, cantidad_clases, precio_clp, precio_promocional, promo_hasta")
-    .eq("slug", planSlug)
+    .select("id")
+    .eq("slug", oferta.planSlug)
     .maybeSingle();
 
   if (!plan) return { ok: false, mensaje: "Ese plan no existe." };
-
-  // El monto lo calcula el servidor, nunca llega del formulario: si viniera del
-  // cliente, cualquiera podría declarar que pagó $1.
-  const hoy = new Date().toISOString().slice(0, 10);
-  const enPromo =
-    plan.precio_promocional !== null && plan.promo_hasta !== null && plan.promo_hasta >= hoy;
-  const monto = enPromo ? plan.precio_promocional! : plan.precio_clp;
 
   // Se pide el id de vuelta: es la clave de idempotencia del aviso, y sin ella
   // dos clics seguidos mandarían dos correos a la academia (PRD-0019 §8.5).
@@ -83,8 +86,8 @@ export async function declararTransferencia(datos: FormData): Promise<Resultado>
     .insert({
       perfil_id: perfil.id,
       plan_id: plan.id,
-      cantidad_clases: plan.cantidad_clases,
-      monto_clp: monto,
+      cantidad_clases: oferta.clases,
+      monto_clp: oferta.precioClp,
       medio_pago: "transferencia",
       titular_declarado: titular,
       nota_alumna: nota,
@@ -105,8 +108,8 @@ export async function declararTransferencia(datos: FormData): Promise<Resultado>
       para: destino.valor,
       alumna: perfil.nombre ?? perfil.email ?? "Alguien",
       correoAlumna: perfil.email,
-      plan: plan.nombre,
-      monto,
+      plan: oferta.titulo,
+      monto: oferta.precioClp,
       titular,
       compraId: creada?.id ?? null,
     });

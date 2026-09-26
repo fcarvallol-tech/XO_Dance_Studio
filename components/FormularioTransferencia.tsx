@@ -3,26 +3,29 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { declararTransferencia } from "@/lib/acciones";
-import { clp, porClase, precioVigente, type Plan } from "@/lib/planes";
+import { porClaseDeOferta, type Oferta } from "@/lib/dominio/ofertas";
+import { clp } from "@/lib/planes";
 import type { DatosTransferencia } from "@/lib/compras-consultas";
 
 /**
- * Los dos pasos de comprar sin pasarela: elegir el pack y avisar que se
- * transfirió.
+ * Declarar la transferencia de una oferta **ya elegida**.
  *
- * El monto **no viaja en el formulario**. Se envía el slug del plan y el
- * servidor calcula cuánto vale, promoción incluida. Si el precio viniera del
- * cliente, cualquiera podría declarar que pagó $1.
+ * Es la mitad de abajo del viejo `FormularioCompra`, sin el selector de packs:
+ * quien llega acá lo hizo desde un link que ya decía qué compraba, y volver a
+ * preguntárselo es hacerle elegir dos veces lo mismo (PRD-0020 §1).
+ *
+ * El monto **no viaja en el formulario**: se manda el slug de la oferta y el
+ * servidor calcula cuánto vale. Si el precio viniera del cliente, cualquiera
+ * podría declarar que pagó $1.
  */
-export function FormularioCompra({
-  planes,
+export function FormularioTransferencia({
+  oferta,
   datos,
 }: {
-  planes: Plan[];
+  oferta: Oferta;
   datos: DatosTransferencia;
 }) {
   const router = useRouter();
-  const [elegido, setElegido] = useState<Plan | null>(null);
   const [fallo, setFallo] = useState<string | null>(null);
   const [listo, setListo] = useState(false);
   const [enviando, iniciar] = useTransition();
@@ -40,15 +43,13 @@ export function FormularioCompra({
           Miramos la cuenta y te acreditamos las clases. Te llega un correo
           cuando estén listas y ahí ya puedes reservar.
         </p>
-        <div className="mt-8 flex flex-wrap gap-4">
-          <button
-            type="button"
-            onClick={() => router.push("/mis-clases")}
-            className="xo-eyebrow rounded-full bg-xo-rosa px-6 py-3.5 text-xo-negro transition-opacity hover:opacity-80"
-          >
-            Ver mis clases
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => router.push("/mis-clases")}
+          className="xo-eyebrow mt-8 rounded-full bg-xo-rosa px-6 py-3.5 text-xo-negro transition-opacity hover:opacity-80"
+        >
+          Ver mis clases
+        </button>
       </div>
     );
   }
@@ -56,50 +57,25 @@ export function FormularioCompra({
   return (
     <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
       <div>
-        <h2 className="xo-eyebrow text-xo-gris">1 · Elige el pack</h2>
+        <h2 className="xo-eyebrow text-xo-gris">1 · Lo que vas a comprar</h2>
 
-        <ul className="mt-4 space-y-3">
-          {planes.map((plan) => {
-            const activo = elegido?.slug === plan.slug;
-            return (
-              <li key={plan.slug}>
-                <button
-                  type="button"
-                  onClick={() => setElegido(plan)}
-                  aria-pressed={activo}
-                  className={`flex w-full items-baseline justify-between gap-4 rounded-lg border px-5 py-4 text-left transition-colors ${
-                    activo
-                      ? "border-xo-negro bg-xo-negro/5"
-                      : "border-xo-negro/20 hover:border-xo-negro/50"
-                  }`}
-                >
-                  <span>
-                    <span className="block font-semibold text-xo-negro">
-                      {plan.nombre}
-                    </span>
-                    <span className="block text-sm text-xo-gris">
-                      {clp(porClase(plan))} por clase
-                    </span>
-                  </span>
-                  <span className="text-right">
-                    {plan.promo !== null ? (
-                      <span className="mr-2 text-sm text-xo-gris line-through">
-                        {clp(plan.precio)}
-                      </span>
-                    ) : null}
-                    <span className="text-lg font-semibold text-xo-negro">
-                      {clp(precioVigente(plan))}
-                    </span>
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="mt-4 rounded-lg border border-xo-negro/20 p-5">
+          <p className="text-2xl font-semibold text-xo-negro">{oferta.titulo}</p>
+          <p className="mt-2 text-sm text-xo-gris">
+            {clp(porClaseDeOferta(oferta))} por clase · {oferta.vigenciaDias} días
+            para usarlas
+          </p>
+          {oferta.precioNormalClp !== null ? (
+            <p className="mt-2 text-sm text-xo-gris">
+              Precio normal <s>{clp(oferta.precioNormalClp)}</s>
+              {oferta.vigenteHasta ? ` · esta oferta vale hasta el ${oferta.vigenteHasta}` : ""}
+            </p>
+          ) : null}
+        </div>
 
         <p className="mt-5 max-w-prose text-sm leading-relaxed text-xo-gris">
-          Las clases sirven para cualquier horario de la parrilla, con cualquier
-          profe y en cualquiera de las dos salas. Tienes 60 días para usarlas.
+          Sirven para cualquier horario de la parrilla, con cualquier profe y en
+          cualquiera de las dos salas.
         </p>
       </div>
 
@@ -116,7 +92,7 @@ export function FormularioCompra({
           <div className="mt-4 border-t border-xo-negro/15 pt-4">
             <dt className="xo-eyebrow text-xo-gris">Monto</dt>
             <dd className="mt-1 text-2xl font-semibold text-xo-negro">
-              {elegido ? clp(precioVigente(elegido)) : "Elige un pack"}
+              {clp(oferta.precioClp)}
             </dd>
           </div>
         </dl>
@@ -134,7 +110,7 @@ export function FormularioCompra({
             });
           }}
         >
-          <input type="hidden" name="plan" value={elegido?.slug ?? ""} />
+          <input type="hidden" name="oferta" value={oferta.slug} />
 
           <div>
             <label htmlFor="titular" className="xo-eyebrow text-xo-gris">
@@ -163,7 +139,7 @@ export function FormularioCompra({
 
           <button
             type="submit"
-            disabled={!elegido || enviando}
+            disabled={enviando}
             className="xo-eyebrow w-full rounded-full bg-xo-rosa px-6 py-4 text-xo-negro transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {enviando ? "Enviando…" : "Ya transferí"}

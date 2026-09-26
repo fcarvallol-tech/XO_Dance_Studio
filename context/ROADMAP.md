@@ -64,7 +64,7 @@ Sin esto no existe nada más: no hay a quién cobrarle ni quién reserve.
 | 2.3 | Créditos: lotes, saldo, movimientos, vencimiento | PRD-0005 |
 | 2.4 | Comprobante por email | PRD-0005 |
 | 2.5 | Suscripción mensual de Teens (rama híbrida) | PRD-0011 |
-| 2.6 | 🔴 Link de compra compartible: `/comprar/<oferta>` público, que sirva igual para un plan o una promoción | PRD-0020 (borrador) |
+| 2.6 | ✅ Link de compra compartible: `/comprar/<oferta>` público, que sirve igual para un plan o una promoción | PRD-0020 |
 
 ⚠️ **Requisito no técnico:** Inicio de Actividades en el SII (en curso, falta la firma de Carla)
 y cuenta de comercio con la pasarela. Puede tomar semanas y no depende de programar.

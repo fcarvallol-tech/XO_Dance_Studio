@@ -141,6 +141,7 @@ function gruposPara(rol: Rol, correosFallidos = 0): Grupo[] {
       de: "Administración",
       enlaces: [
         { href: "/admin/compras", texto: "Transferencias" },
+        { href: "/admin/planes", texto: "Planes y links" },
         { href: "/admin/especiales", texto: "Clases especiales" },
         // El número va en el enlace y no adentro de la página: una sección que
         // hay que acordarse de visitar es una sección que no se visita, y el

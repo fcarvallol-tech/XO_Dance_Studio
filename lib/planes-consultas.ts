@@ -27,6 +27,12 @@ export async function getPlanes(): Promise<Plan[]> {
     .select(
       "slug, nombre, cantidad_clases, precio_clp, precio_promocional, promo_hasta, promo_nombre, vigencia_dias",
     )
+    // Defensa en profundidad: la política de `planes` ya filtra
+    // `activo and deleted_at is null` para anon, y la consulta lo filtra igual.
+    // Confiar solo en RLS deja el sistema a merced de haber razonado bien sobre
+    // la composición de políticas, que en este proyecto ya falló una vez.
+    .eq("activo", true)
+    .is("deleted_at", null)
     .order("orden");
 
   if (error) {
