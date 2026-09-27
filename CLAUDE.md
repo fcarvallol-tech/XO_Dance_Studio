@@ -160,6 +160,21 @@ de a una, y una página que hace ocho tarda el doble que una que hace cuatro.
     mirar las funciones, no solo las tablas: `GET /rest/v1/` lista todo lo que la API expone.
   - **Público es una decisión, no un resto.** Se abre lo que una página pública necesita, y se
     abre esa cosa y no la tabla entera.
+  - 🔴 **Nunca escribir cómo se comporta una política sin haberlo preguntado con la sesión
+    correspondiente.** Leer la política —o leer la consulta— no alcanza, y ya falló tres veces:
+    la política que no restringía (PRD-0008 §12), el `revoke` que rompió el login (§15), y la
+    afirmación de que una profesora veía sus clases sin publicar cuando veía cero
+    (PRD-0021 §8.4). Una consulta **no filtra** y una política **sí**, o al revés, y la diferencia
+    no se ve en el código.
+    - La forma de preguntarlo: `set local role authenticated` con las claims de esa persona
+      —`set_config('request.jwt.claims', …)`— y contar filas. Dentro de una transacción que se
+      revierte. Está hecho en `scripts/verificar-rls-clases.mjs` y en los escenarios de staging.
+    - Se pregunta por **cada** rol que importe, no solo por el que se está construyendo: lo que
+      suele estar mal es el que no se miró. Y se comprueba también lo que **no** debe ver, porque
+      una política permisiva suma acceso y el daño de más no aparece en la pantalla que se estaba
+      probando.
+    - Vale igual para los permisos de columna: `information_schema.column_privileges` dice qué ve
+      cada rol de verdad.
 - **`revoke ... from public` NO es `revoke ... from anon`.** `PUBLIC` es el pseudo-rol que cubre a
   **todos** los roles, `authenticated` incluido. Y las funciones nacen con `EXECUTE` para `PUBLIC`,
   así que muchas funcionan sin grant explícito: revocar `PUBLIC` se lo quita a todo el mundo.

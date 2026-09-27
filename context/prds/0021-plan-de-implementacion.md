@@ -188,5 +188,6 @@ de la alumna muestra el rango en una especial de 90 minutos futura.
 | 3 — Escenario por SQL | Depende de la 2 |
 | 4 — Carga de datos | Depende de la 2 |
 | 5 — Verificar la carga | Depende de la 4 |
-| 6 — La hora de término en pantalla | Depende de la 1 y de la 4 para verla con datos reales |
-| 7 — Producción | Depende de todo |
+| 6 — La hora de término en pantalla | ✅ **8/8 con clics el 27/09/2026.** De paso, el nombre de la coreografía en la grilla, que PRD-0018 §7.7 pedía |
+| 6.b — La profesora ve sus clases | ✅ **9/9 el 27/09/2026.** Política nueva, verificada con las cinco sesiones. Nació de descubrir que §8.4 afirmaba algo falso |
+| 7 — Producción | **Siguiente.** Tres migraciones esperando `db push` con aprobación |

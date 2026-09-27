@@ -157,16 +157,38 @@ Un número, si es aproximado o exacto, y una nota. No hay lista de nombres de ni
 clases, así que no hay nada por persona que guardar. **El dato que existe es "cuánta gente fue", y
 se guarda tal cual: aproximado cuando es aproximado.**
 
-### 8.4 Las clases dictadas no se publican, y eso es una ventaja
+### 8.4 Las clases dictadas no se publican — corregido el 26/09/2026
 
-`publicar_especial` exige fecha futura, así que estas dos quedan sin publicar. Consecuencias, todas
-deseables:
+`publicar_especial` exige fecha futura, así que estas dos quedan sin publicar. Dos consecuencias se
+verificaron y son las que se buscaban:
 
 - **No entran a `metricas_demanda`**, que filtra `parrilla or publicada_at is not null`. Así no
-  aparecen como dos clases con 0 reservas arruinando la ocupación del tablero.
-- **No se ven públicamente**: `clases_lectura_publica` pide lo mismo.
-- **Sí aparecen en la grilla de la profesora**, que no filtra por publicada. Carli ve las clases que
-  dictó, que es donde tienen que estar.
+  aparecen como dos clases con 0 reservas arruinando la ocupación del tablero. ✅ Verificado.
+- **No se ven públicamente**: `clases_lectura_publica` pide lo mismo. ✅ Verificado.
+
+🔴 **Y una tercera era falsa.** Este PRD decía, y Felipe lo aprobó así:
+
+> *"Sí aparecen en la grilla de la profesora, que no filtra por publicada."*
+
+**No aparecían.** La consulta no filtra, pero **RLS sí**: `clases` tenía dos políticas de select
+—`clases_lectura_publica` (parrilla o publicada) y `clases_admin_todo` (admin)— y una profesora no
+es admin, así que lo único que la cubría era la primera. Preguntado con su sesión el 26/09/2026: la
+base tenía **2** clases suyas y ella veía **0**.
+
+Y eso tiraba abajo el sentido de cargar el intensivo: **la trazabilidad quedaba solo para admin**, y
+para Carli no servía de nada.
+
+**Arreglado con una política nueva** (`20260927120000_la_profesora_ve_sus_clases.sql`): la profesora
+ve las clases que dicta, publicadas o no. Suma acceso **solo a sus propias filas**
+—`profesora_id = mi_profesora_id()`—, así que no abre la tabla, y se verificó preguntándole a la
+base con cada sesión: Carli ve sus 2, otra profesora ve 0, una alumna 0, sin sesión 0, admin las 2,
+y Carli **no** ve los borradores de otras. Lo público sigue público.
+
+**La lección, que es lo que hay que llevarse de acá:** afirmar cómo se comporta una política
+leyéndola no vale. Es la tercera vez en este repo que las políticas sorprenden. Cuando se escriba
+que algo "sí aparece" o "no aparece", tiene que venir de una consulta con la sesión
+correspondiente. Quedó como regla en `CLAUDE.md` y como verificador en
+`scripts/verificar-rls-clases.mjs`.
 
 ### 8.5 La hora de término se muestra cuando la duración no es de una hora
 

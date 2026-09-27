@@ -71,13 +71,16 @@ try {
   caso("una semana de clases normales no muestra ningún rango", "0", String(conRango));
   caso("pero sí las horas de inicio", true, /\d{2}:\d{2}/.test(html));
 
-  // 🔴 El hallazgo: las clases del intensivo NO las ve, porque están sin
-  // publicar y `clases_lectura_publica` es la única política de select que
-  // cubre a una profesora. Se deja como caso para que quede a la vista.
+  // Las dos del intensivo: sin publicar, y desde la fase 6.b sí las ve, por la
+  // política `clases_profesora_ve_las_suyas`. Antes veía cero.
   await p.goto(`${SITIO}/profesora/mis-clases?semana=2026-09-25`, { waitUntil: "networkidle" });
   html = await p.content();
-  caso("🔴 la profesora NO ve la clase que dictó, porque está sin publicar",
-       "no la ve", html.includes("17:00–18:30") ? "la ve" : "no la ve");
+  caso("ve la clase sin publicar que dictó, con su rango", true, html.includes("17:00–18:30"));
+  caso("y con el nombre de la coreografía", true, html.includes("What you need"));
+
+  await p.goto(`${SITIO}/profesora/mis-clases?semana=2026-09-07`, { waitUntil: "networkidle" });
+  html = await p.content();
+  caso("también la del 11/09", true, html.includes("18:00–19:30"));
 } finally {
   await nav.close();
 }
