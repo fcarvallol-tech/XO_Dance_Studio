@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | **Borrador.** Propuesto el 26/09/2026. Las decisiones de §8 las cerró Felipe ese día |
+| **Estado** | ✅ **En producción desde el 27/09/2026.** Decisiones de §8 cerradas por Felipe el 26/09; §8.4 corregida ese mismo día tras descubrir que una de sus afirmaciones era falsa |
 | **Autor** | Claude, a pedido de Felipe Carvallo |
 | **Fecha** | 26 de septiembre de 2026 |
 | **Hito** | Hito 1 — Catálogo · toca también Hito 3 (clases) y Hito 5 (liquidación, de lejos) |
@@ -254,4 +254,49 @@ requiera ninguna decisión nueva ni ningún cambio de código.** Hoy requiere la
 
 ## 13. Notas de implementación
 
-Se llena al terminar.
+Hecho entre el 26 y el 27/09/2026, en siete fases. Lo que se desvió, y las cosas que solo
+aparecieron al construirlo:
+
+### El costo por hora no necesitó una tabla aparte
+
+Felipe pidió que `costo_hora_clp` no fuera público —no es el precio de lista de la sala, es lo que
+él paga, y junto al precio por clase deja calcular el margen— y que se evaluara dejarlo en `sedes`
+fuera de lo que la API expone antes de crear otra tabla.
+
+**Se pudo:** PostgREST respeta los permisos por columna, y todas las lecturas públicas de `sedes`
+piden columnas explícitas (`CAMPOS_SEDE`), nunca `*`. Se revocó el `select` de tabla a `anon` y
+`authenticated` y se les devolvió columna por columna. Verificado en producción: pedir
+`costo_hora_clp` con la llave publishable da **401**, pedir lo público devuelve los datos, y
+`select=*` da 401.
+
+**Contrapartida, escrita también en `ARCHITECTURE.md` §5.2:** una columna nueva en `sedes` no la ve
+`anon` hasta que alguien la agregue a ese grant. Falla fuerte, no en silencio, y el escenario
+compara la lista de columnas legibles contra la esperada.
+
+### La regla del cupo es un trigger, no las funciones
+
+Un check de tabla no puede consultar otra tabla, y poner la validación solo en `crear_especial` deja
+fuera los **inserts directos** — que son justamente los que hace una migración de datos como la de
+la fase 4. Así que la garantía es `clases_cupo_cabe_en_la_sala`, y el escenario lo comprueba
+intentando un insert directo con cupo 50 en una sala de 40.
+
+### Tres cosas que solo aparecieron al abrir la pantalla
+
+1. **`getSemana` tiene su propia lista de campos**, aparte de `CAMPOS_CLASE`. Había actualizado una
+   y no la otra, así que el rango horario no llegaba a la grilla. Quedó comentado en las dos.
+2. **La grilla llamaba a una especial por el nombre de su curso.** Lo pedía PRD-0018 §7.7 y estaba
+   sin hacer: las dos clases del intensivo aparecían las dos como "Girly", que con dos clases del
+   mismo estilo el mismo día no distingue nada.
+3. 🔴 **La profesora no veía sus propias especiales sin publicar.** Ver §8.4: es el hallazgo que
+   corrigió una decisión ya aprobada, y dejó una regla nueva en `CLAUDE.md`.
+
+### Pendiente, anotado
+
+- **La asistencia registrada no llega a ninguna pantalla.** Este PRD la guarda; mostrarla y decidir
+  si cuenta como "clase dictada" para la liquidación es PRD-0010 §8.5.
+- **`ARCHITECTURE.md` decía `estado (programada|realizada|cancelada)`** y el esquema solo tiene dos.
+  Una clase pasada queda `programada` con fecha vieja, que es como el sistema ya representa "ya
+  ocurrió". No se tocó el esquema.
+- **La sala nueva no tiene horarios recurrentes.** Queda activa y disponible; programar ahí es una
+  decisión aparte, y `CONTEXT.md` explica por qué conviene pensarla: en EB una clase de 90 minutos
+  cuesta $40.500 de sala.

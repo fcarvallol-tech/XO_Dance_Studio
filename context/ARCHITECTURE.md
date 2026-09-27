@@ -170,23 +170,47 @@ permisos que se van a desincronizar.
 
 ### 5.2 Catálogo
 
-> **Dos sedes reales**, con nombre y dirección desde el 30/08/2026: Seducción Latina Experience
-> (Providencia) y Centro Comunitario Diaguitas (Las Condes). El sistema es multi-sede desde el
+> **Tres sedes reales**, con nombre y dirección: Seducción Latina Experience (Providencia) y
+> Centro Comunitario Diaguitas (Las Condes) desde el 30/08/2026, y **EB Dance Studio** (Chucre
+> Manzur 7, Providencia, sector Bellavista) desde el 27/09/2026. El sistema es multi-sede desde el
 > día uno; ya no es una previsión, es un hecho.
 >
-> **`salas`** sigue pendiente para PRD-0006: ahí van `capacidad` y `costo_hora_clp`, que son lo
-> que permite calcular el margen por clase dictada. Mientras haya una sala por sede no aporta.
+> **`capacidad` y `costo_hora_clp` viven en `sedes` desde PRD-0021**, no en una tabla `salas` que
+> sigue sin existir. Mientras haya una sala por sede, agregar esa tabla solo mueve dos columnas de
+> lugar. Cuando una sede tenga dos salas habrá que hacerlo, y ahí las columnas se llevan consigo.
 >
-> **Capacidad: 22 personas en las dos sedes** (confirmado el 30/08/2026). El cupo es atributo
-> de la sala —y por herencia de la clase—, **nunca del curso**: depende del espacio físico, no
-> de qué se baila adentro. Mientras `salas` no exista, el default de `clases.cupo_maximo` lo
-> sostiene.
+> **La capacidad es de la sala, y no es 22 por decreto.** Los Leones y Diaguitas miden 22
+> (confirmado el 30/08/2026); EB mide **40**. El cupo es atributo de la sala —y por herencia de la
+> clase—, **nunca del curso**: depende del espacio físico, no de qué se baila adentro.
+>
+> ⚠️ **Hasta PRD-0021 el 22 estaba escrito en el código como si fuera una regla del sistema**:
+> `crear_especial` rechazaba cualquier cupo mayor con el mensaje "El cupo va de 1 a 22", y
+> `generar_clases` no seteaba cupo, así que toda la parrilla nacía en 22 sin mirar dónde. Con eso,
+> una clase de 40 personas **no se podía crear**. Ahora el tope es la capacidad de la sede, el
+> default es esa capacidad, y lo garantiza un **trigger** —`clases_cupo_cabe_en_la_sala`— y no solo
+> las funciones: un check de tabla no puede consultar otra tabla, y validar solo en las funciones
+> deja fuera los inserts directos, que son los que hace una migración de datos.
+>
+> **Remedir una sala no invalida clases ya creadas**: el trigger valida al insertar y al cambiar
+> cupo o sede, no sobre lo que ya está guardado. Una clase que se dictó con 40 personas no puede
+> volverse inválida porque después se remidió la sala.
 
 **✅ Construido el 28/08/2026 (PRD-0015) y ampliado el 30/08/2026 (PRD-0016):**
 
 **`cursos`** — `slug, nombre, publico, estilo, descripcion, cupos, dificultad, orden, activo`
 **`profesoras`** — `slug, nombre, estilo, bio, instagram, foto_url, video_url, orden, activa`
-**`sedes`** — `slug, nombre, direccion, comuna, referencia, orden, activa`
+**`sedes`** — `slug, nombre, direccion, comuna, referencia, orden, activa, capacidad, costo_hora_clp`
+
+- ⚠️ **`costo_hora_clp` no es público.** Es lo que la academia paga —puede estar negociado— y
+  junto al precio por clase deja calcular el margen. Como `sedes` es una tabla pública, se
+  resolvió **con permisos por columna** y no con una tabla aparte: se le revocó el `select` de
+  tabla a `anon` y `authenticated` y se les devolvió columna por columna, salvo el costo. Es
+  viable porque todas las lecturas públicas piden columnas explícitas (`CAMPOS_SEDE`), nunca `*`.
+  - **Contrapartida:** una columna nueva en `sedes` no la ve `anon` hasta que se la agregue a ese
+    grant. Falla fuerte —`permission denied for column`—, no en silencio, y
+    `scripts/escenario-capacidad.mjs` compara la lista de columnas legibles contra la esperada.
+  - Cuando exista la tabla de finanzas de PRD-0010 parte 2, que nace con RLS de solo `owner`, el
+    costo puede moverse ahí.
 **`horarios`** — `curso_id, profesora_id, sede_id, dia_semana, hora, activo`
 
 - El **slug** es la identidad pública y es **inmutable por trigger** en las tres tablas que lo
@@ -252,6 +276,12 @@ vino de un horario y que se paga con una compra propia.
   sobre `clases` quedaron limitadas a la parrilla, y todo pasa por funciones `security definer`
   que reciben al actor: `crear_especial`, `editar_especial`, `publicar_especial`,
   `borrar_borrador_especial`.
+- **Quién ve qué clase**, con las tres políticas de select que tiene `clases`:
+  `clases_lectura_publica` (parrilla o publicada, para cualquiera), `clases_admin_todo` (admin lo ve
+  todo) y **`clases_profesora_ve_las_suyas`** (PRD-0021: la profesora ve las que dicta, publicadas o
+  no). Esa última se agregó al descubrir que una profesora veía **cero** de sus propias especiales
+  sin publicar, porque las dos primeras no la cubrían — y se descubrió preguntándole a la base con
+  su sesión, no leyendo la política. Ver `CLAUDE.md` y `scripts/verificar-rls-clases.mjs`.
 - **`portadas-especiales` es un bucket privado.** La columna guarda la ruta, nunca una URL; el
   sitio firma al renderizar y Open Graph descarga el objeto con la service role.
 

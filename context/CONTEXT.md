@@ -62,12 +62,13 @@ Todas tienen Instagram propio con seguidores y son parte activa de la campaña d
 |---|---|
 | **Etapa** | Fase 1 — Validación & Caja. Campaña de lanzamiento en curso |
 | **Modelo** | Academia de baile urbano B2C |
-| **Sedes** | **Dos, con dirección pública desde el 30/08/2026:** Seducción Latina Experience (Av. Nueva Providencia 2260, Providencia, sector Los Leones) y Centro Comunitario Diaguitas (Diaguitas 911, Las Condes) |
+| **Sedes** | **Tres, con dirección pública desde el 30/08/2026:** Seducción Latina Experience (Av. Nueva Providencia 2260, Providencia, sector Los Leones) · Centro Comunitario Diaguitas (Diaguitas 911, Las Condes) · **EB Dance Studio** (Chucre Manzur 7, Providencia, sector Bellavista), desde el 27/09/2026 |
 | **Razón social** | **XO Dance Studio SpA** (en constitución vía Tu Empresa en un Día) |
 | **Nombre de fantasía** | XO Dance Studio |
 | **Alumnas hoy** | 7–8 (⚠️ confirmar el número exacto). Migran de Kids a Teens. **No se migran al sistema**: septiembre se cierra por fuera y desde octubre entran registrándose por la web (ver §5.b, "Puesta en marcha") |
 | **Precio** | Tarifa de packs para todos los cursos. Teens deja los $45.000/mes |
-| **Costo de sala** | Los Leones: **$17.000/hora** · Los Dominicos: **$0** |
+| **Costo de sala** | Los Leones: **$17.000/hora** · Diaguitas: **$0** · EB: **$27.000/hora** |
+| **Capacidad de sala** | Los Leones y Diaguitas: **22** · EB: **40**. Es un dato de cada sala, no una regla del sistema (PRD-0021) |
 | **Sueldo base profesoras** | **$18.000/hora**. Clases de 1 hora. Variable por definir |
 | **Sitio** | **xodancestudio.cl** — dominio propio, apuntado a Vercel y con certificado |
 | **Instagram** | @XO.dancestudioo — se abre al público en agosto 2026 |
@@ -76,12 +77,13 @@ Todas tienen Instagram propio con seguidores y son parte activa de la campaña d
 
 ### Finanzas — modelo nuevo (21/08/2026)
 
-Dos sedes con costos radicalmente distintos:
+Tres sedes con costos radicalmente distintos:
 
-| Sede | Costo de sala | Nota |
-|---|---|---|
-| **Los Leones** | $17.000 | ⚠️ confirmar si es por hora o por clase |
-| **Los Dominicos** | $0 | ⚠️ confirmar por qué es gratis y si es estable en el tiempo |
+| Sede | Costo de sala | Capacidad | Nota |
+|---|---|---|---|
+| **Los Leones** | $17.000/hora | 22 | ⚠️ confirmar si es por hora o por clase |
+| **Diaguitas** | $0 | 22 | ⚠️ confirmar por qué es gratis y si es estable en el tiempo |
+| **EB Dance Studio** | **$27.000/hora** | **40** | La más grande y la más cara. Desde el 27/09/2026 |
 
 **Punto de equilibrio por clase, con el pricing de packs** (pack de 4 = $7.500 por clase):
 
@@ -93,6 +95,35 @@ Dos sedes con costos radicalmente distintos:
 Comparación: en la sala anterior ($60.000) hacían falta **8 alumnas solo para cubrir el
 arriendo**. En Los Leones hacen falta **3**. Es una mejora estructural, no un ahorro marginal:
 cambia el riesgo de abrir un horario nuevo, que era la principal traba para programar más clases.
+
+#### EB Dance Studio cambia esa cuenta, y hacia arriba (27/09/2026)
+
+Es la sala más grande —**40** contra 22— y también la más cara: **$27.000/hora**. Y el formato que
+se hace ahí hasta ahora dura **hora y media**, así que el costo por clase no es $27.000 sino
+**$40.500**. Contra los $25.500 de una clase de 90 minutos en Los Leones y los $0 de Diaguitas.
+
+**Cuánta gente necesita una clase de 90 minutos en EB solo para cubrir la sala:**
+
+| Precio por clase | En EB ($40.500) | En Los Leones ($25.500) | En Diaguitas ($0) |
+|---|---|---|---|
+| Pack de 4 · $7.000 | **6 alumnas** | 4 | 0 |
+| Pack de 8 · $6.000 | **7 alumnas** | 5 | 0 |
+| Clase suelta · $8.500 | **5 alumnas** | 3 | 0 |
+| El intensivo, a $8.000 | **6 alumnas** | 4 | 0 |
+
+Y eso es **antes de pagarle a la profesora**: con el base de $18.000/hora, una clase de 90 minutos
+son $27.000 más, o sea que el piso real en EB ronda las **10 u 11 alumnas** con packs.
+
+Lo que hay que tener presente al programar ahí:
+
+- **EB no es la sala para probar un horario nuevo.** Un horario que arranca con 4 alumnas funciona
+  en Diaguitas, empata en Los Leones y **pierde plata** en EB. La sala grande se justifica cuando
+  ya se sabe que va a llegar gente.
+- **Lo que EB habilita es el techo, no el piso.** Con 22 cupos, una clase llena a $7.000 tope en
+  $154.000; con 40, en $280.000. Las dos clases del intensivo —35 y 20 personas— **no cabían en
+  ninguna de las otras dos salas**: la primera ni siquiera con el cupo completo.
+- Por eso tiene sentido para **intensivos y eventos puntuales**, que es de donde salió, y hay que
+  pensarlo dos veces para parrilla semanal.
 
 ⚠️ **Falta el otro lado de la ecuación:** cuánto se le paga a cada profesora por clase. Ese
 número sale del saldo de la tabla de arriba y define si el modelo deja margen o solo cubre.
@@ -317,7 +348,9 @@ Cada alumna aporta su tarifa menos los $250 que se lleva la profesora por ella.
 ⚠️ **El piso sube en tres de los seis casos.** Con packs de 8 en Los Leones ahora hacen falta
 **7** alumnas para no perder plata, no 6.
 
-**Capacidad real: 22 personas por sala**, confirmada el 30/08/2026 en las dos sedes.
+**Capacidad real: 22 personas** en Los Leones y Diaguitas, confirmada el 30/08/2026. **EB Dance
+Studio son 40** (27/09/2026), así que las cuentas de abajo son de las dos salas de 22; en EB el
+techo es más alto y el piso también.
 
 | | Los Leones | Los Dominicos |
 |---|---|---|
@@ -544,7 +577,7 @@ sin caché de build · verificación real enviando el formulario desde producci�
 | Tema | Estado |
 |---|---|
 | Precios, horarios y cupos de los 5 cursos | Sin definir. Bloquea el lanzamiento |
-| Nueva ubicación / sala | Sin confirmar |
+| Nueva ubicación / sala | ✅ **EB Dance Studio**, Chucre Manzur 7, Providencia (Bellavista), desde el 27/09/2026: 40 personas, $27.000/hora |
 | Modelo económico con 5 profesoras (cómo se les paga) | Sin definir |
 | Remuneración de Carla | Sin definir |
 | % de revenue share de Fase 2 | Sin cuantificar |
