@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { clienteServidor } from "./supabase/servidor";
 import type { Lectura } from "./compras-consultas";
+import { rangoHorario } from "./dominio/horarios";
 
 /**
  * Consultas del portal de la profesora. **Solo servidor.**
@@ -21,6 +22,8 @@ import type { Lectura } from "./compras-consultas";
 export type ClaseDeProfesora = {
   id: string;
   inicio: string;
+  /** `null` en las de parrilla, que se asumen de una hora. */
+  fin: string | null;
   cursoNombre: string;
   sedeNombre: string;
   sedeComuna: string;
@@ -63,9 +66,28 @@ function comoTexto(error: { message: string; code?: string } | null): string | n
   return error.code ? `${error.message} (${error.code})` : error.message;
 }
 
+/**
+ * Cómo se llama la clase para quien la dicta: **la coreografía manda**.
+ *
+ * Lo pedía PRD-0018 §7.7 y había quedado sin hacer, así que las dos clases del
+ * intensivo aparecían las dos como "Girly". Con dos clases del mismo estilo el
+ * mismo día, el nombre del curso no distingue nada.
+ */
+function nombreDeLaClase(c: {
+  tipo: string;
+  titulo: string | null;
+  cursos: { nombre: string } | null;
+}): string {
+  if (c.tipo === "especial" && c.titulo) return c.titulo;
+  return c.cursos?.nombre ?? "";
+}
+
 type FilaClase = {
   id: string;
   inicio: string;
+  fin: string | null;
+  tipo: string;
+  titulo: string | null;
   cupo_maximo: number;
   estado: string;
   motivo_cancelacion: string | null;
@@ -99,8 +121,11 @@ const miProfesoraId = cache(async function miProfesoraId(): Promise<{
   return { id: (data as string | null) ?? null, error: null };
 });
 
+// `fin`, `tipo` y `titulo` entran por PRD-0021: sin `fin` no se puede decir a
+// qué hora termina una clase que no dura una hora, y sin `titulo` una especial
+// aparece con el nombre de su curso en vez de su coreografía.
 const CAMPOS_CLASE =
-  "id, inicio, cupo_maximo, estado, motivo_cancelacion, profesora_id, cursos ( nombre ), sedes ( nombre, comuna ), profesoras ( nombre ), horarios ( profesora_id, profesoras ( nombre ) )";
+  "id, inicio, fin, tipo, titulo, cupo_maximo, estado, motivo_cancelacion, profesora_id, cursos ( nombre ), sedes ( nombre, comuna ), profesoras ( nombre ), horarios ( profesora_id, profesoras ( nombre ) )";
 
 /** Qué recorte de sus clases se quiere. Todo opcional; se combinan. */
 type Recorte = {
@@ -190,7 +215,11 @@ async function traerMisClases(
       return {
         id: c.id,
         inicio: c.inicio,
-        cursoNombre: c.cursos!.nombre,
+        fin: c.fin,
+        // Una especial se llama por su coreografía, no por el curso: lo pedía
+        // PRD-0018 §7.7 y había quedado sin hacer. Con dos clases del mismo
+        // estilo el mismo día, "Girly" no distingue nada.
+        cursoNombre: nombreDeLaClase(c),
         sedeNombre: c.sedes!.nombre,
         sedeComuna: c.sedes!.comuna,
         cupoMaximo: c.cupo_maximo,
@@ -343,6 +372,12 @@ export async function getConflictos(
 export type ClaseDeGrilla = {
   id: string;
   inicio: string;
+  fin: string | null;
+  /**
+   * Ya formateada: `"20:00"`, o `"18:00–19:30"` cuando la clase no dura lo que
+   * se supone. La decide `rangoHorario`, que tiene tests, y no el componente:
+   * el mismo texto se escribe en el servidor y en el navegador.
+   */
   hora: string;
   cursoNombre: string;
   profesoraNombre: string;
@@ -387,7 +422,9 @@ export async function getSemana(
     supabase
       .from("clases")
       .select(
-        "id, inicio, cupo_maximo, estado, profesora_id, cursos ( nombre ), profesoras ( nombre ), sedes ( nombre, comuna )",
+        // `fin`, `tipo` y `titulo` por PRD-0021. Esta consulta tiene su propia
+        // lista de campos, aparte de CAMPOS_CLASE: hay que tocar las dos.
+        "id, inicio, fin, tipo, titulo, cupo_maximo, estado, profesora_id, cursos ( nombre ), profesoras ( nombre ), sedes ( nombre, comuna )",
       )
       .gte("inicio", desde.toISOString())
       .lt("inicio", hasta.toISOString())
@@ -401,6 +438,9 @@ export async function getSemana(
   type Fila = {
     id: string;
     inicio: string;
+    fin: string | null;
+    tipo: string;
+    titulo: string | null;
     cupo_maximo: number;
     estado: string;
     profesora_id: string;
@@ -428,14 +468,6 @@ export async function getSemana(
     }
   }
 
-  const hora = (iso: string) =>
-    new Intl.DateTimeFormat("es-CL", {
-      timeZone: "America/Santiago",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(new Date(iso));
-
   const porDia = new Map<string, ClaseDeGrilla[]>();
   for (const c of filas) {
     const mia = c.profesora_id === miId;
@@ -445,8 +477,9 @@ export async function getSemana(
       {
         id: c.id,
         inicio: c.inicio,
-        hora: hora(c.inicio),
-        cursoNombre: c.cursos!.nombre,
+        fin: c.fin,
+        hora: rangoHorario(c.inicio, c.fin),
+        cursoNombre: nombreDeLaClase(c),
         profesoraNombre: c.profesoras!.nombre,
         sedeNombre: c.sedes!.nombre,
         sedeComuna: c.sedes!.comuna,

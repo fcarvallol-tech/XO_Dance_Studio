@@ -5,10 +5,10 @@ import { cancelarReserva, reservarClase } from "@/lib/acciones";
 import {
   claveDia,
   diaLegible,
-  horaLegible,
   lugaresLibres,
   type ClaseDelCalendario,
 } from "@/lib/compras";
+import { rangoHorario } from "@/lib/dominio/horarios";
 
 /**
  * Las clases de los próximos 60 días, agrupadas por día.
@@ -125,7 +125,9 @@ export function Calendario({
                     <div>
                       <p className={atenuada ? "text-xo-gris" : "text-xo-negro"}>
                         <span className="font-semibold">
-                          {horaLegible(clase.inicio)}
+                          {/* El rango aparece solo cuando la clase no dura una
+                              hora: comprometer hora y media no se supone. */}
+                          {rangoHorario(clase.inicio, clase.fin)}
                         </span>{" "}
                         · {clase.cursoNombre}
                       </p>

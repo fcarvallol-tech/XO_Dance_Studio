@@ -4,7 +4,7 @@ import { TituloPortal } from "@/components/Portal";
 import { ErrorDeLectura } from "@/components/ErrorDeLectura";
 import { GrillaSemanal } from "@/components/GrillaSemanal";
 import { requiereNivel } from "@/lib/sesion";
-import { cuandoLegible } from "@/lib/compras";
+import { cuandoLegible, horaLegible } from "@/lib/compras";
 import { getProximaClase, getSemana } from "@/lib/profesora-consultas";
 import { esDiaValido, hoyEnSantiago, lunesDe, sumarDias } from "@/lib/semana";
 
@@ -60,6 +60,7 @@ export default async function LaSemana({ searchParams }: Props) {
             <p className="xo-eyebrow text-xo-gris">Tu próxima clase</p>
             <p className="mt-1 text-lg text-xo-negro">
               {proxima.datos.cursoNombre} · {cuandoLegible(proxima.datos.inicio)}
+              {proxima.datos.fin ? ` a ${horaLegible(proxima.datos.fin)}` : ""}
             </p>
             <p className="text-sm text-xo-gris">
               {proxima.datos.sedeNombre}, {proxima.datos.sedeComuna}

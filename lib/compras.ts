@@ -37,6 +37,8 @@ export type Compra = {
 export type ClaseDelCalendario = {
   id: string;
   inicio: string;
+  /** `null` en las de parrilla, que se asumen de una hora (PRD-0021). */
+  fin: string | null;
   cursoSlug: string;
   cursoNombre: string;
   profesoraSlug: string;

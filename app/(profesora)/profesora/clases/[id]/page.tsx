@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { TituloPortal } from "@/components/Portal";
 import { ErrorDeLectura } from "@/components/ErrorDeLectura";
 import { requiereNivel } from "@/lib/sesion";
-import { cuandoLegible } from "@/lib/compras";
+import { cuandoLegible, horaLegible } from "@/lib/compras";
 import { getClase, getInscritas } from "@/lib/profesora-consultas";
 
 export const metadata: Metadata = {
@@ -46,7 +46,13 @@ export default async function DetalleClase({ params }: Props) {
 
       <div className="mt-6">
         <TituloPortal
-          eyebrow={clase.datos ? cuandoLegible(clase.datos.inicio) : "La clase"}
+          eyebrow={
+            clase.datos
+              ? `${cuandoLegible(clase.datos.inicio)}${
+                  clase.datos.fin ? ` a ${horaLegible(clase.datos.fin)}` : ""
+                }`
+              : "La clase"
+          }
           titulo={clase.datos?.cursoNombre ?? "La clase"}
           bajada={
             clase.datos

@@ -232,6 +232,7 @@ export async function getComprasResueltas(limite = 30): Promise<Lectura<Compra[]
 type FilaClase = {
   id: string;
   inicio: string;
+  fin: string | null;
   cupo_maximo: number;
   cursos: { slug: string; nombre: string } | null;
   profesoras: { slug: string; nombre: string } | null;
@@ -258,7 +259,7 @@ export async function getCalendario(
   const { data, error } = await supabase
     .from("clases")
     .select(
-      "id, inicio, cupo_maximo, cursos ( slug, nombre ), profesoras ( slug, nombre ), sedes ( nombre, comuna )",
+      "id, inicio, fin, cupo_maximo, cursos ( slug, nombre ), profesoras ( slug, nombre ), sedes ( nombre, comuna )",
     )
     // Explícito acá y no solo en RLS: desde que `clases` expone también las
     // canceladas, filtrar es responsabilidad de quien consulta. La alumna no
@@ -313,6 +314,7 @@ export async function getCalendario(
     datos: clases.map((c) => ({
       id: c.id,
       inicio: c.inicio,
+      fin: c.fin,
       cursoSlug: c.cursos!.slug,
       cursoNombre: c.cursos!.nombre,
       profesoraSlug: c.profesoras!.slug,
