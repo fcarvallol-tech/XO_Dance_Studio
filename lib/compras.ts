@@ -5,6 +5,8 @@
  * `compras-consultas.ts` y las escrituras en las acciones de servidor.
  */
 
+import { horaEnSantiago } from "./dominio/horarios";
+
 export type EstadoCompra =
   | "pendiente"
   | "pagada"
@@ -113,12 +115,15 @@ export function diaLegible(iso: string): string {
   return cuandoLegible(iso).split(",")[0];
 }
 
-/** "20:00" en hora de Santiago. */
+/**
+ * "20:00" en hora de Santiago.
+ *
+ * Delega en `dominio/horarios.ts`, que es donde vive el formato desde PRD-0021:
+ * tener dos funciones que escriben la misma hora es tener dos formas de que se
+ * escriba distinto.
+ */
 export function horaLegible(iso: string): string {
-  return new Intl.DateTimeFormat("es-CL", {
-    timeZone: "America/Santiago",
-    hour: "2-digit", minute: "2-digit", hour12: false,
-  }).format(new Date(iso));
+  return horaEnSantiago(iso);
 }
 
 /** La clave de agrupación por día, estable entre servidor y navegador. */
