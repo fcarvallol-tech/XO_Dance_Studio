@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | **Borrador.** Propuesto el 28/09/2026 a pedido de Felipe. §8 tiene sus cuatro decisiones tomadas; **§8.6 es una pregunta abierta y bloquea la fase 1** |
+| **Estado** | ✅ **Construido el 28/09/2026**, fases 0 a 6. ⏸ **Falta desplegar**: espera el visto bueno de Felipe y dos textos suyos (§13) |
 | **Autor** | Claude, a pedido de Felipe Carvallo |
 | **Fecha** | 28 de septiembre de 2026 |
 | **Hito** | Hito 0 — Lanzamiento |
@@ -189,9 +189,42 @@ Lo que hay que resolver al construirlo, y que el diseño tiene que contemplar:
   achica. Propuesta: **que se quede**, porque achicarlo es una animación que `BRAND.md` no pide y
   el proyecto tiene la regla de "poco movimiento y con intención".
 
-### 8.6 🔴 Pregunta abierta: ¿qué pasa con la captación de leads?
+### 8.6 ✅ La captación se retira, y el objetivo del sitio cambia (Felipe, 28/09/2026)
 
-**Esto contradice el objetivo declarado del sitio y por eso no lo decido yo.**
+**Camino C.** El sitio deja de ser un folleto que capta datos y pasa a ser **un portal funcional
+para las alumnas: que compren, reserven y gestionen sus clases**. Se asume que llegan sabiendo qué
+es XO, porque vienen de redes sociales.
+
+Dos consecuencias, las dos de Felipe:
+
+- **El formulario no tiene función.** Los datos quedan al registrarse con el correo, y en este
+  modelo no tiene sentido llamar por teléfono a alguien para que compre.
+- **La clase de prueba gratis se elimina.** Ese incentivo pasa a los **cupones de descuento de
+  PRD-0013**, para quien se inscribe por primera vez — y ahí además se puede medir, limitar y
+  apagar sin desplegar, cosa que la clase gratis nunca permitió.
+
+`CLAUDE.md` y `CONTEXT.md` quedaron actualizados con el objetivo nuevo. De paso se cerró una
+pregunta que `CONTEXT.md` tenía abierta desde agosto —*"¿sobrevive la clase de prueba gratis?"*—.
+
+**Qué se retiró y qué se conservó**, que era la parte que Felipe pidió proponer:
+
+| Pieza | Qué se hizo | Por qué |
+|---|---|---|
+| `Formulario.tsx`, `ClaseDePrueba.tsx` | **Retirados** | Son el formulario y su antesala. Sin objetivo de captación no tienen función |
+| `BotonInscripcion`, `Seleccion`, `PreseleccionPorUrl` | **Retirados** | Existían solo para llevar al formulario con curso y profesora preseleccionados |
+| `lib/lead.ts` | **Retirado** | Validaba lo que ya nadie envía |
+| `/api/lead` | **Retirado** | Una ruta que escribe en la base con la service role y que **nadie llama** es superficie de ataque sin contrapartida |
+| **La tabla `leads`** | **Se conserva entera**, con su RLS y sus grants | Guarda lo que haya entrado. Instrucción explícita de Felipe |
+| **`/admin/leads`** | **Se conserva** | Es la única forma de mirar esos registros. Una tabla que nadie puede leer es una tabla perdida |
+
+**Vestigio anotado:** en producción la tabla está **vacía** —verificado el 28/09—, así que no se
+perdió ningún dato. Si con el tiempo sigue vacía, retirar la tabla y su pantalla es un PRD de diez
+líneas; mientras tanto no estorban.
+
+### 8.6.b Lo que decía antes esta sección
+
+Quedaba así, y se conserva porque explica de dónde salió la pregunta: **esto contradecía el
+objetivo declarado del sitio y por eso no lo decidí yo.**
 
 `CLAUDE.md` dice, como primera regla del sitio público:
 
@@ -272,4 +305,47 @@ link de una sección concreta en vez de "mira la página y baja hasta…".
 
 ## 13. Notas de implementación
 
-Se llena al terminar.
+Construido el 28/09/2026, fases 0 a 6. Lo que se desvió y lo que solo apareció al hacerlo:
+
+### El logo que sobresale necesita tres cosas, no una
+
+Se ve como un detalle de CSS y se rompe por tres lados distintos: el logo **absoluto** y más alto
+que la barra —si no, la estira y deja de sobresalir—, `overflow-visible` en la barra —si no, el
+navegador lo recorta— y **el espacio reservado en `MarcoSitio`**, no en cada página. Esto último es
+lo que importa mantener: un margen repetido en siete archivos es un margen que en el octavo se
+olvida, y el síntoma sería el logo tapando el título de una sola página.
+
+### Las tres cabeceras se volvieron una
+
+El sitio tenía **tres**: la de la landing, la de las páginas públicas nuevas y la del perfil de
+profesora, cada una con su logo y su acción a la derecha. Con siete páginas eso deja de ser una
+duplicación tolerable y pasa a ser tres sitios que se parecen. Ahora es `MarcoSitio`.
+
+### Un caso que no había previsto
+
+Las anclas viejas (`/#planes`) se rescatan con un componente cliente, porque **el navegador no
+manda lo que va después del `#`** y una redirección de servidor nunca las ve. Pero al probarlo
+apareció otro caso: si alguien **ya está en la portada** y aprieta un enlace viejo, el navegador
+solo cambia el hash y no vuelve a montar nada, así que el rescate no corría. Se resolvió
+escuchando `hashchange`, y el verificador prueba los dos caminos.
+
+### Lo verificado
+
+`scripts/verificar-sitio.mjs`, con Chromium en **375, 768 y 1280**: **19 de 19**. Ninguna página
+desborda a lo ancho, el logo es más alto que la barra y sobresale **sin tapar el título**, los seis
+caminos y Mi Cuenta están, el CTA viejo y "Entrar" ya no, el menú móvil abre, la portada quedó con
+el eslogan y los packs, y las tres anclas viejas rescatan.
+
+Y el chequeo de rutas de PRD-0020, otra vez: las ocho públicas responden 200 sin sesión, y las
+siete privadas redirigen cada una con **su** `volver`.
+
+### ⚠️ Lo que falta antes de publicar
+
+- **El texto de Nosotros.** Hay un borrador, marcado **en pantalla** con un recuadro que dice "No
+  publicar así": se armó con `BRAND.md` §1 y §7 y con `CONTEXT.md` §7, y lo tiene que reemplazar
+  Carla.
+- **Tres preguntas frecuentes** —qué llevar, cómo llegar, si se puede ir a mirar— y **el plazo de
+  respuesta a un reclamo**. Todas marcadas como "Falta" en la página, y la de Ayuda avisa arriba
+  cuántas son.
+- **El video del hero.** La portada mínima depende mucho más de él que la anterior: hoy el hero es
+  negro plano y la portada quedó corta.

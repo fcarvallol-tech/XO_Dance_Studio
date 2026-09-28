@@ -164,11 +164,11 @@ No es relleno: es donde aparece lo que cada fase no podía ver sola.
 
 | Fase | Estado |
 |---|---|
-| 0 — Decisiones | 🔴 Falta §8.6: qué pasa con la captación |
-| 1 — Cabecera y logo | Bloqueada por la 0 |
-| 2 — Nuestras Profes y Nosotros | Depende de la 1 |
-| 3 — Ayuda | Depende de la 1 |
-| 4 — Calendario público | Depende de la 1. Es la de riesgo |
-| 5 — Portada mínima y enlaces viejos | Depende de la 2, 3 y 4 |
-| 6 — Repaso | Depende de todo |
-| 7 — Producción | Necesita los textos de Felipe y su visto bueno |
+| 0 — Decisiones | ✅ Cerrada el 28/09. Camino **C**: la captación se retira y el objetivo del sitio cambia |
+| 1 — Cabecera y logo | ✅ `MarcoSitio`, `BarraSitio` y `lib/navegacion.ts` |
+| 2 — Nuestras Profes y Nosotros | ✅ Con el borrador de Nosotros marcado en pantalla |
+| 3 — Ayuda | ✅ Doce preguntas, contacto, reclamos y lo legal enlazado |
+| 4 — Calendario público | ✅ `/calendario` sin sesión y `/reservar/<id>` |
+| 5 — Portada mínima y enlaces viejos | ✅ Y la captación retirada entera |
+| 6 — Repaso | ✅ **19/19** con Chromium en tres anchos |
+| 7 — Producción | ⏸ **Espera a Felipe**: su visto bueno y dos textos suyos |
