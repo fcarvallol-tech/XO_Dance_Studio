@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { BotonInscripcion } from "./BotonInscripcion";
 import { Reveal } from "./Reveal";
 import {
   clp,
@@ -86,12 +85,20 @@ export function Planes({
           <span aria-hidden="true" className="text-xo-rosa">
             ✦{" "}
           </span>
-          Los horarios y la sede te los contamos por WhatsApp cuando nos dejes
-          tus datos.
+          Los horarios y las salas están en{" "}
+          <Link href="/calendario" className="underline underline-offset-4">
+            el calendario
+          </Link>
+          .
         </p>
 
         <div className="mt-10">
-          <BotonInscripcion origen="planes">Reservar clase</BotonInscripcion>
+          <Link
+            href="/comprar"
+            className="xo-eyebrow inline-flex items-center rounded-full bg-xo-rosa px-6 py-4 text-xo-negro transition-colors hover:bg-xo-rosa-claro"
+          >
+            Comprar un pack
+          </Link>
         </div>
       </Reveal>
     </section>

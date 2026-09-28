@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { CAMINOS } from "@/lib/navegacion";
 import {
   INSTAGRAM_HANDLE,
   INSTAGRAM_URL,
@@ -51,14 +52,18 @@ export function Footer() {
           al final de la página sin encontrarlo. */}
       <div className="relative mx-auto mt-12 max-w-6xl border-t border-xo-blanco/10 pt-6">
         <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-          <li>
-            <Link
-              href="/entrar"
-              className="text-xo-blanco/60 underline-offset-4 transition-colors hover:text-xo-rosa hover:underline"
-            >
-              Entrar a mi cuenta
-            </Link>
-          </li>
+          {/* Los caminos del sitio, de la misma fuente que la barra: quien llegó
+              al final de una página no debería tener que volver arriba. */}
+          {CAMINOS.map((camino) => (
+            <li key={camino.href}>
+              <Link
+                href={camino.href}
+                className="text-xo-blanco/60 underline-offset-4 transition-colors hover:text-xo-rosa hover:underline"
+              >
+                {camino.texto}
+              </Link>
+            </li>
+          ))}
           <li>
             <Link
               href="/privacidad"

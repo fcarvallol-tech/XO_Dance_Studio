@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { BotonInscripcion } from "./BotonInscripcion";
 import { Placeholder } from "./Placeholder";
 import { Reveal } from "./Reveal";
 import {
@@ -279,10 +278,15 @@ function Ficha({
           ))}
         </ul>
 
+        {/* El CTA de captación se retiró con PRD-0022: ahora el camino es ver
+            cuándo hace clases y reservar, no dejar los datos. */}
         <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
-          <BotonInscripcion origen="ficha-profesora" profesoraId={profesora.slug}>
-            Reservar clase con {profesora.nombre}
-          </BotonInscripcion>
+          <Link
+            href="/calendario"
+            className="xo-eyebrow inline-flex items-center rounded-full bg-xo-rosa px-6 py-3.5 text-xo-negro transition-colors hover:bg-xo-rosa-claro"
+          >
+            Ver cuándo hace clases
+          </Link>
 
           <Link
             href={`/profesoras/${profesora.slug}`}

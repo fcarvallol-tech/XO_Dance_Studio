@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CabeceraPublica } from "@/components/CabeceraPublica";
+import { MarcoSitio } from "@/components/MarcoSitio";
 import { Especiales } from "@/components/Especiales";
-import { Footer } from "@/components/Footer";
 import { getEspecialesPublicadas } from "@/lib/especiales-consultas";
 
 /**
@@ -37,10 +36,8 @@ export default async function ClasesEspeciales() {
   const especiales = await getEspecialesPublicadas();
 
   return (
-    <>
-      <CabeceraPublica accion="Ver los planes" destino="/#planes" />
-
-      <main className="xo-grain relative px-6 py-20 sm:px-10 sm:py-28">
+    <MarcoSitio>
+      <section className="xo-grain relative px-6 py-20 sm:px-10 sm:py-28">
         <div className="relative mx-auto max-w-5xl">
           <Link
             href="/#planes"
@@ -88,9 +85,7 @@ export default async function ClasesEspeciales() {
             </div>
           )}
         </div>
-      </main>
-
-      <Footer />
-    </>
+      </section>
+    </MarcoSitio>
   );
 }

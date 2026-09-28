@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Footer } from "@/components/Footer";
+import { MarcoSitio } from "@/components/MarcoSitio";
 import { Placeholder } from "@/components/Placeholder";
 import { UBICACION } from "@/lib/contacto";
 import {
@@ -77,38 +77,17 @@ export default async function PerfilProfesora({ params }: Props) {
     ...new Set(suyos.map((h) => nombreDe(todos, h.cursoSlug))),
   ].filter((nombre): nombre is string => Boolean(nombre));
 
-  // El formulario vive en la landing. El perfil manda para allá con la profe
-  // ya elegida: la lee <PreseleccionPorUrl>.
-  const reservar = `/?profesora=${profesora.slug}#inscripcion`;
+  // Hasta PRD-0022 esto mandaba a la landing con la profe preseleccionada en el
+  // formulario de captación. Ese formulario ya no existe: ahora el camino es el
+  // calendario, que es donde se ve cuándo hace clases y se reserva.
+  const reservar = "/calendario";
 
   return (
-    <>
-      <header className="sticky top-0 z-50 h-18 border-b border-xo-blanco/10 bg-xo-negro">
-        <div className="mx-auto flex h-full max-w-6xl items-center justify-between gap-4 px-6 sm:px-10">
-          <Link href="/" aria-label="XO Dance Studio, ir al inicio">
-            <Image
-              src="/logo-xo.png"
-              alt=""
-              width={1192}
-              height={789}
-              priority
-              className="h-8 w-auto"
-            />
-          </Link>
-
-          <Link
-            href={reservar}
-            className="xo-eyebrow inline-flex items-center justify-center rounded-full bg-xo-rosa px-4 py-2.5 whitespace-nowrap text-xo-negro transition-colors hover:bg-xo-rosa-claro sm:px-5"
-          >
-            Reservar clase
-          </Link>
-        </div>
-      </header>
-
-      <main className="xo-grain relative px-6 py-20 sm:px-10 sm:py-28">
+    <MarcoSitio>
+      <section className="xo-grain relative px-6 py-20 sm:px-10 sm:py-28">
         <div className="relative mx-auto max-w-5xl">
           <Link
-            href="/#profesoras"
+            href="/nuestras-profes"
             className="xo-eyebrow text-xo-blanco/60 underline-offset-4 transition-colors hover:text-xo-rosa hover:underline"
           >
             <span aria-hidden="true">← </span>Todas las profes
@@ -192,7 +171,7 @@ export default async function PerfilProfesora({ params }: Props) {
                   href={reservar}
                   className="xo-eyebrow inline-flex items-center justify-center rounded-full bg-xo-rosa px-6 py-3.5 whitespace-nowrap text-xo-negro transition-colors hover:bg-xo-rosa-claro"
                 >
-                  Reservar clase con {profesora.nombre}
+                  Ver cuándo hace clases
                 </Link>
 
                 <a
@@ -207,9 +186,7 @@ export default async function PerfilProfesora({ params }: Props) {
             </div>
           </div>
         </div>
-      </main>
-
-      <Footer />
-    </>
+      </section>
+    </MarcoSitio>
   );
 }

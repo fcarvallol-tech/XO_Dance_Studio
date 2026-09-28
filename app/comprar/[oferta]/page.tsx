@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CabeceraPublica } from "@/components/CabeceraPublica";
-import { Footer } from "@/components/Footer";
+import { MarcoSitio } from "@/components/MarcoSitio";
 import { porClaseDeOferta } from "@/lib/dominio/ofertas";
 import { getOfertas, resolverOferta } from "@/lib/ofertas-consultas";
 import { clp } from "@/lib/planes";
@@ -64,10 +63,8 @@ export default async function PaginaDeOferta({ params }: Props) {
   if (!oferta) notFound();
 
   return (
-    <>
-      <CabeceraPublica accion="Entrar" destino="/entrar" />
-
-      <main className="xo-grain relative px-6 py-20 sm:px-10 sm:py-28">
+    <MarcoSitio>
+      <section className="xo-grain relative px-6 py-20 sm:px-10 sm:py-28">
         <div className="relative mx-auto max-w-2xl">
           <Link
             href="/comprar"
@@ -139,10 +136,8 @@ export default async function PaginaDeOferta({ params }: Props) {
             enlace: no hay contraseña que recordar.
           </p>
         </div>
-      </main>
-
-      <Footer />
-    </>
+      </section>
+    </MarcoSitio>
   );
 }
 

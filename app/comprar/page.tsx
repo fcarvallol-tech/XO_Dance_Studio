@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CabeceraPublica } from "@/components/CabeceraPublica";
-import { Footer } from "@/components/Footer";
+import { MarcoSitio } from "@/components/MarcoSitio";
 import { porClaseDeOferta } from "@/lib/dominio/ofertas";
 import { getOfertas } from "@/lib/ofertas-consultas";
 import { clp } from "@/lib/planes";
@@ -40,10 +39,8 @@ export default async function Comprar() {
   const ofertas = await getOfertas();
 
   return (
-    <>
-      <CabeceraPublica accion="Entrar" destino="/entrar" />
-
-      <main className="xo-grain relative px-6 py-20 sm:px-10 sm:py-28">
+    <MarcoSitio>
+      <section className="xo-grain relative px-6 py-20 sm:px-10 sm:py-28">
         <div className="relative mx-auto max-w-4xl">
           <Link
             href="/#planes"
@@ -122,9 +119,7 @@ export default async function Comprar() {
             .
           </p>
         </div>
-      </main>
-
-      <Footer />
-    </>
+      </section>
+    </MarcoSitio>
   );
 }

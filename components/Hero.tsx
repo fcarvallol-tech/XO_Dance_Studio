@@ -1,4 +1,4 @@
-import { BotonInscripcion } from "./BotonInscripcion";
+import Link from "next/link";
 import { INICIO_CLASES, UBICACION } from "@/lib/contacto";
 
 export function Hero() {
@@ -26,8 +26,21 @@ export function Hero() {
           Un lugar donde bailar también significa sentirte parte.
         </p>
 
-        <div className="mt-10">
-          <BotonInscripcion origen="hero">Reservar clase</BotonInscripcion>
+        {/* Los dos caminos que el sitio ofrece ahora: ver cuándo hay clases,
+            o comprar. El formulario de captación se retiró con PRD-0022. */}
+        <div className="mt-10 flex flex-wrap gap-4">
+          <Link
+            href="/calendario"
+            className="xo-eyebrow inline-flex items-center rounded-full bg-xo-rosa px-6 py-4 text-xo-negro transition-colors hover:bg-xo-rosa-claro"
+          >
+            Ver el calendario
+          </Link>
+          <Link
+            href="/comprar"
+            className="xo-eyebrow inline-flex items-center rounded-full border border-xo-blanco/30 px-6 py-4 text-xo-blanco transition-colors hover:border-xo-rosa hover:text-xo-rosa"
+          >
+            Comprar clases
+          </Link>
         </div>
       </div>
 

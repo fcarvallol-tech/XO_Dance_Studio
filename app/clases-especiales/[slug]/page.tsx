@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CabeceraPublica } from "@/components/CabeceraPublica";
-import { Footer } from "@/components/Footer";
+import { MarcoSitio } from "@/components/MarcoSitio";
 import { ReelFachada } from "@/components/ReelFachada";
 import { cuandoLegible, horaLegible } from "@/lib/compras";
 import {
@@ -71,10 +70,8 @@ export default async function ClaseEspecial({ params }: Props) {
   const reservar = `/reservar-especial/${especial.slug}`;
 
   return (
-    <>
-      <CabeceraPublica accion="Ver todas" destino="/clases-especiales" />
-
-      <main className="xo-grain relative px-6 py-16 sm:px-10 sm:py-24">
+    <MarcoSitio>
+      <section className="xo-grain relative px-6 py-16 sm:px-10 sm:py-24">
         <div className="relative mx-auto max-w-5xl">
           <Link
             href="/clases-especiales"
@@ -187,10 +184,8 @@ export default async function ClaseEspecial({ params }: Props) {
             </div>
           </div>
         </div>
-      </main>
-
-      <Footer />
-    </>
+      </section>
+    </MarcoSitio>
   );
 }
 

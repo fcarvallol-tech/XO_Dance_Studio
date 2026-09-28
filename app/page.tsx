@@ -1,63 +1,39 @@
 import { Suspense } from "react";
-import { Barra } from "@/components/Barra";
-import { ClaseDePrueba } from "@/components/ClaseDePrueba";
-import { Cursos } from "@/components/Cursos";
-import { Footer } from "@/components/Footer";
-import { Formulario } from "@/components/Formulario";
+import { AnclasViejas } from "@/components/AnclasViejas";
 import { Hero } from "@/components/Hero";
-import { Lineup } from "@/components/Lineup";
+import { MarcoSitio } from "@/components/MarcoSitio";
 import { Planes } from "@/components/Planes";
-import { PreseleccionPorUrl } from "@/components/PreseleccionPorUrl";
-import { QueEsXo } from "@/components/QueEsXo";
-import { Sedes } from "@/components/Sedes";
-import { SeleccionProvider } from "@/components/Seleccion";
-import { getCatalogoPublico } from "@/lib/catalogo-consultas";
 import { getDesdePrecioEspecial } from "@/lib/especiales-consultas";
 import { getPlanes } from "@/lib/planes-consultas";
 
 /**
- * La landing sigue siendo estática. El catálogo se lee con el cliente público,
- * que no toca cookies, así que la página se prerenderiza igual que antes; lo
- * que cambia es cada cuánto se regenera.
+ * La portada, **mínima** desde PRD-0022: el hero con el eslogan y los packs.
  *
- * Una hora es la red de seguridad. El camino normal es el webhook de Supabase
- * contra /api/revalidar, que la deja fresca en segundos. Ver PRD-0015 §5.
+ * Todo lo demás se mudó a su página —profesoras, sedes, cursos, qué es XO— y la
+ * razón es la que dio Felipe: **no abrumar con información mezclada**. Quien
+ * llega ya sabe qué es XO, porque viene de Instagram; lo que necesita es
+ * encontrar rápido lo que vino a hacer.
+ *
+ * Se lee con el cliente público, sin cookies, así que sigue siendo estática.
  */
 export const revalidate = 3600;
 
 export default async function Home() {
-  const [{ cursos, profesoras, sedes, horarios }, planes, desdeEspecial] =
-    await Promise.all([
-      getCatalogoPublico(),
-      getPlanes(),
-      getDesdePrecioEspecial(),
-    ]);
+  const [planes, desdeEspecial] = await Promise.all([
+    getPlanes(),
+    getDesdePrecioEspecial(),
+  ]);
 
   return (
-    <SeleccionProvider>
-      {/* Lee ?profesora= de la URL. Aislado para no arrastrar la página
-          entera fuera del prerender estático. */}
+    <MarcoSitio>
+      {/* Rescata /#planes y compañía, que siguen publicados en Instagram.
+          Aislado para no arrastrar la portada fuera del prerender. */}
       <Suspense fallback={null}>
-        <PreseleccionPorUrl slugsValidos={profesoras.map((p) => p.slug)} />
+        <AnclasViejas />
       </Suspense>
 
-      <Barra />
-      <main id="contenido">
-        <Hero />
-        <QueEsXo />
-        <Lineup cursos={cursos} profesoras={profesoras} horarios={horarios} />
-        <Cursos
-          cursos={cursos}
-          profesoras={profesoras}
-          sedes={sedes}
-          horarios={horarios}
-        />
-        <Sedes sedes={sedes} />
-        <Planes planes={planes} desdeEspecial={desdeEspecial} />
-        <ClaseDePrueba />
-        <Formulario cursos={cursos} profesoras={profesoras} />
-      </main>
-      <Footer />
-    </SeleccionProvider>
+      <Hero />
+      <Planes planes={planes} desdeEspecial={desdeEspecial} />
+    </MarcoSitio>
   );
 }

@@ -1,5 +1,6 @@
 import { clienteServidor } from "./supabase/servidor";
 import { clienteAdmin } from "./supabase/admin";
+import { clientePublico } from "./supabase/publico";
 import type {
   ClaseDelCalendario,
   Compra,
@@ -248,6 +249,77 @@ type FilaClase = {
  * sí necesita saber cuántos lugares quedan. Lo que se devuelve es un número,
  * nunca quién reservó.
  */
+/**
+ * El calendario **sin sesión** (PRD-0022 §8.3): horarios, profesora, sede y
+ * cupos, y nada de nadie.
+ *
+ * Es `getCalendario` sin la parte que necesita saber quién mira —cuál clase ya
+ * reservó— y sin `clienteServidor`, que toca cookies y sacaría la página del
+ * prerender. El conteo de cupos va con la service role, igual que allá: una
+ * visitante no puede leer las reservas de otra, pero sí necesita saber cuántos
+ * lugares quedan. Lo que sale de acá es un número, nunca quién reservó.
+ */
+export async function getCalendarioPublico(
+  dias: number,
+): Promise<Lectura<ClaseDelCalendario[]>> {
+  const publico = clientePublico();
+  const admin = clienteAdmin();
+  const desde = new Date();
+  const hasta = new Date(desde.getTime() + dias * 24 * 60 * 60 * 1000);
+
+  const { data, error } = await publico
+    .from("clases")
+    .select(
+      "id, inicio, fin, cupo_maximo, cursos ( slug, nombre ), profesoras ( slug, nombre ), sedes ( nombre, comuna )",
+    )
+    .eq("estado", "programada")
+    .gt("inicio", desde.toISOString())
+    .lt("inicio", hasta.toISOString())
+    .order("inicio");
+
+  if (error) return { datos: [], error: comoTexto(error) };
+
+  const clases = ((data ?? []) as unknown as FilaClase[]).filter(
+    (c) => c.cursos && c.profesoras && c.sedes,
+  );
+  if (clases.length === 0) return { datos: [], error: null };
+
+  const { data: todas, error: errorConteo } = await admin
+    .from("reservas")
+    .select("clase_id")
+    .in("clase_id", clases.map((c) => c.id))
+    .in("estado", ["confirmada", "asistio"]);
+
+  // Mismo criterio que la versión con sesión: mostrar los cupos mal es peor que
+  // decir que no se pudieron leer.
+  const fallo = comoTexto(errorConteo);
+  if (fallo) return { datos: [], error: fallo };
+
+  const tomados = new Map<string, number>();
+  for (const fila of (todas ?? []) as { clase_id: string }[]) {
+    tomados.set(fila.clase_id, (tomados.get(fila.clase_id) ?? 0) + 1);
+  }
+
+  return {
+    datos: clases.map((c) => ({
+      id: c.id,
+      inicio: c.inicio,
+      fin: c.fin,
+      cursoSlug: c.cursos!.slug,
+      cursoNombre: c.cursos!.nombre,
+      profesoraSlug: c.profesoras!.slug,
+      profesoraNombre: c.profesoras!.nombre,
+      sedeNombre: c.sedes!.nombre,
+      sedeComuna: c.sedes!.comuna,
+      cupoMaximo: c.cupo_maximo,
+      tomados: tomados.get(c.id) ?? 0,
+      // Sin sesión no hay reserva propia que marcar.
+      reservaId: null,
+    })),
+    error: null,
+  };
+}
+
 export async function getCalendario(
   perfilId: string,
   dias: number,
