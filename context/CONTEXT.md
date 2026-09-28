@@ -435,7 +435,22 @@ las clases parten en septiembre.
 **Open Day XO:** 2–3 horas para conocer a las cinco profesoras, tomar una mini clase de cada
 estilo, inscribirse con descuento ese día y ser parte de la primera comunidad XO.
 
-**Objetivo de conversión único del sitio:** dejar los datos para una clase de prueba gratis.
+**Objetivo del sitio, desde el 28/09/2026: ser un portal funcional para las alumnas** — que
+compren, reserven y gestionen sus clases. Se asume que llegan sabiendo qué es XO, porque vienen de
+redes sociales.
+
+> **Antes era captar datos para una clase de prueba gratis**, y el sitio era un folleto con un
+> formulario al final. Con cuentas, packs, calendario y clases especiales construidos, el sitio
+> dejó de ser el anzuelo y pasó a ser la herramienta: **el anzuelo es Instagram**. La decisión es
+> de Felipe y está en PRD-0022.
+>
+> **La clase de prueba gratis se elimina como mecanismo.** El incentivo para quien se inscribe por
+> primera vez pasa a los **cupones de descuento de PRD-0013**, que además se pueden medir, limitar
+> y apagar sin desplegar — cosa que la clase gratis nunca permitió.
+>
+> **Y el formulario de captación se retira.** Los datos quedan al registrarse con el correo, y en
+> este modelo no tiene sentido llamar por teléfono a alguien para que compre. La tabla `leads`
+> se conserva con lo que haya entrado.
 
 ---
 
@@ -498,7 +513,7 @@ Santiago y regiones, contenido digital como canal de adquisición, cursos online
 
 | Track | Estado |
 |---|---|
-| **Landing** | ✅ Construida y **desplegada en Vercel**. One-page: Hero · Qué es XO · Profesoras · Cursos · Clase de prueba · Formulario · Footer |
+| **Sitio público** | ✅ Desplegado en Vercel. **Páginas propias desde el 28/09/2026** (PRD-0022): portada mínima, `/calendario` sin sesión, `/nuestras-profes`, `/comprar`, `/clases-especiales`, `/nosotros` y `/ayuda`, con "Mi Cuenta" aparte |
 | **Captura de leads** | ✅ Funciona. `POST /api/lead` valida en servidor, inserta en Supabase con service role key, y luego abre WhatsApp con mensaje precargado |
 | **Migración de BD** | ✅ `supabase/migrations/20260801000000_leads.sql`. Tabla `leads` con RLS activo, grants revocados a `anon`/`authenticated` y solo `INSERT` a `service_role` |
 | **Sistema de contexto en repo** | ✅ Ya existía: `CLAUDE.md`, `AGENTS.md`, `.claude/rules/estilo.md`, `docs/marca.md` |
@@ -588,7 +603,7 @@ sin caché de build · verificación real enviando el formulario desde producci�
 | ¿Un mes con 5 clases se cobra distinto que uno con 4? | Sin definir |
 | ¿Los créditos vencen? ¿En cuánto tiempo? | Sin definir. Sin vencimiento, la caja cobrada es pasivo eterno |
 | Ventana de cancelación: ¿hasta cuántas horas antes se devuelve el crédito? | Sin definir |
-| ¿Sobrevive la clase de prueba gratis? | Sin definir. El CTA nuevo sugiere que no |
+| ~~¿Sobrevive la clase de prueba gratis?~~ | ✅ **Resuelto el 28/09/2026: no.** El incentivo de primera inscripción pasa a los cupones de PRD-0013 |
 | Pasarela de pago y si se puede cobrar antes del Inicio de Actividades | Sin definir. Ver ADR-0003 |
 | Componente **variable** del pago a profesoras | Sin definir. El base son $18.000/hora |
 | ¿Por qué Los Dominicos es gratis y por cuánto tiempo? | Sin confirmar. Si es un favor, es un riesgo de concentración |

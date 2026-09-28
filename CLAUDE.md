@@ -5,7 +5,7 @@
 > el sistema de contexto y la parte de ERP. Reemplázalo entero.
 
 Plataforma de una academia de baile en Providencia y Las Condes, Santiago de Chile: sitio público de
-captación + cuentas de alumnas, venta de paquetes de clases, reserva por horario y portales
+sitio público + cuentas de alumnas, venta de paquetes de clases, reserva por horario y portales
 para alumna, profesora, administración y owner.
 
 @AGENTS.md
@@ -26,8 +26,22 @@ editar `.tsx`.
 
 ## Objetivo del sitio público
 
-Que la visitante deje sus datos para una clase de prueba gratis en el curso que le interese.
-Todo lo que no sirva a ese objetivo, sobra.
+**Ser un portal funcional para las alumnas: que compren, reserven y gestionen sus clases.** Se
+asume que llegan sabiendo qué es XO, porque vienen de redes sociales. Todo lo que no sirva a ese
+objetivo, sobra.
+
+> **Cambió el 28/09/2026** (Felipe). Antes era *"que la visitante deje sus datos para una clase de
+> prueba gratis"*, y el sitio era un folleto con un formulario al final. Con cuentas, packs,
+> calendario y clases especiales construidos, el sitio dejó de ser el anzuelo y pasó a ser la
+> herramienta: **el anzuelo es Instagram**.
+>
+> Dos consecuencias que no son de maquetación:
+> - **El formulario de captación se retira.** Los datos quedan al registrarse con el correo, y en
+>   este modelo no tiene sentido llamar por teléfono a alguien para que compre.
+> - **La clase de prueba gratis se elimina.** Ese incentivo pasa a los cupones de descuento de
+>   PRD-0013, para quien se inscribe por primera vez.
+>
+> Ver PRD-0022.
 
 El ERP se construye sobre la misma base, por fases, según `context/ROADMAP.md`. Las decisiones
 del sitio deben ser compatibles con ese futuro, pero **no implementes ERP mientras no haya PRD
@@ -87,8 +101,20 @@ reemplace. No la cambies en silencio.
 
 ## Estructura
 
-Sitio público: una sola página con scroll (`app/page.tsx`). Secciones en orden: Hero · Qué es
-XO · Profesoras · Cursos · Planes · Sedes · Clase de prueba · Formulario · Footer.
+Sitio público: **páginas propias desde PRD-0022** (28/09/2026), no una sola con scroll.
+
+| Ruta | Qué es |
+|---|---|
+| `/` | Portada mínima: el hero con el eslogan y los packs. Nada más |
+| `/calendario` | Los horarios, **sin sesión**. Reservar pide entrar y vuelve a la clase |
+| `/nuestras-profes` | Las cinco, cada una con su `/profesoras/<slug>` |
+| `/comprar` · `/comprar/<oferta>` | Los packs y el link compartible |
+| `/clases-especiales` · `/clases-especiales/<slug>` | Las coreografías puntuales |
+| `/nosotros` | Qué transmitimos y qué nos motiva. Las sedes van dentro |
+| `/ayuda` | Preguntas frecuentes, contacto y reclamos |
+
+La barra lleva esos seis caminos y **"Mi Cuenta"** a la derecha, separado de lo comercial. No hay
+CTA de "Reservar clase" ni enlace "Entrar": los reemplazó Mi Cuenta.
 
 ERP: rutas bajo `app/(erp)/`, todas autenticadas. No existe todavía.
 
@@ -97,9 +123,9 @@ ERP: rutas bajo `app/(erp)/`, todas autenticadas. No existe todavía.
 - `lib/planes.ts` — los packs. Fuente única de precios y de la promo vigente.
 - `lib/cursos.ts` — los 5 cursos. Fuente única de horarios y cupos.
 - `lib/profesoras.ts` — las 5 profesoras. Relación curso ↔ profesora es muchos a muchos.
-- `lib/lead.ts` — validación compartida cliente/servidor. El servidor es el que manda.
-- La inserción de leads pasa **siempre** por `app/api/lead/route.ts`. La service role key salta
-  RLS y no puede salir del servidor.
+- ~~`lib/lead.ts` y `app/api/lead/route.ts`~~ — **retirados el 28/09/2026** con el formulario de
+  captación (PRD-0022). La tabla `leads` **se conserva** con sus registros, su RLS y
+  `/admin/leads` para poder mirarlos; lo que ya no existe es el camino que escribía en ella.
 
 ## Reglas críticas del modelo de créditos y reservas
 
