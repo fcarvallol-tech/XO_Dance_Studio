@@ -9,16 +9,16 @@ import { Footer } from "./Footer";
  * su propia acción a la derecha. Con siete páginas eso deja de ser una
  * duplicación tolerable y pasa a ser tres sitios que se parecen.
  *
- * **El `pt` de `<main>` es lo que hace posible el logo que sobresale.** El logo
- * es más alto que la barra y baja por debajo de ella; sin este espacio, taparía
- * lo primero de cada página. Vive acá y no en cada página a propósito: un margen
- * repetido en siete archivos es un margen que en el octavo se olvida.
+ * **El `pt` de `<main>` es lo que hace posible el bulto del logo.** La barra
+ * baja con el logo para formar una sola pieza, y sin este espacio ese bulto
+ * taparía lo primero de cada página. Vive acá y no en cada página a propósito:
+ * un margen repetido en siete archivos es uno que en el octavo se olvida.
  */
 export function MarcoSitio({ children }: { children: React.ReactNode }) {
   return (
     <>
       <BarraSitio />
-      <main id="contenido" className="pt-10 sm:pt-16">
+      <main id="contenido" className="pt-14 sm:pt-24">
         {children}
       </main>
       <Footer />

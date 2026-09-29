@@ -7,22 +7,27 @@ import { usePathname } from "next/navigation";
 import { CAMINOS, MI_CUENTA } from "@/lib/navegacion";
 
 /**
- * La barra del sitio público.
+ * La barra del sitio público, con el logo **dentro de un bulto de la barra**.
  *
- * **El logo sobresale de la barra**, más alto que ella y anclado a la
- * izquierda (PRD-0022 §8.5). El efecto necesita tres cosas que conviene dejar
- * dichas, porque cada una se rompe por su cuenta:
+ * El efecto que pidió Felipe (PRD-0022 §8.5) no es un logo que sobresale sobre
+ * la barra: es que **la barra acompañe la forma del logo**, bajando con él para
+ * que se lean como una sola pieza. Se fue a mirar la referencia con un navegador
+ * —el fetch no la muestra, devuelve un header plano— y lo que hace Death Wish es
+ * exactamente eso: una protuberancia del mismo negro de la barra, que baja por
+ * detrás del logo. Allá va centrada; acá, anclada a la izquierda.
  *
- * 1. La barra tiene altura fija y el logo es **más alto**, con
- *    `position: absolute` y `top` centrado sobre ella. Sin absoluto, el logo
- *    estira la barra y deja de sobresalir.
- * 2. `overflow-visible` en la barra, o el navegador recorta lo que sobra.
- * 3. **El contenido de cada página arranca debajo del logo, no de la barra.**
- *    Lo resuelve `<MarcoSitio>`, que reserva ese espacio una sola vez: hacerlo
- *    con un margen en cada página es garantizar que alguna se olvide.
+ * Cómo está hecho, porque cada pieza se rompe sola:
  *
- * No se achica al hacer scroll, por decisión de Felipe: es una animación que
- * `BRAND.md` no pide y la regla del proyecto es poco movimiento y con intención.
+ * 1. **El bulto es un `div` hermano del logo**, del mismo color que la barra y
+ *    con las esquinas de abajo redondeadas. No es un `border-radius` sobre la
+ *    barra: la barra es de ancho completo y curvarla entera no daría un bulto.
+ * 2. **El logo va encima** (`z-10` contra el bulto), con aire arriba y abajo: el
+ *    PNG llega hasta el borde superior de su lienzo, así que sin ese aire se ve
+ *    **cortado por arriba**, que es lo que pasaba.
+ * 3. **`overflow-visible` en la barra**, o el navegador recorta lo que baja.
+ * 4. **El espacio de abajo lo reserva `MarcoSitio`**, no cada página.
+ *
+ * No se achica al hacer scroll, por decisión de Felipe.
  */
 export function BarraSitio() {
   const [abierto, setAbierto] = useState(false);
@@ -37,27 +42,40 @@ export function BarraSitio() {
         Saltar al contenido
       </a>
 
-      <div className="relative mx-auto flex h-full max-w-6xl items-center justify-between gap-4 px-6 sm:px-10">
-        {/* El logo, sobresaliendo. `-translate-y-1/2` sobre `top-1/2` lo deja
-            centrado en la barra, así que lo que sobra se reparte arriba y
-            abajo; el contenedor de contenido reserva lo de abajo. */}
-        <Link
-          href="/"
-          aria-label="XO Dance Studio, ir al inicio"
-          className="absolute top-1/2 left-6 z-10 -translate-y-1/2 sm:left-10"
-        >
-          <Image
-            src="/logo-xo.png"
-            alt=""
-            width={1192}
-            height={789}
-            priority
-            className="h-20 w-auto drop-shadow-[0_4px_16px_rgba(26,26,26,0.85)] sm:h-28"
-          />
-        </Link>
+      {/* El bulto y el logo cuelgan del `header`, que ocupa el ancho de la
+          ventana, y **no del contenedor centrado**: anclado al costado
+          izquierdo quiere decir al borde de la pantalla, no al del contenido.
+          Dentro del contenedor, en pantallas anchas el bulto nacía separado del
+          borde y se le veía una línea vertical suelta a la izquierda.
 
-        {/* Deja el hueco del logo: la navegación no puede empezar debajo de él. */}
-        <div aria-hidden="true" className="h-full w-28 shrink-0 sm:w-40" />
+          **El borde es lo que hace visible el efecto.** El relleno es el mismo
+          negro de la barra y el fondo de casi todo el sitio también lo es, así
+          que sin borde no se distingue de nada. Con él, la línea que delimita la
+          barra se curva y baja rodeando el logo: eso es "la barra acompaña la
+          forma del logo". Arriba no lleva borde, ahí se funde con la barra. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-0 left-0 z-0 h-[7.5rem] w-40 rounded-br-[2.5rem] border-r border-b border-xo-blanco/10 bg-xo-negro sm:h-[10.5rem] sm:w-60 sm:rounded-br-[3.5rem]"
+      />
+
+      <Link
+        href="/"
+        aria-label="XO Dance Studio, ir al inicio"
+        className="absolute top-4 left-5 z-10 sm:top-6 sm:left-8"
+      >
+        <Image
+          src="/logo-xo.png"
+          alt=""
+          width={1192}
+          height={789}
+          priority
+          className="h-16 w-auto sm:h-24"
+        />
+      </Link>
+
+      <div className="relative mx-auto flex h-full max-w-6xl items-center justify-between gap-4 px-6 sm:px-10">
+        {/* Deja el hueco del bulto: la navegación no empieza debajo de él. */}
+        <div aria-hidden="true" className="h-full w-36 shrink-0 sm:w-56" />
 
         <nav aria-label="Secciones" className="hidden lg:block">
           <ul className="flex items-center gap-6 xl:gap-8">
