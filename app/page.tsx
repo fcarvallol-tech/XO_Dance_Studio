@@ -1,10 +1,10 @@
 import { Suspense } from "react";
 import { AnclasViejas } from "@/components/AnclasViejas";
+import { CaminosPortada } from "@/components/CaminosPortada";
 import { Hero } from "@/components/Hero";
 import { MarcoSitio } from "@/components/MarcoSitio";
-import { Planes } from "@/components/Planes";
-import { getDesdePrecioEspecial } from "@/lib/especiales-consultas";
-import { getPlanes } from "@/lib/planes-consultas";
+import { ProfesorasPortada } from "@/components/ProfesorasPortada";
+import { getCatalogoPublico } from "@/lib/catalogo-consultas";
 
 /**
  * La portada, **mínima** desde PRD-0022: el hero con el eslogan y los packs.
@@ -19,10 +19,7 @@ import { getPlanes } from "@/lib/planes-consultas";
 export const revalidate = 3600;
 
 export default async function Home() {
-  const [planes, desdeEspecial] = await Promise.all([
-    getPlanes(),
-    getDesdePrecioEspecial(),
-  ]);
+  const { profesoras } = await getCatalogoPublico();
 
   return (
     <MarcoSitio>
@@ -33,7 +30,12 @@ export default async function Home() {
       </Suspense>
 
       <Hero />
-      <Planes planes={planes} desdeEspecial={desdeEspecial} />
+      {/* La alternancia de fondos: el hero negro, los caminos en rosado y las
+          profes de vuelta en negro. Cada corte marca que cambia el tema, y el
+          pie cierra en negro. Sobre el rosado todo el texto es negro: `xo-rosa`
+          sobre claro da 1.7:1 y `BRAND.md` lo prohíbe para texto. */}
+      <CaminosPortada />
+      <ProfesorasPortada profesoras={profesoras} />
     </MarcoSitio>
   );
 }
