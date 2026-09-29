@@ -84,9 +84,13 @@ try {
   await esc.goto(`${SITIO}/`, { waitUntil: "networkidle" });
   const portada = await esc.content();
   caso("la portada tiene el eslogan", true, portada.includes("baila sola"));
-  caso("y los packs", true, portada.includes("Compras clases, no un mes"));
-  caso("y ya no las profesoras", false, portada.includes("Las profes de XO"));
-  caso("ni el formulario de captación", false, portada.includes("Déjanos tus datos"));
+  // Los ajustes 2 y 3 devolvieron dos bloques a la portada: los caminos en rosa
+  // y las profesoras. La portada mínima de la fase 5 ya no es la que va.
+  caso("y el bloque rosa de packs", true,
+       portada.includes("Elige el pack que más te guste"));
+  caso("y las profesoras", true, portada.includes("Quiénes te van a enseñar"));
+  caso("y ya no el formulario de captación", false,
+       portada.includes("Déjanos tus datos"));
 
   // --- las anclas viejas rescatan ----------------------------------------
   // **Cada una en una pestaña nueva**, que es como llegan de verdad: desde un
@@ -110,11 +114,101 @@ try {
   await esc.waitForTimeout(1500);
   caso("estando ya en la portada, el hash también rescata", "/comprar",
        new URL(esc.url()).pathname);
+
+  // --- ajuste 5: el calendario es una grilla con eje de tiempo ------------
+  // Lo que no se ve leyendo el código: que la posición y el alto de cada clase
+  // **sean** su hora y su duración. Se mide el bloque dibujado y se compara con
+  // la hora que ese mismo bloque dice tener, contra el eje de la izquierda. Si
+  // la grilla dibujara todo del mismo alto, o corriera media hora, esto lo caza.
+  await esc.goto(`${SITIO}/calendario`, { waitUntil: "networkidle" });
+
+  const grilla = await esc.evaluate(() => {
+    const fila = 28; // 1.75rem
+    // La grilla solo muestra los días que tienen clases: cuatro columnas una
+    // semana y dos la siguiente. Eso es deliberado (ver GrillaCalendario).
+    const encabezados = [...document.querySelectorAll("p.xo-eyebrow")]
+      .map((p) => p.textContent?.trim() ?? "")
+      .filter((t) => /^(lunes|martes|miércoles|jueves|viernes|sábado|domingo)$/i.test(t));
+
+    const primeraHora = Number(
+      document.body.textContent?.match(/(\d{2}):00/)?.[1] ?? -1,
+    );
+
+    const bloques = [];
+    for (const a of document.querySelectorAll("a[style*='grid-row']")) {
+      const m = a.getAttribute("style")?.match(/grid-row:\s*(\d+)\s*\/\s*span\s*(\d+)/);
+      const hhmm = a.textContent?.match(/(\d{1,2}):(\d{2})/);
+      if (!m || !hhmm) continue;
+      const [, tramo, span] = m.map(Number);
+      const caja = a.getBoundingClientRect();
+      const columna = a.parentElement.getBoundingClientRect();
+      bloques.push({
+        // El alto dibujado contra los tramos que dice ocupar.
+        altoOk: Math.abs(caja.height - span * fila) <= 1,
+        // Y el borde de arriba contra el tramo en que dice empezar.
+        arribaOk: Math.abs(caja.top - columna.top - (tramo - 1) * fila) <= 1,
+        // Y la hora escrita contra la hora que le toca por su posición.
+        horaOk:
+          Number(hhmm[1]) * 60 + Number(hhmm[2]) ===
+          primeraHora * 60 + (tramo - 1) * 30,
+      });
+    }
+    return { dias: encabezados.length, bloques };
+  });
+
+  caso("el calendario dibuja una columna por día con clases", true, grilla.dias > 0);
+  caso("hay clases dibujadas en la grilla", true, grilla.bloques.length > 0);
+  caso("el alto de cada clase es su duración",
+       String(grilla.bloques.length),
+       String(grilla.bloques.filter((b) => b.altoOk).length));
+  caso("y su posición es su hora de inicio",
+       String(grilla.bloques.length),
+       String(grilla.bloques.filter((b) => b.arribaOk).length));
+  caso("y la hora escrita coincide con el eje (incluidas las y media)",
+       String(grilla.bloques.length),
+       String(grilla.bloques.filter((b) => b.horaOk).length));
+
+  // --- ajuste 6: el buscador de profesoras --------------------------------
+  await esc.goto(`${SITIO}/nuestras-profes`, { waitUntil: "networkidle" });
+  caso("el título de profesoras es el nuevo", true,
+       (await esc.locator("h1").textContent())?.includes(
+         "Elige a cualquiera de nuestras excelentes profesoras",
+       ));
+
+  const tarjetas = esc.locator("ul li a h2");
+  const todas = await tarjetas.count();
+  caso("se ven todas las profesoras al entrar", true, todas > 1);
+
+  // Buscar por nombre, sin tilde, en minúsculas: así escribe la gente.
+  await esc.getByRole("searchbox", { name: /buscar/i }).fill("lina");
+  await esc.waitForTimeout(200);
+  caso('buscar "lina" deja una sola', "1", String(await tarjetas.count()));
+
+  await esc.getByRole("searchbox", { name: /buscar/i }).fill("zzz");
+  await esc.waitForTimeout(200);
+  caso("un nombre que no existe no deja ninguna", "0", String(await tarjetas.count()));
+  await esc.getByRole("button", { name: "Ver todas" }).click();
+  await esc.waitForTimeout(200);
+  caso('"Ver todas" devuelve el listado completo', String(todas),
+       String(await tarjetas.count()));
+
+  // El filtro por estilo: se toma el primer chip que no sea "Todos".
+  const chips = esc.locator('button[aria-pressed]');
+  const primerEstilo = (await chips.nth(1).textContent())?.trim() ?? "";
+  await chips.nth(1).click();
+  await esc.waitForTimeout(200);
+  const filtradas = await tarjetas.count();
+  caso(`filtrar por ${primerEstilo} deja menos que todas`, true,
+       filtradas > 0 && filtradas < todas);
+  await chips.first().click();
+  await esc.waitForTimeout(200);
+  caso('"Todos" vuelve a mostrarlas todas', String(todas),
+       String(await tarjetas.count()));
 } finally {
   await nav.close();
 }
 
-console.log("\nPRD-0022 — el sitio, mirado con un navegador\n");
+console.log("\nPRD-0022 — el sitio y sus ajustes, mirados con un navegador\n");
 console.log("| Caso | Esperado | Obtenido | |");
 console.log("|---|---|---|---|");
 for (const x of r) console.log(`| ${x.n} | ${x.esperado || "(ninguna)"} | ${x.real || "(ninguna)"} | ${x.ok ? "✓" : "✗"} |`);

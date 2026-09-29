@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Lineup } from "@/components/Lineup";
+import { BuscadorProfesoras } from "@/components/BuscadorProfesoras";
 import { MarcoSitio } from "@/components/MarcoSitio";
 import { getCatalogoPublico } from "@/lib/catalogo-consultas";
 
@@ -34,7 +34,20 @@ export default async function NuestrasProfes() {
 
   return (
     <MarcoSitio>
-      <Lineup cursos={cursos} profesoras={profesoras} horarios={horarios} />
+      <section className="xo-grain relative px-6 py-20 sm:px-10 sm:py-28">
+        <div className="relative mx-auto max-w-6xl">
+          <p className="xo-eyebrow text-xo-rosa">Las profes</p>
+          <h1 className="mt-4 max-w-3xl font-display text-[clamp(2.25rem,7vw,4rem)] leading-[0.95] text-xo-blanco">
+            Elige a cualquiera de nuestras excelentes profesoras
+          </h1>
+
+          <BuscadorProfesoras
+            profesoras={profesoras}
+            cursos={cursos}
+            horarios={horarios}
+          />
+        </div>
+      </section>
     </MarcoSitio>
   );
 }
