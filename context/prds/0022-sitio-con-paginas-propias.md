@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | ✅ **Construido el 28/09/2026**, fases 0 a 6. ⏸ **Falta desplegar**: espera el visto bueno de Felipe y dos textos suyos (§13) |
+| **Estado** | ✅ **Construido el 28/09/2026**, fases 0 a 6, **más once ajustes de Felipe el 29/09/2026** (§14). ⏸ **Falta desplegar**: el video del hero y el visto bueno de Felipe |
 | **Autor** | Claude, a pedido de Felipe Carvallo |
 | **Fecha** | 28 de septiembre de 2026 |
 | **Hito** | Hito 0 — Lanzamiento |
@@ -341,11 +341,59 @@ siete privadas redirigen cada una con **su** `volver`.
 
 ### ⚠️ Lo que falta antes de publicar
 
-- **El texto de Nosotros.** Hay un borrador, marcado **en pantalla** con un recuadro que dice "No
-  publicar así": se armó con `BRAND.md` §1 y §7 y con `CONTEXT.md` §7, y lo tiene que reemplazar
-  Carla.
-- **Tres preguntas frecuentes** —qué llevar, cómo llegar, si se puede ir a mirar— y **el plazo de
-  respuesta a un reclamo**. Todas marcadas como "Falta" en la página, y la de Ayuda avisa arriba
-  cuántas son.
+- ~~**El texto de Nosotros**~~ y ~~**las tres preguntas frecuentes**~~: resueltos en los ajustes
+  9 y 10 del 29/09. No queda nada marcado como "Falta" en pantalla.
 - **El video del hero.** La portada mínima depende mucho más de él que la anterior: hoy el hero es
   negro plano y la portada quedó corta.
+
+
+---
+
+## 14. Los once ajustes del 29/09/2026
+
+Felipe miró el sitio construido y pidió once cambios "en una pasada, commiteando por bloque". Van
+acá porque son del mismo trabajo, no de un PRD nuevo: ninguno cambia una decisión de §8.
+
+| # | Qué pidió | Cómo quedó |
+|---|---|---|
+| 1 | El logo quedó cortado y el efecto no era el de deathwishcoffee: la barra tiene que **acompañar la forma del logo**, no que el logo sobresalga a secas | Un bulto negro con borde, anclado a la izquierda de `<header>`, con la esquina inferior derecha redondeada. **El borde es lo que hace visible el efecto**: negro sobre negro no se ve |
+| 2 | La sección de planes de la portada: título "Elige el pack que más te guste" y **tres cuadros** —clases sueltas, packs, especiales | `CaminosPortada` |
+| 3 | Debajo, **profesoras en la portada**: foto y nombre, cada una a su perfil | `ProfesorasPortada` |
+| 4 | **Alternancia de fondos**: packs en rosado con letras negras, profesoras en negro, pie siempre negro | Rosa XO solo como **fondo de bloque** con texto `xo-negro`, nunca como color de texto sobre claro (`BRAND.md`) |
+| 5 | El calendario como **grilla semanal** en tramos de media hora, con la media marcada más tenue, porque hay clases de hora y media | `GrillaCalendario` + `lib/dominio/grilla.ts` con 11 tests. **No se reusó `GrillaSemanal`**: esa apila las clases en una lista sin eje de tiempo, y en una lista todas las clases miden lo mismo |
+| 6 | Página de profesoras: título nuevo, **buscador por nombre y filtro por estilo** | `BuscadorProfesoras`. Los estilos **salen de los horarios**, no de una lista a mano: un segundo lugar donde viva el catálogo es la incoherencia que este repo ya tuvo |
+| 7 | "Compras clases, no un mes" → "Compra un pack de clases y prueba distintos estilos" | `/comprar` |
+| 8 | "Una coreo, una fecha" → "Encuentra apasionantes proyectos de nuestras profesoras" | `/clases-especiales` |
+| 9 | Nosotros: fuera la advertencia de borrador y dos párrafos | `/nosotros` |
+| 10 | Reescribir dos preguntas frecuentes, borrar la de ir a mirar, y **ninguna promesa de plazo** para los reclamos | `lib/ayuda.ts`. La respuesta de cómo llegar cubre **dos sedes**: EB Dance Studio no aparece, y **no se dice que falta** |
+| 11 | Instagram nuevo: `@xo.dance.co` | `lib/contacto.ts`. Los Instagram personales de las profesoras **no se tocaron** |
+
+### La dirección de Los Leones
+
+El ajuste 10 también cambia el dato, no solo el texto: la sala Seducción Latina es **Av. Nueva
+Providencia 2260, local 130, piso 3**. Está en
+`supabase/migrations/20260929120000_direccion_de_los_leones.sql`, **escrita y sin aplicar** —
+espera la aprobación de Felipe, como toda migración.
+
+### Tres componentes que se fueron
+
+`Lineup.tsx`, `Planes.tsx` y `QueEsXo.tsx` eran secciones de la página única. Nadie las importaba
+después de esta reorganización. Se borran: un componente huérfano que dice el título viejo se lee
+como vigente.
+
+### Lo verificado
+
+`scripts/verificar-sitio.mjs` creció de 19 a **31 casos, todos como se esperaba**, con Chromium a
+375, 768 y 1280.
+
+Lo que se agregó no es "la página carga": el buscador se **escribe** y se cuenta cuántas profes
+quedan, el chip de estilo se **aprieta**, y del calendario se mide **el bloque dibujado** —su alto
+contra los tramos que dice ocupar, su borde de arriba contra el tramo en que dice empezar, y la
+hora impresa contra el eje. Una grilla que dibujara todo del mismo alto, o corrida media hora,
+compila igual de bien.
+
+**Dos de los casos que escribí primero estaban mal, no el código**, y vale anotarlo porque es el
+mismo error de siempre —afirmar cómo se comporta algo en vez de mirarlo—: di por hecho que la
+grilla mostraría **los siete días** (muestra solo los que tienen clases, y es deliberado: cuatro
+columnas vacías es hacer scrollear de más en el teléfono) y que cada bloque imprimiría un **rango**
+horario (las clases de una hora muestran solo el inicio, que es justo la regla que pidió PRD-0021).
