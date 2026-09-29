@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MarcoSitio } from "@/components/MarcoSitio";
-import { CalendarioPublico } from "@/components/CalendarioPublico";
+import { GrillaCalendario } from "@/components/GrillaCalendario";
 import { ErrorDeLectura } from "@/components/ErrorDeLectura";
 import { getCalendarioPublico } from "@/lib/compras-consultas";
 
@@ -68,7 +68,7 @@ export default async function CalendarioPagina() {
               </Link>
             </div>
           ) : (
-            <CalendarioPublico clases={clases.datos} />
+            <GrillaCalendario clases={clases.datos} />
           )}
         </div>
       </section>

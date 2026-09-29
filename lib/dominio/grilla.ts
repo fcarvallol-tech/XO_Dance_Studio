@@ -1,0 +1,83 @@
+/**
+ * Dónde cae cada clase en una grilla horaria.
+ *
+ * La grilla del calendario público se divide en **tramos de media hora**, y no
+ * en bloques de una hora, por una razón concreta: hay clases de 90 minutos
+ * (PRD-0021) y una grilla por horas no puede representarlas sin mentir — o las
+ * alarga a dos horas o las corta a una.
+ *
+ * Todo el cálculo es aritmética de media hora, y es exactamente el tipo de
+ * cuenta que se ve bien hasta que aparece una clase que empieza a y media. Por
+ * eso vive acá con tests, y no dentro del componente.
+ *
+ * Las horas se guardan en UTC y se leen en `America/Santiago`.
+ */
+
+// Con extensión: el corredor de Node resuelve los ESM por ruta exacta, y es
+// el patrón que ya usa el resto de `lib/dominio`.
+import { duracionMin } from "./horarios.ts";
+
+export const MINUTOS_POR_TRAMO = 30;
+
+/** Una clase sin `fin` se asume de una hora, como la parrilla. */
+const MINUTOS_QUE_SE_SUPONEN = 60;
+
+const ZONA = "America/Santiago";
+
+/** La hora del día en Santiago, con los minutos como fracción: 18:30 → 18.5. */
+function horaDecimal(iso: string): number {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: ZONA,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date(iso));
+  const dato = (t: string) => Number(partes.find((p) => p.type === t)?.value ?? 0);
+  return dato("hour") + dato("minute") / 60;
+}
+
+/**
+ * En qué tramo empieza una clase, contando desde la hora en que abre la grilla.
+ * El primero es el 0.
+ */
+export function tramoDe(inicio: string, horaDeApertura: number): number {
+  return Math.round((horaDecimal(inicio) - horaDeApertura) * (60 / MINUTOS_POR_TRAMO));
+}
+
+/**
+ * Cuántos tramos ocupa. **Se redondea hacia arriba**: una clase de 45 minutos
+ * ocupa dos tramos, porque mostrar uno la haría parecer más corta y dejaría un
+ * hueco donde en realidad hay una clase.
+ */
+export function tramosQueOcupa(inicio: string, fin: string | null): number {
+  const minutos = duracionMin(inicio, fin) ?? MINUTOS_QUE_SE_SUPONEN;
+  return Math.max(1, Math.ceil(minutos / MINUTOS_POR_TRAMO));
+}
+
+export type Tramo = { inicio: string; fin: string | null };
+
+/**
+ * Desde qué hora hasta qué hora dibujar la grilla.
+ *
+ * Se calcula de las clases y no se fija a mano: una grilla de 8 a 23 con clases
+ * solo de tarde son quince filas vacías que hay que scrollear. Deja una hora de
+ * aire a cada lado para que la primera y la última no queden pegadas al borde.
+ */
+export function ventanaDeHoras(clases: Tramo[]): { desde: number; hasta: number } {
+  if (clases.length === 0) return { desde: 9, hasta: 22 };
+
+  let primera = 24;
+  let ultima = 0;
+
+  for (const clase of clases) {
+    const empieza = horaDecimal(clase.inicio);
+    const minutos = duracionMin(clase.inicio, clase.fin) ?? MINUTOS_QUE_SE_SUPONEN;
+    primera = Math.min(primera, empieza);
+    ultima = Math.max(ultima, empieza + minutos / 60);
+  }
+
+  return {
+    desde: Math.max(0, Math.floor(primera) - 1),
+    hasta: Math.min(24, Math.ceil(ultima) + 1),
+  };
+}
