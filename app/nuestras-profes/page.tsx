@@ -13,7 +13,7 @@ export const revalidate = 3600;
 
 const TITULO = "Nuestras profes — XO Dance Studio";
 const DESCRIPCION =
-  "Las cinco profesoras de XO Dance Studio: quiénes son, qué estilo dicta cada una y cuándo hacen clases.";
+  "Las profesoras de XO Dance Studio: quiénes son, qué estilo dicta cada una y cuándo hacen clases.";
 
 export const metadata: Metadata = {
   title: TITULO,

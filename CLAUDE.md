@@ -76,10 +76,10 @@ Fuentes vía `next/font/google`.
   - Cuando el flujo cruza sistemas (correo, pasarela, OAuth), el punto de falla suele estar
     **entre** ellos: en el formato del enlace, en el parámetro que no llega, en el redirect
     intermedio. Ahí es donde hay que mirar, no en los extremos.
-- **No inventar datos.** Los precios están definidos y publicados: viven en `lib/planes.ts` y en
-  ningún otro lado. Horarios y cupos siguen en `lib/cursos.ts` marcados `TODO` y se muestran como
-  "Por confirmar". Lo mismo aplica a cualquier dato de negocio que no esté en
-  `context/CONTEXT.md`: si no está, se pregunta.
+- **No inventar datos.** Precios, horarios, cupos y profesoras **viven en la base** (ver §Datos) y
+  en ningún otro lado: no se escriben a mano en un componente ni se rellenan con un ejemplo
+  plausible. Lo mismo aplica a cualquier dato de negocio que no esté en `context/CONTEXT.md`: si
+  no está, se pregunta.
 - **Las direcciones sí se publican** desde PRD-0016: viven en la tabla `sedes` y se muestran en
   el sitio. Lo que se sigue sin publicar es la fecha exacta de lanzamiento.
 - Sin `localStorage` ni `sessionStorage`.
@@ -107,7 +107,7 @@ Sitio público: **páginas propias desde PRD-0022** (28/09/2026), no una sola co
 |---|---|
 | `/` | Portada mínima: el hero con el eslogan y los packs. Nada más |
 | `/calendario` | Los horarios, **sin sesión**. Reservar pide entrar y vuelve a la clase |
-| `/nuestras-profes` | Las cinco, cada una con su `/profesoras/<slug>` |
+| `/nuestras-profes` | Las profesoras activas, con buscador y filtro por estilo. Cada una tiene su `/profesoras/<slug>` |
 | `/comprar` · `/comprar/<oferta>` | Los packs y el link compartible |
 | `/clases-especiales` · `/clases-especiales/<slug>` | Las coreografías puntuales |
 | `/nosotros` | Qué transmitimos y qué nos motiva. Las sedes van dentro |
@@ -120,9 +120,19 @@ ERP: rutas bajo `app/(erp)/`, todas autenticadas. No existe todavía.
 
 ## Datos
 
-- `lib/planes.ts` — los packs. Fuente única de precios y de la promo vigente.
-- `lib/cursos.ts` — los 5 cursos. Fuente única de horarios y cupos.
-- `lib/profesoras.ts` — las 5 profesoras. Relación curso ↔ profesora es muchos a muchos.
+**El catálogo vive en la base de datos, no en el código.** `lib/cursos.ts` y `lib/profesoras.ts`
+ya no existen: tener el dato en los dos lados fue la incoherencia de agosto de 2026.
+
+- **Cursos, profesoras y horarios** — tablas `cursos`, `profesoras`, `horarios` y `clases`. Se leen
+  con `lib/catalogo-consultas.ts` (`getCatalogoPublico`) y se manipulan con las funciones puras de
+  `lib/catalogo.ts`. Relación curso ↔ profesora es muchos a muchos.
+- **Precios de los packs** — tabla `planes`, vía `lib/planes-consultas.ts`. `lib/planes.ts` quedó
+  solo con los tipos y el formato, para que lo puedan importar componentes cliente.
+- **Cupo de cada clase** — sale de `sedes.capacidad`, no de un número escrito en el código
+  (PRD-0021). `sedes.costo_hora_clp` **no es público**: está fuera de lo que expone la API.
+- Hoy el catálogo tiene **cuatro profesoras activas** (Carli, Pau, Drimy y Lina). Maida está
+  inactiva a propósito desde que K-Pop salió del catálogo —Felipe, 29/09/2026—, así que "cinco
+  profesoras" en cualquier texto es un dato viejo.
 - ~~`lib/lead.ts` y `app/api/lead/route.ts`~~ — **retirados el 28/09/2026** con el formulario de
   captación (PRD-0022). La tabla `leads` **se conserva** con sus registros, su RLS y
   `/admin/leads` para poder mirarlos; lo que ya no existe es el camino que escribía en ella.
@@ -255,8 +265,10 @@ npx supabase db push             # ⚠️ solo con aprobación explícita de Fel
 
 ## Pendientes de Carla
 
-- Video del hero y videos/fotos de las cinco profesoras.
-- Bios reales de **Carli y Maida** (siguen diciendo `Acá la bio de "Nombre"`). Drimy, Lina y Pau
-  ya entregaron la suya.
-- Horarios y cupos en `lib/cursos.ts`. (Precios ya definidos.)
-- Confirmar la nueva ubicación.
+- **Video del hero.** Es lo que más falta: la portada de PRD-0022 es mínima y hoy el hero es negro
+  plano. Bloquea el despliegue.
+- Videos y fotos de las profesoras.
+- **Bio real de Carli** — su perfil sigue diciendo `Acá la bio de "Nombre"`. Pau, Drimy y Lina ya
+  entregaron la suya (comprobado en las páginas, 29/09/2026). La de Maida dejó de ser pendiente:
+  está inactiva.
+- ~~Horarios, cupos y ubicación~~: resueltos. El catálogo está cargado y las tres sedes también.

@@ -372,8 +372,19 @@ acá porque son del mismo trabajo, no de un PRD nuevo: ninguno cambia una decisi
 
 El ajuste 10 también cambia el dato, no solo el texto: la sala Seducción Latina es **Av. Nueva
 Providencia 2260, local 130, piso 3**. Está en
-`supabase/migrations/20260929120000_direccion_de_los_leones.sql`, **escrita y sin aplicar** —
-espera la aprobación de Felipe, como toda migración.
+`supabase/migrations/20260929120000_direccion_de_los_leones.sql`, **aplicada en staging el
+29/09/2026** con la aprobación de Felipe. Comprobado leyendo la fila después: el nombre, la comuna
+y la referencia quedaron como estaban. **Falta producción**, que necesita su propia aprobación.
+
+### Cuatro profesoras, no cinco
+
+Al verificar apareció que el sitio muestra **cuatro** profesoras y no cinco. No es un bug: Maida
+está inactiva a propósito desde que K-Pop salió del catálogo (Felipe, 29/09/2026). Lo que sí
+estaba mal era lo escrito alrededor —la descripción de `/nuestras-profes` decía "las cinco
+profesoras"— y, de paso, apareció que `CLAUDE.md` seguía nombrando `lib/cursos.ts` y
+`lib/profesoras.ts` como fuente única de horarios, cupos y profesoras. **Esos dos archivos ya no
+existen**: el catálogo vive en la base desde PRD-0010. Corregido, porque un `CLAUDE.md` que manda
+a un archivo borrado le cuesta una hora a la sesión siguiente.
 
 ### Tres componentes que se fueron
 
