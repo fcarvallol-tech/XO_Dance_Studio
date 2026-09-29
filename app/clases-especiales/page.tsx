@@ -48,7 +48,7 @@ export default async function ClasesEspeciales() {
 
           <p className="xo-eyebrow mt-12 text-xo-rosa">Clases especiales</p>
           <h1 className="mt-4 max-w-3xl font-display text-[clamp(2.5rem,9vw,5rem)] leading-[0.9] text-xo-blanco">
-            Una coreo, una fecha
+            Encuentra apasionantes proyectos de nuestras profesoras
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-xo-blanco/75">
             Fuera del horario de siempre: la profe arma una coreografía completa
@@ -66,12 +66,12 @@ export default async function ClasesEspeciales() {
               <p className="mt-3 max-w-md leading-relaxed text-xo-blanco/65">
                 Las anunciamos en{" "}
                 <a
-                  href="https://www.instagram.com/XO.dancestudioo/"
+                  href="https://www.instagram.com/xo.dance.co/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xo-rosa underline underline-offset-4"
                 >
-                  @XO.dancestudioo
+                  @xo.dance.co
                 </a>{" "}
                 apenas quedan cerradas. Mientras tanto, las clases de la parrilla
                 van todas las semanas.

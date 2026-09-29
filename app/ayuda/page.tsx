@@ -84,6 +84,16 @@ export default function Ayuda() {
                         <span className="xo-eyebrow mr-2 text-xo-rosa">Falta</span>
                       ) : null}
                       {p.respuesta}
+                      {p.enlace ? (
+                        <a
+                          href={p.enlace.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 block text-xo-rosa underline underline-offset-4"
+                        >
+                          {p.enlace.texto}
+                        </a>
+                      ) : null}
                     </dd>
                   </div>
                 ))}
@@ -137,12 +147,6 @@ export default function Ayuda() {
               lo tomamos como tal.
             </p>
             <p>Cuéntanos qué pasó, cuándo, y qué esperabas que pasara.</p>
-            <p className="border border-xo-rosa/40 px-5 py-4 text-sm text-xo-rosa-claro">
-              <span className="xo-eyebrow mr-2 text-xo-rosa">Falta</span>
-              PENDIENTE: en cuántos días hábiles nos comprometemos a responder un
-              reclamo. Sin ese plazo, esta sección promete menos de lo que
-              debería.
-            </p>
             <p>
               Si el problema es con un cobro, escríbenos igual: las devoluciones
               las resolvemos caso a caso y siempre las registra una persona.

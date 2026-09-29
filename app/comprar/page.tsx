@@ -51,7 +51,7 @@ export default async function Comprar() {
 
           <p className="xo-eyebrow mt-12 text-xo-rosa">Comprar clases</p>
           <h1 className="mt-4 max-w-2xl font-display text-[clamp(2.5rem,9vw,4.5rem)] leading-[0.9] text-xo-blanco">
-            Compras clases, no un mes
+            Compra un pack de clases y prueba distintos estilos
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-xo-blanco/75">
             Sirven para cualquier clase de la parrilla, con cualquier profe y en

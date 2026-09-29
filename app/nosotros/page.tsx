@@ -10,11 +10,10 @@ import { getCatalogoPublico } from "@/lib/catalogo-consultas";
  * **Las sedes van dentro, como un dato, no como el tema** (PRD-0022 §8.2). El
  * tema es la academia; dónde queda es una respuesta práctica que se da al final.
  *
- * ⚠️ El texto es un **borrador**, escrito a partir de lo que ya está en el
- * proyecto —`BRAND.md` §1 y §7, `CONTEXT.md` §7— para que Felipe o Carla lo
- * reemplacen. Está marcado en pantalla a propósito: publicar un "sobre nosotros"
- * escrito por el sistema sería justamente lo contrario de lo que esta página
- * tiene que hacer.
+ * El texto salió de `BRAND.md` §1 y §7 y de `CONTEXT.md` §7, y quedó aprobado
+ * por Felipe el 29/09/2026 con dos párrafos menos: el del origen de la academia
+ * y el del cierre. Lo que queda dice qué diferencia a XO —el ambiente, no el
+ * estilo— y nada más.
  */
 export const revalidate = 3600;
 
@@ -51,22 +50,7 @@ export default async function Nosotros() {
             baila sola
           </h1>
 
-          {/* ⚠️ BORRADOR — lo reemplaza Felipe o Carla. Se marca en pantalla y
-              no solo en un comentario: un texto provisional que no se ve como
-              tal es un texto que se publica sin que nadie lo decida. */}
-          <p className="mt-10 border border-xo-rosa/40 px-5 py-4 text-sm leading-relaxed text-xo-rosa-claro">
-            <strong className="font-semibold">Borrador.</strong> Este texto lo
-            armó el sistema con lo que ya estaba escrito del proyecto, para que
-            Carla lo reemplace por el suyo. No publicar así.
-          </p>
-
-          <div className="mt-10 space-y-6 text-lg leading-relaxed text-xo-blanco/85">
-            <p>
-              XO nació cuando Carla decidió independizarse y armar algo propio:
-              una academia donde las clases se parecieran a lo que ella quería
-              encontrar cuando empezó a bailar.
-            </p>
-
+          <div className="mt-12 space-y-6 text-lg leading-relaxed text-xo-blanco/85">
             <p>
               Lo que nos diferencia no es el estilo. Reggaetón, Girly, Slow
               Femme, K-Pop: eso lo enseña mucha gente y lo enseña bien.{" "}
@@ -76,18 +60,6 @@ export default async function Nosotros() {
               Que alguien llegue sola un martes y a la tercera clase ya tenga con
               quién quedarse conversando. Que las profesoras se sepan tu nombre.
               Que venir a bailar sea también venir a un lugar donde te esperan.
-            </p>
-
-            <p className="font-serif-xo text-xl italic text-xo-rosa-claro sm:text-2xl">
-              Por eso el eslogan no es una frase de marketing: es lo que estamos
-              tratando de construir cada semana.
-            </p>
-
-            <p>
-              Somos cinco profesoras y un grupo de alumnas que crece. Nos importa
-              que se baile bien, y nos importa igual que nadie se sienta de más
-              por recién empezar, por no tener el cuerpo de una bailarina de
-              Instagram o por venir sin conocer a nadie.
             </p>
           </div>
 

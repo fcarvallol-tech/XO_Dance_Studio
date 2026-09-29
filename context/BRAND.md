@@ -210,7 +210,7 @@ El ERP no es una pieza de branding, pero tampoco debería ser hostil:
 
 | Canal | Handle | Estado |
 |---|---|---|
-| Instagram academia | @XO.dancestudioo | Se abre al público en agosto 2026 |
+| Instagram academia | @xo.dance.co | Se abre al público en agosto 2026 |
 | TikTok Carla | — | Contenido personal, cara de la marca |
 | Instagram Carla | @carlataty.20 | Personal |
 

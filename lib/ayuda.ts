@@ -8,17 +8,17 @@
  * mueven; pero entonces hay que resolver también la revalidación, y hoy el
  * webhook que la dispara **ni siquiera existe** (`ARCHITECTURE.md` §10).
  *
- * Las que llevan `porConfirmar` son datos que **no están en ninguna parte del
- * proyecto** y que no se inventan: ropa, cómo llegar, y si se puede ir a mirar.
- * Se muestran marcadas en pantalla, no escondidas en un comentario, porque un
- * texto provisional que no se ve como tal es un texto que se publica sin que
- * nadie lo decida.
+ * Las respuestas las confirmó Felipe el 29/09/2026. `porConfirmar` sigue
+ * existiendo en el tipo —no cuesta nada y el día que se agregue una pregunta sin
+ * respuesta definitiva hay dónde marcarla— pero hoy no la usa ninguna.
  */
 
 export type Pregunta = {
   pregunta: string;
   respuesta: string;
-  /** Lo tiene que completar Felipe. Se muestra marcado. */
+  /** Un enlace que acompaña la respuesta, cuando decirlo con palabras no basta. */
+  enlace?: { texto: string; url: string };
+  /** Para una pregunta cuya respuesta todavía no está decidida. Se ve marcada. */
   porConfirmar?: boolean;
 };
 
@@ -100,20 +100,22 @@ export const PREGUNTAS: BloqueDePreguntas[] = [
       {
         pregunta: "¿Qué llevo a la clase?",
         respuesta:
-          "PENDIENTE: ropa cómoda, qué calzado, si conviene llevar agua, si hay camarines " +
-          "para cambiarse.",
-        porConfirmar: true,
+          "Ropa cómoda con la que puedas moverte y zapatillas deportivas. Si tienes " +
+          "rodilleras acolchadas, tráelas: en algunos estilos se agradecen, pero no son " +
+          "obligatorias. Y trae agua.",
       },
       {
-        pregunta: "¿Cómo llego? ¿Hay estacionamiento?",
+        pregunta: "¿Cómo llego?",
         respuesta:
-          "PENDIENTE: metro o micro más cercanos a cada sala, y si hay dónde estacionar.",
-        porConfirmar: true,
-      },
-      {
-        pregunta: "¿Puedo ir a mirar una clase antes de inscribirme?",
-        respuesta: "PENDIENTE: si se puede, con quién se coordina y con cuánta anticipación.",
-        porConfirmar: true,
+          "Las salas están cerca del metro. El Centro Comunitario Diaguitas, en Las Condes, " +
+          "tiene un video que muestra cómo llegar. Seducción Latina queda en Av. Nueva " +
+          "Providencia 2260, local 130, piso 3, en el sector Los Leones.",
+        // El video vive acá y no dentro del texto: así el componente lo puede
+        // mostrar como enlace sin que haya que parsear la respuesta.
+        enlace: {
+          texto: "Ver cómo llegar a Diaguitas",
+          url: "https://www.instagram.com/reel/Dcw4N64g9fi/",
+        },
       },
     ],
   },

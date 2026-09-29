@@ -3,8 +3,8 @@ export const WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP ?? "56984362290";
 
 export const WHATSAPP_VISIBLE = "+56 9 8436 2290";
 
-export const INSTAGRAM_HANDLE = "@XO.dancestudioo";
-export const INSTAGRAM_URL = "https://www.instagram.com/xo.dancestudioo/";
+export const INSTAGRAM_HANDLE = "@xo.dance.co";
+export const INSTAGRAM_URL = "https://www.instagram.com/xo.dance.co/";
 
 /**
  * Las dos comunas donde hay sala. Desde PRD-0016 la dirección exacta **sí** se

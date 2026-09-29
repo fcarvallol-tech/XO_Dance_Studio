@@ -153,7 +153,7 @@ export default async function ClaseEspecial({ params }: Props) {
                 <p className="mt-6 max-w-md leading-relaxed text-xo-blanco/75">
                   Esta ya se llenó. Escríbenos por{" "}
                   <a
-                    href="https://www.instagram.com/XO.dancestudioo/"
+                    href="https://www.instagram.com/xo.dance.co/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xo-rosa underline underline-offset-4"

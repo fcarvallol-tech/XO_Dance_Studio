@@ -71,7 +71,7 @@ Todas tienen Instagram propio con seguidores y son parte activa de la campaña d
 | **Capacidad de sala** | Los Leones y Diaguitas: **22** · EB: **40**. Es un dato de cada sala, no una regla del sistema (PRD-0021) |
 | **Sueldo base profesoras** | **$18.000/hora**. Clases de 1 hora. Variable por definir |
 | **Sitio** | **xodancestudio.cl** — dominio propio, apuntado a Vercel y con certificado |
-| **Instagram** | @XO.dancestudioo — se abre al público en agosto 2026 |
+| **Instagram** | @xo.dance.co — se abre al público en agosto 2026 |
 | **WhatsApp** | +56 9 8436 2290 |
 | **Herramientas** | Notion · Google Drive · Canva · GitHub · Supabase · Vercel |
 
