@@ -71,6 +71,20 @@ siembra con `node scripts/sembrar-escenario.mjs` y se verifica con
 `node scripts/verificar-metricas.mjs`; los dos se niegan a correr si el `project_ref` no es el de
 staging.
 
+### La CLI y el sitio local son dos enlaces distintos
+
+La CLI lee `supabase/.temp/project-ref`; el sitio que levanta `npm run dev` o `npm run start` lee
+`NEXT_PUBLIC_SUPABASE_URL` de `.env.local`. **Uno no sigue al otro**, así que la CLI puede estar
+en staging mientras el sitio local lee producción. Pasó el 29/09/2026: el verificador de PRD-0022
+corrió contra datos reales con la CLI en staging.
+
+**Regla: cuando el sitio local se use para verificar, `.env.local` apunta a staging.** Producción
+se mira en producción, no desde `localhost`. Antes de correr un `scripts/verificar-*.mjs` contra
+`localhost:3000`, revisar a qué `project_ref` apunta la URL de `.env.local`, igual que se mira
+`project-ref` antes de un `db push`. Que un verificador solo lea no es excusa: con datos reales el
+resultado depende de lo que haya ese día, y el primero que escriba —una reserva de prueba— la
+escribe en la base de verdad.
+
 ## El día a día
 
 ```bash

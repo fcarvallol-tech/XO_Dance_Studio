@@ -124,11 +124,16 @@ try {
 
   const grilla = await esc.evaluate(() => {
     const fila = 28; // 1.75rem
-    // La grilla solo muestra los días que tienen clases: cuatro columnas una
-    // semana y dos la siguiente. Eso es deliberado (ver GrillaCalendario).
-    const encabezados = [...document.querySelectorAll("p.xo-eyebrow")]
-      .map((p) => p.textContent?.trim() ?? "")
-      .filter((t) => /^(lunes|martes|miércoles|jueves|viernes|sábado|domingo)$/i.test(t));
+    // Los siete días siempre, tengan clases o no (Felipe, 29/09/2026), y el
+    // encabezado es solo el nombre: la fecha va una vez, junto a los botones.
+    const celdas = [...document.querySelectorAll("p.xo-eyebrow")].filter((p) =>
+      /^(lunes|martes|miércoles|jueves|viernes|sábado|domingo)/i.test(p.textContent?.trim() ?? ""),
+    );
+    const encabezados = celdas.map((p) => p.textContent?.trim() ?? "");
+    // Las líneas verticales: cada columna de día tiene su borde derecho.
+    const conLinea = celdas.filter(
+      (p) => parseFloat(getComputedStyle(p.parentElement).borderRightWidth) > 0,
+    ).length;
 
     const primeraHora = Number(
       document.body.textContent?.match(/(\d{2}):00/)?.[1] ?? -1,
@@ -153,10 +158,15 @@ try {
           primeraHora * 60 + (tramo - 1) * 30,
       });
     }
-    return { dias: encabezados.length, bloques };
+    return { encabezados, conLinea, bloques };
   });
 
-  caso("el calendario dibuja una columna por día con clases", true, grilla.dias > 0);
+  caso("el calendario muestra los siete días, de lunes a domingo",
+       "lunes martes miércoles jueves viernes sábado domingo",
+       grilla.encabezados.join(" ").toLowerCase());
+  caso("ningún encabezado lleva el número de la fecha", 0,
+       grilla.encabezados.filter((t) => /\d/.test(t)).length);
+  caso("hay una línea vertical entre cada día", 7, grilla.conLinea);
   caso("hay clases dibujadas en la grilla", true, grilla.bloques.length > 0);
   caso("el alto de cada clase es su duración",
        String(grilla.bloques.length),
@@ -167,6 +177,83 @@ try {
   caso("y la hora escrita coincide con el eje (incluidas las y media)",
        String(grilla.bloques.length),
        String(grilla.bloques.filter((b) => b.horaOk).length));
+
+  // La navegación no se salta semanas: cada "Después" avanza exactamente siete
+  // días, aunque la semana del medio no tenga clases. Se lee el rango impreso,
+  // que es lo que ve la persona, y no el estado del componente.
+  const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+    "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  const inicioDelRango = async () => {
+    const t = (await esc.locator("p", { hasText: /^Del \d/ }).first().textContent()) ?? "";
+    const m = t.match(/Del (\d+)(?: de (\p{L}+))? al (\d+) de (\p{L}+)/u);
+    if (!m) return null;
+    const mes = MESES.indexOf(m[2] ?? m[4]);
+    return Date.UTC(2026, mes, Number(m[1]));
+  };
+  const saltos = [];
+  let previo = await inicioDelRango();
+  caso("el rango de la semana se ve junto a los botones", true, previo !== null);
+  const despues = esc.getByRole("button", { name: /Después/ });
+  // Con tope: si la página no hidrata, el botón nunca se desactiva y el bucle
+  // no terminaría. Un rango que no cambia al apretar cuenta como salto de 0.
+  while (previo !== null && saltos.length < 20 && (await despues.isEnabled())) {
+    await despues.click();
+    await esc.waitForTimeout(150);
+    const actual = await inicioDelRango();
+    saltos.push(actual === null ? NaN : (actual - previo) / 86400000);
+    previo = actual;
+    if (saltos.at(-1) !== 7) break;
+  }
+  caso('cada "Después" avanza siete días, sin saltarse semanas',
+       saltos.map(() => 7).join(","), saltos.join(","));
+
+  // --- ajuste 5 en el teléfono: un día a la vez -----------------------------
+  const tel = await (await nav.newContext({ viewport: { width: 375, height: 800 } })).newPage();
+  await tel.goto(`${SITIO}/calendario`, { waitUntil: "networkidle" });
+  const visibles = () =>
+    tel.evaluate(() =>
+      [...document.querySelectorAll("p.xo-eyebrow")]
+        .filter((p) => /^(lunes|martes|miércoles|jueves|viernes|sábado|domingo)$/i
+          .test(p.textContent?.trim() ?? ""))
+        .filter((p) => p.offsetParent !== null)
+        .map((p) => p.textContent?.trim().toLowerCase()),
+    );
+  const botonesDia = tel.getByRole("group", { name: "Día" }).getByRole("button");
+  caso("a 375px hay siete botones de día", 7, await botonesDia.count());
+  const alAbrir = await visibles();
+  caso("a 375px se ve una sola columna", 1, alAbrir.length);
+  const activo = await tel.getByRole("group", { name: "Día" })
+    .locator('button[aria-pressed="true"]').getAttribute("aria-label");
+  caso("y es la del botón marcado", activo, alAbrir[0]);
+  // Se toca otro día y la columna cambia a ese.
+  const otro = alAbrir[0] === "domingo" ? "lunes" : "domingo";
+  await tel.getByRole("button", { name: otro, exact: true }).click();
+  await tel.waitForTimeout(150);
+  caso(`tocar "${otro}" muestra esa columna`, otro, (await visibles()).join(","));
+
+  // Los lugares se ven en todos los bloques, incluidas las clases de una hora,
+  // y en los tres anchos. Se mide si el texto queda dentro de la caja: con
+  // `overflow: hidden` un texto cortado sigue estando en el DOM, así que
+  // buscarlo por su contenido no probaría nada.
+  for (const ancho of [375, 768, 1023, 1024, 1280]) {
+    const p = await (await nav.newContext({ viewport: { width: ancho, height: 900 } })).newPage();
+    await p.goto(`${SITIO}/calendario`, { waitUntil: "networkidle" });
+    const cortados = await p.evaluate(() => {
+      const malos = [];
+      for (const a of document.querySelectorAll("a[style*='grid-row']")) {
+        if (a.offsetParent === null) continue; // otro día, en el teléfono
+        const caja = a.getBoundingClientRect();
+        const lugares = [...a.querySelectorAll("span")].find((s) =>
+          /^(\d+ lugar(es)?|Llena)$/.test(s.textContent?.trim() ?? ""));
+        const r = lugares?.getBoundingClientRect();
+        if (!r || r.bottom > caja.bottom - 1 || r.right > caja.right - 1) {
+          malos.push(a.querySelector("p")?.textContent?.trim() ?? "?");
+        }
+      }
+      return malos;
+    });
+    caso(`a ${ancho}px cada clase muestra sus lugares sin cortarlos`, "", cortados.join(", "));
+  }
 
   // --- ajuste 6: el buscador de profesoras --------------------------------
   await esc.goto(`${SITIO}/nuestras-profes`, { waitUntil: "networkidle" });

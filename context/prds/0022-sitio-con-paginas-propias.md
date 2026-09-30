@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | ✅ **Construido el 28/09/2026**, fases 0 a 6, **más once ajustes de Felipe el 29/09/2026** (§14). ⏸ **Falta desplegar**: el video del hero y el visto bueno de Felipe |
+| **Estado** | ✅ **Construido el 28/09/2026**, fases 0 a 6, **más once ajustes de Felipe el 29/09/2026** y **cuatro más al calendario** el mismo día (§14). ⏸ **Falta desplegar**: el video del hero y el visto bueno de Felipe |
 | **Autor** | Claude, a pedido de Felipe Carvallo |
 | **Fecha** | 28 de septiembre de 2026 |
 | **Hito** | Hito 0 — Lanzamiento |
@@ -360,7 +360,7 @@ acá porque son del mismo trabajo, no de un PRD nuevo: ninguno cambia una decisi
 | 2 | La sección de planes de la portada: título "Elige el pack que más te guste" y **tres cuadros** —clases sueltas, packs, especiales | `CaminosPortada` |
 | 3 | Debajo, **profesoras en la portada**: foto y nombre, cada una a su perfil | `ProfesorasPortada` |
 | 4 | **Alternancia de fondos**: packs en rosado con letras negras, profesoras en negro, pie siempre negro | Rosa XO solo como **fondo de bloque** con texto `xo-negro`, nunca como color de texto sobre claro (`BRAND.md`) |
-| 5 | El calendario como **grilla semanal** en tramos de media hora, con la media marcada más tenue, porque hay clases de hora y media | `GrillaCalendario` + `lib/dominio/grilla.ts` con 11 tests. **No se reusó `GrillaSemanal`**: esa apila las clases en una lista sin eje de tiempo, y en una lista todas las clases miden lo mismo |
+| 5 | El calendario como **grilla semanal** en tramos de media hora, con la media marcada más tenue, porque hay clases de hora y media | `GrillaCalendario` + `lib/dominio/grilla.ts` con 11 tests. **No se reusó `GrillaSemanal`**: esa apila las clases en una lista sin eje de tiempo, y en una lista todas las clases miden lo mismo. Segunda vuelta más abajo: siete días siempre, cuadrícula completa y un día a la vez en el teléfono |
 | 6 | Página de profesoras: título nuevo, **buscador por nombre y filtro por estilo** | `BuscadorProfesoras`. Los estilos **salen de los horarios**, no de una lista a mano: un segundo lugar donde viva el catálogo es la incoherencia que este repo ya tuvo |
 | 7 | "Compras clases, no un mes" → "Compra un pack de clases y prueba distintos estilos" | `/comprar` |
 | 8 | "Una coreo, una fecha" → "Encuentra apasionantes proyectos de nuestras profesoras" | `/clases-especiales` |
@@ -405,6 +405,56 @@ compila igual de bien.
 
 **Dos de los casos que escribí primero estaban mal, no el código**, y vale anotarlo porque es el
 mismo error de siempre —afirmar cómo se comporta algo en vez de mirarlo—: di por hecho que la
-grilla mostraría **los siete días** (muestra solo los que tienen clases, y es deliberado: cuatro
-columnas vacías es hacer scrollear de más en el teléfono) y que cada bloque imprimiría un **rango**
+grilla mostraría **los siete días** (en ese momento mostraba solo los que tenían clases —lo que
+se revirtió después, ver "El calendario, segunda vuelta"—) y que cada bloque imprimiría un **rango**
 horario (las clases de una hora muestran solo el inicio, que es justo la regla que pidió PRD-0021).
+
+### El calendario, segunda vuelta (Felipe, 29/09/2026)
+
+Mirando la grilla, Felipe pidió cuatro cambios más. El primero **revierte** lo que arriba quedó
+como deliberado: ocultar los días sin clases hacía que la semana pareciera empezar el martes, y
+un día vacío también es un dato.
+
+| # | Qué pidió | Cómo quedó |
+|---|---|---|
+| a | **Los siete días siempre**, aunque no tengan clases | Las columnas salen de `diasDeLaSemana(lunes)`, no de las clases |
+| b | **Sin el número de la fecha** en los encabezados | Solo el nombre del día. Como sin fecha nada decía qué semana se estaba mirando, el rango ("Del 28 de septiembre al 4 de octubre") va **una vez**, junto a Antes / Después |
+| c | **Cuadrícula completa**, como Google Calendar | Borde exterior, línea vertical entre días y horizontal en cada tramo; la hora en punto más marcada y la media más tenue, como antes. Tipografía y colores, los de `BRAND.md` |
+| d | Siete columnas en el teléfono quedan angostas: proponer | **Bajo `lg`, un día a la vez** (era `md`; ver los lugares, más abajo), con los siete días como botones arriba (los que tienen clases llevan un punto). Abre en hoy si le quedan clases, si no en el primer día con clases de la semana. Desde `lg`, la semana entera. Es el mismo DOM con otras clases de CSS, no dos grillas |
+
+**Por qué d y no otra cosa:** a 375 px siete columnas son de unos 44 px, donde no cabe "Salsa ·
+19:30 · Pau · 8 lugares", y cortar el texto justo donde está lo útil es peor que no mostrarlo. Se
+descartó el scroll horizontal que había, porque con siete columnas esconde más de la mitad de la
+semana, y la vista de tres días, porque parte la semana en pedazos que no calzan con lunes a
+domingo.
+
+**Un error que apareció al hacer a:** las semanas se armaban agrupando las clases, así que
+**una semana sin clases no existía** y "Después" saltaba dos de una vez sin que se notara. Además
+se contaban con `getDay()` del navegador, que empieza la semana en domingo. Ahora las da
+`semanasDeLaGrilla` en `lib/dominio/grilla.ts` —continuas, desde la de hoy hasta la de la última
+clase, en días de Santiago—, con 8 tests. El `hoy` lo pasa la página desde el servidor, para que
+la grilla y los datos usen el mismo día.
+
+**Verificado:** `scripts/verificar-sitio.mjs` pasa de 31 a **39 casos, 39/39**. Los que esperaban
+"solo días con clases" ahora piden los siete, en orden, sin números y con su línea vertical. Se
+suman: el rango impreso junto a los botones, que **cada "Después" avance exactamente siete días**
+—leído del rango que ve la persona, no del estado del componente; hoy son ocho saltos de 7—, y a
+375 px siete botones, una sola columna visible que es la del botón marcado, y que tocar otro día
+la cambie. `npm test` 152/152 y `npm run build` limpios.
+
+**Los lugares en las clases de una hora (Felipe, 30/09/2026).** Al revisar las capturas apareció
+que un bloque de una hora —56 px— se cortaba después de la profesora, y **los lugares, que
+estaban al final, no se veían**. Es el dato que decide si alguien reserva. Se ordenó el bloque
+por importancia, porque lo que no cabe se corta por abajo: nombre, luego **hora y lugares en la
+misma línea** —se parte sola donde la columna es angosta—, luego la profesora y, si hay alto, la
+sala. Se descartó achicar la fuente —11 px ya es el piso legible— y sacar la profesora, que sigue
+saliendo cuando cabe. El verificador suma un caso por ancho que **mide** que el texto de los
+lugares quede dentro de la caja: con `overflow: hidden` el texto cortado sigue en el DOM, así que
+buscarlo por contenido daría por bueno justo lo que estaba roto.
+
+Ese caso encontró algo más: **a 768 px seguían cortados** (Reggaeton Femme y Slow Femme). Siete
+columnas en una tablet dejan unos 65 px de texto, el nombre y la línea de hora y lugares se parten
+en dos cada uno, y no caben en 56 px. **La semana entera pasa de `md` a `lg`**: bajo 1024 px se ve
+un día a la vez, como en el teléfono. Se mide en 375, 768, 1023, 1024 y 1280, los dos del medio
+para clavar el borde. Verificador **44/44**. Lo que sí se corta ahora, donde el nombre ocupa dos
+líneas, es la profesora: es el orden elegido.

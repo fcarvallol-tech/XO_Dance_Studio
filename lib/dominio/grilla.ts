@@ -16,6 +16,10 @@
 // Con extensión: el corredor de Node resuelve los ESM por ruta exacta, y es
 // el patrón que ya usa el resto de `lib/dominio`.
 import { duracionMin } from "./horarios.ts";
+// `lib/semana.ts` es aritmética de días civiles en Santiago, pura y sin nada de
+// servidor: es de este mismo tipo de código, solo que más viejo que la carpeta.
+// Reimplementar acá "el lunes de" sería tener la misma cuenta en dos lados.
+import { lunesDe, sumarDias } from "../semana.ts";
 
 export const MINUTOS_POR_TRAMO = 30;
 
@@ -80,4 +84,29 @@ export function ventanaDeHoras(clases: Tramo[]): { desde: number; hasta: number 
     desde: Math.max(0, Math.floor(primera) - 1),
     hasta: Math.min(24, Math.ceil(ultima) + 1),
   };
+}
+
+
+/**
+ * Los lunes que debe ofrecer la navegación de la grilla, **uno por semana y
+ * sin saltarse ninguna**.
+ *
+ * Antes las semanas salían de agrupar las clases, así que una semana sin clases
+ * simplemente no existía y el botón "Después" avanzaba dos de un salto, sin que
+ * quien navega tuviera cómo notarlo. Ahora el rango es continuo: desde la
+ * semana de hoy —que siempre está, aunque no haya nada— hasta la de la última
+ * clase.
+ *
+ * Recibe **días civiles** en Santiago (`"2026-09-29"`), no instantes: qué día
+ * es una clase de las 21:00 depende de la zona, y esa conversión ya la hizo
+ * quien llama.
+ */
+export function semanasDeLaGrilla(dias: string[], hoy: string): string[] {
+  const lunes = [lunesDe(hoy), ...dias.map(lunesDe)].sort();
+  const primero = lunes[0];
+  const ultimo = lunes[lunes.length - 1];
+
+  const salida: string[] = [];
+  for (let d = primero; d <= ultimo; d = sumarDias(d, 7)) salida.push(d);
+  return salida;
 }

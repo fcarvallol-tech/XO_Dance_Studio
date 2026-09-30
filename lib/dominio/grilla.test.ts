@@ -10,7 +10,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { MINUTOS_POR_TRAMO, tramoDe, tramosQueOcupa, ventanaDeHoras } from "./grilla.ts";
+import {
+  MINUTOS_POR_TRAMO,
+  semanasDeLaGrilla,
+  tramoDe,
+  tramosQueOcupa,
+  ventanaDeHoras,
+} from "./grilla.ts";
 
 const utc = (iso: string) => `${iso}Z`;
 // Septiembre en Chile es −03:00.
@@ -71,4 +77,63 @@ test("ventanaDeHoras: sin clases devuelve una ventana razonable y no un vacío",
 test("ventanaDeHoras: no se pasa de la medianoche ni baja de cero", () => {
   const v = ventanaDeHoras([{ inicio: utc("2026-09-11T03:30:00"), fin: null }]);
   assert.ok(v.desde >= 0 && v.hasta <= 24, `${v.desde}–${v.hasta}`);
+});
+
+// --- semanasDeLaGrilla ------------------------------------------------------
+
+test("semanasDeLaGrilla: sin clases, igual ofrece la semana de hoy", () => {
+  // Una grilla vacía sigue siendo una grilla: se dibujan los siete días y no
+  // se muestra la nada.
+  assert.deepEqual(semanasDeLaGrilla([], "2026-09-30"), ["2026-09-28"]);
+});
+
+test("semanasDeLaGrilla: clases de una misma semana dan un solo lunes", () => {
+  assert.deepEqual(
+    semanasDeLaGrilla(["2026-09-29", "2026-10-02", "2026-10-03"], "2026-09-30"),
+    ["2026-09-28"],
+  );
+});
+
+test("semanasDeLaGrilla: dos semanas seguidas dan sus dos lunes", () => {
+  assert.deepEqual(
+    semanasDeLaGrilla(["2026-09-29", "2026-10-06"], "2026-09-30"),
+    ["2026-09-28", "2026-10-05"],
+  );
+});
+
+test("semanasDeLaGrilla: una semana sin clases en medio NO se salta", () => {
+  // Es la razón de que esto exista. Saltársela hace que "Después" avance dos
+  // semanas de una, y quien navega no tiene cómo saber que se perdió una.
+  assert.deepEqual(
+    semanasDeLaGrilla(["2026-09-29", "2026-10-13"], "2026-09-30"),
+    ["2026-09-28", "2026-10-05", "2026-10-12"],
+  );
+});
+
+test("semanasDeLaGrilla: la primera semana es la de hoy aunque no tenga clases", () => {
+  assert.deepEqual(
+    semanasDeLaGrilla(["2026-10-07"], "2026-09-30"),
+    ["2026-09-28", "2026-10-05"],
+  );
+});
+
+test("semanasDeLaGrilla: el orden de las clases no cambia el resultado", () => {
+  assert.deepEqual(
+    semanasDeLaGrilla(["2026-10-13", "2026-09-29", "2026-10-06"], "2026-09-30"),
+    ["2026-09-28", "2026-10-05", "2026-10-12"],
+  );
+});
+
+test("semanasDeLaGrilla: una clase anterior a hoy arrastra el inicio hacia atrás", () => {
+  // No debería llegar ninguna —el calendario pide las próximas—, pero si llega
+  // vale más mostrarla que dejarla fuera del rango y que desaparezca.
+  assert.deepEqual(
+    semanasDeLaGrilla(["2026-09-21"], "2026-09-30"),
+    ["2026-09-21", "2026-09-28"],
+  );
+});
+
+test("semanasDeLaGrilla: el domingo pertenece a la semana que empezó el lunes", () => {
+  // El domingo 4 es de la semana del lunes 28, no de la del 5.
+  assert.deepEqual(semanasDeLaGrilla(["2026-10-04"], "2026-09-30"), ["2026-09-28"]);
 });
