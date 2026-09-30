@@ -209,8 +209,9 @@ permisos que se van a desincronizar.
   - **Contrapartida:** una columna nueva en `sedes` no la ve `anon` hasta que se la agregue a ese
     grant. Falla fuerte —`permission denied for column`—, no en silencio, y
     `scripts/escenario-capacidad.mjs` compara la lista de columnas legibles contra la esperada.
-  - Cuando exista la tabla de finanzas de PRD-0010 parte 2, que nace con RLS de solo `owner`, el
-    costo puede moverse ahí.
+  - ~~Cuando exista la tabla de finanzas de PRD-0010 parte 2, el costo puede moverse ahí~~ — **se
+    dejó donde está** (30/09/2026): los grants por columna funcionan y `metricas_finanzas` lo lee como
+    `security definer`. Mover la columna no ganaba nada.
 **`horarios`** — `curso_id, profesora_id, sede_id, dia_semana, hora, activo`
 
 - El **slug** es la identidad pública y es **inmutable por trigger** en las tres tablas que lo
@@ -417,7 +418,25 @@ las dos. Se agregó `expira_at`.
 
 ### 5.6 Finanzas
 
-**`egresos`** — `fecha, categoria, descripcion, monto_clp, sede_id, comprobante_url`
+> ✅ **Parte 2 construida el 30/09/2026** (PRD-0010 §17). Las primeras tres tablas del proyecto con RLS
+> de **solo `owner`**; solo `select` para `authenticated`, toda escritura por función concedida a
+> `service_role` con el actor como parámetro.
+
+**`categorias_egreso`** — `slug` pk, `nombre`, `orden`, `activa`. Editable desde el Table Editor;
+el slug no se cambia, el nombre sí; desactivar una la saca del formulario sin tocar egresos viejos.
+**`egresos`** — `fecha date, categoria → categorias_egreso, descripcion, monto_clp > 0, sede_id?,
+comprobante_path?, registrado_por, anulado_por?, motivo_anulacion?, deleted_at?`. Se registra y se
+anula (`registrar_egreso`, `anular_egreso`, `adjuntar_comprobante_egreso`); nunca se edita ni se borra.
+**`costos_profesoras`** — `profesora_id` pk, `base_hora_clp`, `variable_credito_clp`. Sembrada con
+$18.000 y $250 para todas. Sin fila, el margen de esa profesora es `null`, no cero.
+**`metricas_finanzas(p_desde, p_hasta, p_desde_ant, p_hasta_ant)`** — `security definer` porque lee
+`sedes.costo_hora_clp`; owner verificado en su primera línea. Agrega y agrupa; `lib/dominio/finanzas.ts`
+divide. Bucket privado `comprobantes-egresos`.
+
+**Caja neta** = ingresos (compras pagadas por `aprobada_at`) − egresos registrados. **No** resta costos
+calculados. **Margen por clase dictada** = ingreso atribuido (§7.1 del PRD) − sala × horas − base ×
+horas − variable × créditos consumidos. Solo parrilla: las especiales se pagan con otra regla (50% de lo
+recaudado tras la sala, sin base) que todavía no está construida.
 **`liquidaciones_profesoras`** — `profesora_id, periodo, clases_dictadas, monto_bruto_clp,
 comision_clp, monto_neto_clp, estado`
 
@@ -538,6 +557,9 @@ cliente. Todo pasa por Route Handler o función de base de datos, en transacció
 | `next@16.3.4` sin subir | `npm audit` reporta 4 altas: `postcss` y `nanoid` solo en el pipeline de CSS de `next build`, y `sharp` cerrada porque `next.config.ts` no declara `remotePatterns`. **Ninguna es alcanzable en producción.** El fix es un minor de Next que arrastra las tres parchadas; va como cambio aparte, con verificación de que el build sigue leyendo el catálogo |
 | `README.md` | Sigue siendo el de `create-next-app` |
 | Dominio | Sin registrar |
+| **`sedes.costo_hora_clp` en NULL en producción** para Seducción Latina y Diaguitas | PRD-0021 agregó la columna sin cargar las dos salas viejas; solo EB nació con valor. Mientras estén en NULL, `/owner/finanzas` dice "sin costo cargado" en cada clase de esas sedes, que es lo correcto. En staging la siembra pone los $17.000 y $0 de `CONTEXT.md` §5.b; **en producción los carga Felipe** (Table Editor o migración). Anotado el 30/09/2026 |
+| **El pago de una clase especial no está construido** | Regla de Felipe (30/09/2026): sin base, la profesora recibe el **50% de lo recaudado después de descontar la sala**. `metricas_finanzas` deja las especiales fuera del margen por clase y la página lo dice. Entra con la liquidación (PRD-0010 parte 3), que además necesita distinguir dictada / no dictada |
+| Las categorías de egreso se editan solo por el Table Editor | `categorias_egreso` no tiene pantalla. Felipe las va a revisar con Carla; si hacen falta seguido, es una página más y el modelo no cambia |
 
 > ✅ **Saldada el 25/08/2026:** el fallback de `metadataBase`. `app/layout.tsx` encadena
 > `NEXT_PUBLIC_SITE_URL` → `VERCEL_PROJECT_PRODUCTION_URL` → `localhost`, descartando cadenas

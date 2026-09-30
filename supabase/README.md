@@ -66,7 +66,25 @@ Desde el 08/09/2026 hay **dos** proyectos, y la CLI apunta a uno solo a la vez:
 `cat supabase/.temp/project-ref` dice a cuál está enlazada ahora mismo. **Mirarlo antes de
 cualquier comando que escriba**, porque `db push` no pregunta a qué base le está escribiendo.
 
-Las credenciales de staging viven en `.env.staging`, fuera del repo. El escenario de prueba se
+Las credenciales de staging viven en `.env.staging`, fuera del repo. Necesita **cinco**
+variables: `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD` (para los scripts por `pg`),
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` (para
+los verificadores de navegador y para levantar el sitio contra staging). Las llaves salen de
+`npx supabase projects api-keys --project-ref ybopuahlzbjkkwumkllk`. ⚠️ Sin BOM al principio del
+archivo: `staging.mjs` lo lee línea por línea y un BOM deja la primera variable en `undefined`
+(pasó el 30/09/2026 en el computador de la oficina).
+
+Para levantar el sitio contra staging, las variables del entorno tapan a las de `.env.local`, y hay
+que tapar también la publicable, que `config.ts` prefiere:
+
+```bash
+set -a; . ./.env.staging; set +a
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
+NEXT_PUBLIC_SITE_URL=http://localhost:3000 npm run build && npm run start
+```
+
+Se verifica con `node scripts/verificar-finanzas.mjs` (datos) y
+`node scripts/verificar-finanzas-navegador.mjs` (clics). El escenario de prueba se
 siembra con `node scripts/sembrar-escenario.mjs` y se verifica con
 `node scripts/verificar-metricas.mjs`; los dos se niegan a correr si el `project_ref` no es el de
 staging.

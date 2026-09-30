@@ -762,13 +762,60 @@ Los valores esperados están en la fase 0.2 del plan: egresos del mes $103.000 e
 $50.000, caja neta **$9.500** y anterior **−$6.000**, y las tres clases del escenario con
 ingreso $15.000 / $7.000 / $15.500, costo de profesora $18.500 cada una y sala según su sede.
 
-- [ ] `npm test` en verde con los tests de `finanzas.ts`.
-- [ ] `verificar-finanzas.mjs` en verde contra staging, incluidos los rechazos de la función, la
+- [x] `npm test` en verde con los tests de `finanzas.ts`.
+- [x] `verificar-finanzas.mjs` en verde contra staging, incluidos los rechazos de la función, la
       clase sin costo y las filas que ve un admin (cero).
-- [ ] Un egreso registrado **desde el formulario** aparece en la lista y baja la caja; anulado
+- [x] Un egreso registrado **desde el formulario** aparece en la lista y baja la caja; anulado
       desde el botón, desaparece y la fila sigue en la base con `deleted_at`.
-- [ ] Un admin no ve `/owner/finanzas`, recibe `42501` por `/rest/v1/rpc/metricas_finanzas` y
+- [x] Un admin no ve `/owner/finanzas`, recibe `42501` por `/rest/v1/rpc/metricas_finanzas` y
       `[]` en `/rest/v1/egresos`.
-- [ ] `GET /rest/v1/` expone lo nuevo y nada más.
-- [ ] `/owner/finanzas` resuelve en tres llamadas o menos.
-- [ ] `npm run build` pasa.
+- [x] `GET /rest/v1/` expone lo nuevo y nada más.
+- [x] `/owner/finanzas` resuelve en tres llamadas o menos.
+- [x] `npm run build` pasa.
+
+## 18. Notas de implementación — parte 2
+
+Implementada el 30/09/2026 sobre `main`, en seis commits, uno por fase del plan.
+
+### Lo que se desvió del plan
+
+- **Las categorías viven en una tabla**, no en un `check`: Felipe pidió que fueran editables porque
+  las va a revisar con Carla. `categorias_egreso` se edita desde el Table Editor; no tiene pantalla.
+- **El formulario usa `onSubmit`, no `action`.** Con `action`, React vacía el formulario al terminar
+  la acción aunque la base haya rechazado el egreso: por un cero en el monto había que escribir
+  todo de nuevo. Se vio en la fase 5, no antes.
+- **La siembra de staging carga `sedes.costo_hora_clp`** para las dos salas viejas —$17.000 y $0,
+  de `CONTEXT.md` §5.b— porque PRD-0021 agregó la columna sin cargarlas y **también están en NULL en
+  producción**. Lo carga Felipe; hasta entonces, cada clase de esas sedes dice "sin costo cargado",
+  que es el comportamiento correcto y el que el verificador prueba.
+- **La auditoría de `GET /rest/v1/` no se pudo hacer por el OpenAPI**: responde 401 en staging.
+  Se hizo ruta por ruta, con sesión de admin y de anon, sobre las tres tablas y las cuatro funciones.
+
+### Lo que solo se vio abriendo la página
+
+Nada de lo de la parte 1 reapareció: los signos, los plurales y las horas se copiaron del tablero.
+Lo que sí apareció fue lo del formulario que se vacía, y dos errores del verificador —apretaba el
+botón **Salir** de la cabecera por ser el primer `submit` de la página, y confundía el anunciador
+de rutas de Next con el aviso del formulario—. Los dos son el argumento de probar el artefacto.
+
+### Verificación
+
+- 19 tests nuevos en `lib/dominio/finanzas.test.ts`; 171 en total, sin dependencias nuevas.
+- `scripts/verificar-finanzas.mjs`: **48/48** contra staging con los valores del juez, incluidos
+  los rechazos de `registrar_egreso`, la clase sin costo y las filas que ve cada rol.
+- `scripts/verificar-finanzas-navegador.mjs`: **41/41** con Chromium a 390 px y el enlace del
+  correo. Egreso registrado desde el formulario, anulado desde el botón, comprobante subido y
+  visto por URL firmada, admin rebotado por URL directa y con `42501` por REST.
+- **3 llamadas a Supabase por render** de `/owner/finanzas` y de `/owner/finanzas/nuevo-egreso`,
+  medidas con un `fetch` instrumentado que no se commiteó.
+- `npm run build` y `npm test` en verde.
+
+### Lo que quedó pendiente
+
+- **La migración `20260930150000_finanzas_egresos.sql` está aplicada a staging y no a producción.**
+- **`sedes.costo_hora_clp` en producción** para Seducción Latina y Diaguitas.
+- **El pago de las clases especiales** —50% de lo recaudado después de descontar la sala, sin
+  base— no está construido. Va con la parte 3.
+- Una pantalla para las categorías, si editarlas por el Table Editor resulta incómodo.
+- La parte 3: liquidación de profesoras, `dictada` / `no_dictada`, causa y reemplazo. Reusa
+  `costos_profesoras` y el predicado de créditos consumidos de `metricas_finanzas`.
