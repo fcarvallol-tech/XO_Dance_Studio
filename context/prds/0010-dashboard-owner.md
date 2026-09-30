@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | Borrador — en revisión de Felipe |
+| **Estado** | Parte 1 ✅ implementada el 08/09/2026 · **Parte 2 en desarrollo desde el 30/09/2026** (§17) · Parte 3 enunciada |
 | **Fecha** | 21 de agosto de 2026 · reescrito el 6 de septiembre de 2026 |
 | **Hito** | Hito 5 |
 | **Relacionados** | PRD-0009 · PRD-0017 · `ARCHITECTURE.md` §8 · ADR-0002 |
@@ -695,3 +695,80 @@ verificar el flujo.
 - Sembrar en staging necesita dos parches que no son del dominio y conviene recordar: insertar en
   `auth.users` a mano deja las columnas de token en `NULL` y GoTrue falla al leerlas, y sin
   `perfil_completo_at` los layouts mandan a `/completar-perfil`.
+
+## 17. Parte 2 — detalle (aprobado el 30/09/2026)
+
+Lo que §3.8–9 y §8.4 enunciaban, ya decidido. El plan con fases, juez y verificación está en
+`0010-plan-de-implementacion-parte-2.md`.
+
+### 17.1 Dos preguntas, no una
+
+**Caja neta** = ingresos del período (compras `pagadas`, por `aprobada_at`, como §7.3) − **egresos
+registrados** del período. No resta costos calculados: si Carla anota el arriendo que pagó como
+egreso y el sistema además lo calcula por clase, se descontaría dos veces. La caja mide lo que
+salió de la cuenta.
+
+**Margen por clase dictada** = ingreso atribuido a la clase (regla §7.1, por reserva que consumió
+y no recuperó) − costo calculado de dictarla: hora de sala (`sedes.costo_hora_clp`) × horas +
+base de la profesora × horas + variable × créditos consumidos. Mide la economía unitaria de
+`CONTEXT.md` §5.b, clase por clase. **Solo parrilla.** Las especiales quedan fuera porque se
+pagan con otra regla —**la profesora recibe el 50% de lo recaudado después de descontar la
+sala, sin base** (Felipe, 30/09/2026)— que todavía no está construida y **hay que incorporar**.
+
+Un costo que no está cargado —profesora sin fila, sede sin costo— da margen **`null`**, la fila
+dice "sin costo cargado" y el total del mes declara cuántas quedaron fuera. Nunca cero.
+
+### 17.2 Modelo de datos
+
+- **`categorias_egreso`** (`slug` pk, `nombre`, `orden`, `activa`). Editable desde el Table
+  Editor, porque la lista se va a revisar con Carla. Nace con: arriendo de sala, sueldo de
+  profesora, marketing, insumos, servicios, otro.
+- **`egresos`** (`fecha date`, `categoria` → `categorias_egreso`, `descripcion`, `monto_clp > 0`,
+  `sede_id` opcional, `comprobante_path`, `registrado_por`, `anulado_por`, `motivo_anulacion`,
+  `deleted_at`). Se **registra y se anula**; no se edita. Como el libro de créditos.
+- **`costos_profesoras`** (`profesora_id` pk, `base_hora_clp`, `variable_credito_clp`). Una fila
+  por profesora, sembrada con **$18.000 y $250** para todas, Carli incluida.
+- Bucket privado `comprobantes-egresos` (PDF/JPG/WebP, 2 MB), URL firmada desde el servidor.
+
+Las tres tablas tienen **RLS de solo owner** (`tiene_nivel('owner')`), las primeras del proyecto.
+Solo `select` para `authenticated`; toda escritura va por `registrar_egreso`, `anular_egreso` y
+`adjuntar_comprobante_egreso`, concedidas solo a `service_role`, con el actor como parámetro.
+
+`metricas_finanzas(p_desde, p_hasta, p_desde_ant, p_hasta_ant)` es **`security definer`**, a
+diferencia de las de la parte 1: lee `sedes.costo_hora_clp`, que no está concedido a
+`authenticated`. La primera línea es el chequeo de owner. Agrega y agrupa; no divide: la caja,
+las horas y el margen salen de `lib/dominio/finanzas.ts`.
+
+### 17.3 Rutas
+
+`/owner/finanzas` (caja neta, egresos del mes, margen por clase) y
+`/owner/finanzas/nuevo-egreso`. Enlace **Finanzas** junto a Métricas. Tres llamadas por render:
+identidad, `metricas_resumen` (que ya trae los ingresos) y `metricas_finanzas`.
+
+### 17.4 Reglas
+
+1. El monto es entero, mayor que cero. La fecha no puede ser futura: un egreso es algo que ya se
+   pagó. La categoría tiene que existir y estar activa. Lo valida la función, no el formulario.
+2. Una caja negativa se muestra con el signo antes del peso (`-$6.000`) y, si el mes anterior fue
+   cero o negativo, la comparación va **solo en pesos**: un porcentaje contra un negativo no
+   significa nada.
+3. Créditos consumidos de una clase = reservas con crédito y `credito_devuelto = false`, fuera de
+   `pendiente_pago`, `expirada` y `liberada`. Es el mismo predicado de §7.1.3 y §8.5.b.
+4. Una clase sin `fin` dura una hora. Con `fin`, lo que dure.
+
+### 17.5 Criterios de aceptación
+
+Los valores esperados están en la fase 0.2 del plan: egresos del mes $103.000 en 3, anterior
+$50.000, caja neta **$9.500** y anterior **−$6.000**, y las tres clases del escenario con
+ingreso $15.000 / $7.000 / $15.500, costo de profesora $18.500 cada una y sala según su sede.
+
+- [ ] `npm test` en verde con los tests de `finanzas.ts`.
+- [ ] `verificar-finanzas.mjs` en verde contra staging, incluidos los rechazos de la función, la
+      clase sin costo y las filas que ve un admin (cero).
+- [ ] Un egreso registrado **desde el formulario** aparece en la lista y baja la caja; anulado
+      desde el botón, desaparece y la fila sigue en la base con `deleted_at`.
+- [ ] Un admin no ve `/owner/finanzas`, recibe `42501` por `/rest/v1/rpc/metricas_finanzas` y
+      `[]` en `/rest/v1/egresos`.
+- [ ] `GET /rest/v1/` expone lo nuevo y nada más.
+- [ ] `/owner/finanzas` resuelve en tres llamadas o menos.
+- [ ] `npm run build` pasa.
