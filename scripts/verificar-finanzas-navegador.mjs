@@ -125,6 +125,24 @@ try {
   );
   caso("en la base: $1.234, insumos, vigente", [fila?.monto_clp, fila?.categoria, fila?.deleted_at], [1234, "insumos", null]);
 
+  // El motivo es de cada fila, no de la lista: lo que se escribe en una no
+  // puede aparecer en otra, o se anula un egreso con el motivo de otro.
+  // Solo las filas de egresos: la cabecera del portal también tiene <li>.
+  const filasEgresos = pagina.locator("main li").filter({ has: pagina.getByRole("button", { name: "Anular" }) });
+  const [filaA, filaB] = [filasEgresos.nth(0), filasEgresos.nth(1)];
+  await filaA.getByRole("button", { name: "Anular" }).click();
+  await filaA.locator('input[placeholder="Se registró dos veces"]').fill("Motivo de la fila A");
+  await filaB.getByRole("button", { name: "Anular" }).click();
+  caso(
+    "el motivo escrito en una fila no aparece en otra",
+    await filaB.locator('input[placeholder="Se registró dos veces"]').inputValue(),
+    "",
+  );
+  // Se cierran las dos sin confirmar nada.
+  await filaA.getByRole("button", { name: "Anular" }).click();
+  await filaB.getByRole("button", { name: "Anular" }).click();
+  caso("nada se anuló al cerrar", (await sql(`select count(*)::int as n from public.egresos where deleted_at is not null and motivo_anulacion like 'Motivo de la fila%'`))[0].n, 0);
+
   // Anular: el botón de la fila, el motivo y la confirmación.
   const item = pagina.locator("li", { hasText: DESCRIPCION });
   await item.getByRole("button", { name: "Anular" }).click();
@@ -164,6 +182,21 @@ try {
   await pagina.getByRole("button", { name: "Registrar egreso" }).click();
   await pagina.waitForSelector('p[role="alert"]', { timeout: 15000 });
   caso("monto 0 → mensaje de la función", await pagina.locator('p[role="alert"]').innerText(), "El monto tiene que ser mayor que cero");
+  // "12.5" no es $125: el punto de miles solo vale en grupos de tres.
+  await pagina.fill('input[name="monto_clp"]', "12.5");
+  await pagina.getByRole("button", { name: "Registrar egreso" }).click();
+  await pagina.waitForFunction(
+    () => document.querySelector('p[role="alert"]')?.innerText.includes("entero"),
+    null,
+    { timeout: 15000 },
+  ).catch(() => {});
+  caso(
+    "«12.5» → rechazado como monto no entero",
+    (await pagina.locator('p[role="alert"]').innerText({ timeout: 5000 }).catch(() => "(sin aviso)")).includes("entero"),
+    true,
+    `en ${new URL(pagina.url()).pathname}`,
+  );
+  caso("«12.5» no quedó registrado como $125", (await sql(`select count(*)::int as n from public.egresos where monto_clp = 125 and deleted_at is null`))[0].n, 0);
   await pagina.fill('input[name="monto_clp"]', "1000");
   await pagina.fill('input[name="fecha"]', "2099-01-01");
   // Por nombre y no por `button[type="submit"]`: el primero de la página es

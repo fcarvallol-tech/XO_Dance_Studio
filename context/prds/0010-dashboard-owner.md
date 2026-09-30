@@ -809,10 +809,10 @@ de rutas de Next con el aviso del formulario—. Los dos son el argumento de pro
 
 ### Verificación
 
-- 21 tests nuevos (`lib/dominio/finanzas.test.ts` y `diaLegible` en `periodo.test.ts`); 173 en total, sin dependencias nuevas.
+- 25 tests nuevos (`lib/dominio/finanzas.test.ts` y `diaLegible` en `periodo.test.ts`); 177 en total, sin dependencias nuevas.
 - `scripts/verificar-finanzas.mjs`: **48/48** contra staging con los valores del juez, incluidos
   los rechazos de `registrar_egreso`, la clase sin costo y las filas que ve cada rol.
-- `scripts/verificar-finanzas-navegador.mjs`: **43/43** con Chromium a 390 px y el enlace del
+- `scripts/verificar-finanzas-navegador.mjs`: **47/47** con Chromium a 390 px y el enlace del
   correo. Egreso registrado desde el formulario, anulado desde el botón, comprobante subido y
   visto por URL firmada, admin rebotado por URL directa y con `42501` por REST.
 - **3 llamadas a Supabase por render** de `/owner/finanzas` y de `/owner/finanzas/nuevo-egreso`,
@@ -821,10 +821,15 @@ de rutas de Next con el aviso del formulario—. Los dos son el argumento de pro
 
 ### Lo que quedó pendiente
 
-- **La migración `20260930150000_finanzas_egresos.sql` está aplicada a staging y no a producción.**
-- **`sedes.costo_hora_clp` en producción** para Seducción Latina y Diaguitas.
+- ~~La migración está aplicada a staging y no a producción~~ ✅ **Aplicada a producción el 30/09/2026**
+  con la aprobación de Felipe, junto con `20260930170000_costo_hora_sedes_viejas.sql`.
+- ~~`sedes.costo_hora_clp` en producción~~ ✅ Cargado por esa migración: $17.000 y $0.
 - **El pago de las clases especiales** —50% de lo recaudado después de descontar la sala, sin
-  base— no está construido. Va con la parte 3.
+  base— está en `CONTEXT.md` §5.b y no construido. Va con la parte 3.
+- De los menores de la revisión final, Felipe pidió arreglar dos y se arreglaron con test primero:
+  **"12.5" ya no se lee como $125** (`montoDesdeTexto`: el punto solo vale en grupos de tres, y el
+  cero lo sigue rechazando la base con su mensaje) y **el motivo de anulación es de cada fila**
+  (`FilaEgreso` con su propio estado). Los demás quedan anotados en `ARCHITECTURE.md` §10.
 - Una pantalla para las categorías, si editarlas por el Table Editor resulta incómodo.
 - La parte 3: liquidación de profesoras, `dictada` / `no_dictada`, causa y reemplazo. Reusa
   `costos_profesoras` y el predicado de créditos consumidos de `metricas_finanzas`.

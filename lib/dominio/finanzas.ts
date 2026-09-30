@@ -185,3 +185,30 @@ export function porCategoria(
     .map(([categoria, montoClp]) => ({ categoria, montoClp }))
     .sort((a, b) => b.montoClp - a.montoClp || a.categoria.localeCompare(b.categoria));
 }
+
+// ---------------------------------------------------------------------------
+// El monto que alguien teclea
+// ---------------------------------------------------------------------------
+
+/** El tope de un `int` de Postgres, que es el tipo de `egresos.monto_clp`. */
+const MONTO_MAXIMO_CLP = 2_147_483_647;
+
+/**
+ * Un monto en pesos a partir de lo que se escribió en el campo.
+ *
+ * Se aceptan enteros, con o sin puntos de miles en grupos de tres: "68000" y
+ * "68.000" son lo mismo. **"12.5" no es 125**: quitar los puntos a ciegas lo
+ * convertía en $125 sin que nadie lo notara. Un punto que no separa miles es
+ * un decimal mal escrito, y se rechaza para que la persona lo vea.
+ *
+ * `null` para todo lo que no sea un entero entre 0 y el tope de la columna.
+ */
+export function montoDesdeTexto(texto: string): number | null {
+  const limpio = texto.trim();
+  if (!/^\d+$/.test(limpio) && !/^\d{1,3}(\.\d{3})+$/.test(limpio)) return null;
+  const monto = Number.parseInt(limpio.replace(/\./g, ""), 10);
+  // El cero pasa: lo rechaza `registrar_egreso` con su propio mensaje, que es
+  // más preciso que "no es un entero". Acá solo se mira el formato y el tope.
+  if (!Number.isSafeInteger(monto) || monto > MONTO_MAXIMO_CLP) return null;
+  return monto;
+}

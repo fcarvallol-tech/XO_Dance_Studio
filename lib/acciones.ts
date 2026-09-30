@@ -15,6 +15,7 @@ import {
 } from "./correo";
 import { cuandoLegible } from "./compras";
 import { instanteEnSantiago } from "./dominio/periodo";
+import { montoDesdeTexto } from "./dominio/finanzas";
 import { resolverOferta } from "./ofertas-consultas";
 import { fechaLegible } from "./planes";
 
@@ -676,9 +677,10 @@ export async function registrarEgreso(
     return { ok: false, mensaje: "Solo el owner registra egresos." };
   }
 
-  // "28.000" se acepta y se lee como 28000. Cualquier otra cosa no es un monto.
-  const montoTexto = String(datos.get("monto_clp") ?? "").trim().replace(/\./g, "");
-  if (!/^\d+$/.test(montoTexto)) {
+  // "68.000" se acepta y se lee como 68000; "12.5" no es 125 y se rechaza. La
+  // regla vive en `montoDesdeTexto`, con tests: acá solo se pregunta.
+  const monto = montoDesdeTexto(String(datos.get("monto_clp") ?? ""));
+  if (monto === null) {
     return { ok: false, mensaje: "El monto tiene que ser un número entero, en pesos." };
   }
   const fecha = String(datos.get("fecha") ?? "").trim();
@@ -691,7 +693,7 @@ export async function registrarEgreso(
     p_fecha: fecha,
     p_categoria: String(datos.get("categoria") ?? "").trim(),
     p_descripcion: String(datos.get("descripcion") ?? ""),
-    p_monto_clp: Number.parseInt(montoTexto, 10),
+    p_monto_clp: monto,
     p_sede_id: String(datos.get("sede_id") ?? "").trim() || null,
   });
 

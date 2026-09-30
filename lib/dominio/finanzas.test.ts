@@ -21,6 +21,7 @@ import {
   costoClase,
   horasDeClase,
   ingresoClase,
+  montoDesdeTexto,
   margenClase,
   porCategoria,
   resumenMargen,
@@ -197,4 +198,37 @@ test("porCategoria: dos egresos de la misma categoría se suman", () => {
     ]),
     [{ categoria: "insumos", montoClp: 15_000 }],
   );
+});
+
+// ---------------------------------------------------------------------------
+// montoDesdeTexto — lo que alguien teclea en el campo del monto
+// ---------------------------------------------------------------------------
+
+test("montoDesdeTexto: enteros, con o sin puntos de miles", () => {
+  assert.equal(montoDesdeTexto("68000"), 68_000);
+  assert.equal(montoDesdeTexto("68.000"), 68_000);
+  assert.equal(montoDesdeTexto("1.234.567"), 1_234_567);
+  assert.equal(montoDesdeTexto("  500 "), 500);
+});
+
+test("montoDesdeTexto: «12.5» no es 125, es un decimal mal escrito", () => {
+  // Antes se quitaban los puntos sin mirar y 12.5 entraba como $125.
+  assert.equal(montoDesdeTexto("12.5"), null);
+  assert.equal(montoDesdeTexto("12.50"), null);
+  assert.equal(montoDesdeTexto("1.2345"), null);
+  assert.equal(montoDesdeTexto("12,5"), null);
+});
+
+test("montoDesdeTexto: vacío, negativo y letras dan null; el cero pasa y lo rechaza la base", () => {
+  assert.equal(montoDesdeTexto(""), null);
+  assert.equal(montoDesdeTexto("-5"), null);
+  assert.equal(montoDesdeTexto("abc"), null);
+  assert.equal(montoDesdeTexto("$1.000"), null);
+  // Con su mensaje, "mayor que cero", que es más preciso que "no es un entero".
+  assert.equal(montoDesdeTexto("0"), 0);
+});
+
+test("montoDesdeTexto: más que un int de Postgres da null y no 22003", () => {
+  assert.equal(montoDesdeTexto("2147483647"), 2_147_483_647);
+  assert.equal(montoDesdeTexto("2147483648"), null);
 });
