@@ -158,7 +158,13 @@ function gruposPara(rol: Rol, correosFallidos = 0): Grupo[] {
   }
 
   if (tieneNivel(rol, "owner")) {
-    grupos.push({ de: null, enlaces: [{ href: "/owner/metricas", texto: "Métricas" }] });
+    grupos.push({
+      de: null,
+      enlaces: [
+        { href: "/owner/metricas", texto: "Métricas" },
+        { href: "/owner/finanzas", texto: "Finanzas" },
+      ],
+    });
   }
 
   return grupos;
