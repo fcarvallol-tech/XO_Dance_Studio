@@ -458,3 +458,21 @@ en dos cada uno, y no caben en 56 px. **La semana entera pasa de `md` a `lg`**: 
 un día a la vez, como en el teléfono. Se mide en 375, 768, 1023, 1024 y 1280, los dos del medio
 para clavar el borde. Verificador **44/44**. Lo que sí se corta ahora, donde el nombre ocupa dos
 líneas, es la profesora: es el orden elegido.
+
+### El logo, segunda vuelta (Felipe, 30/09/2026)
+
+Dos cambios a la cabecera del ajuste 1:
+
+| # | Qué pidió | Cómo quedó |
+|---|---|---|
+| a | El bulto quedó **rectangular**: en deathwishcoffee.com la barra baja **en curva** alrededor del logo | El bulto pasa de `div` con una esquina redondeada a **un SVG en cuenco** que cuelga bajo la barra. Su trazo sale de la línea de la barra con un redondeo, baja rodeando el logo y vuelve a subir: se lee como la misma línea estirándose, sin paredes verticales dentro de la barra. Ajustado al contorno del logo —216 × 64 px en escritorio, 144 × 26 en móvil—, no más grande |
+| b | El logo estaba **pegado al borde** izquierdo | Bulto y logo se separan del borde de la ventana —12 px en móvil, 32 en `sm`, 40 en `lg`— y siguen anclados a ella, no al contenedor centrado |
+
+**Mirado en la referencia con Chromium**, no con fetch: allá el cuenco es el mismo círculo negro
+del logo, que queda medio dentro y medio fuera de la barra.
+
+**Verificado** con el sitio construido contra **staging** en un puerto aparte (`.env.local` apunta
+a producción): verificador **44/44**, sin desborde a 375 y 1280, y el contenido sigue empezando
+debajo del cuenco (168 px en escritorio, 128 en móvil). **A 1024 px la barra desborda 142 px**: los
+seis enlaces y Mi Cuenta no caben en una línea. **No es de este cambio**: `main` desborda lo mismo,
+medido. El verificador no lo ve porque mide 375, 768 y 1280. Queda pendiente.

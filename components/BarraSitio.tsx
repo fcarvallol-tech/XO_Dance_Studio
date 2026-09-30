@@ -18,9 +18,11 @@ import { CAMINOS, MI_CUENTA } from "@/lib/navegacion";
  *
  * Cómo está hecho, porque cada pieza se rompe sola:
  *
- * 1. **El bulto es un `div` hermano del logo**, del mismo color que la barra y
- *    con las esquinas de abajo redondeadas. No es un `border-radius` sobre la
- *    barra: la barra es de ancho completo y curvarla entera no daría un bulto.
+ * 1. **El bulto es un SVG que cuelga bajo la barra**, del mismo negro. No es un
+ *    `div` con esquinas redondeadas: un rectángulo se lee como una caja pegada
+ *    a la barra, y lo que se busca es que la **línea de la barra se curve** y
+ *    baje rodeando el logo. Por eso el trazo es una sola curva que sale de la
+ *    línea de la barra, baja en cuenco y vuelve a subir, sin paredes verticales.
  * 2. **El logo va encima** (`z-10` contra el bulto), con aire arriba y abajo: el
  *    PNG llega hasta el borde superior de su lienzo, así que sin ese aire se ve
  *    **cortado por arriba**, que es lo que pasaba.
@@ -43,25 +45,36 @@ export function BarraSitio() {
       </a>
 
       {/* El bulto y el logo cuelgan del `header`, que ocupa el ancho de la
-          ventana, y **no del contenedor centrado**: anclado al costado
-          izquierdo quiere decir al borde de la pantalla, no al del contenido.
-          Dentro del contenedor, en pantallas anchas el bulto nacía separado del
-          borde y se le veía una línea vertical suelta a la izquierda.
+          ventana, y **no del contenedor centrado**: anclados al costado
+          izquierdo de la pantalla, pero **separados de su borde**. Pegado al
+          borde el logo se leía apretado; con aire se lee como una pieza propia.
 
-          **El borde es lo que hace visible el efecto.** El relleno es el mismo
-          negro de la barra y el fondo de casi todo el sitio también lo es, así
-          que sin borde no se distingue de nada. Con él, la línea que delimita la
-          barra se curva y baja rodeando el logo: eso es "la barra acompaña la
-          forma del logo". Arriba no lleva borde, ahí se funde con la barra. */}
-      <div
+          El SVG empieza 1px arriba del final de la barra para tapar su borde
+          justo donde nace la curva: así la línea no atraviesa el cuenco, sino
+          que baja con él. `preserveAspectRatio="none"` deja usar el mismo dibujo
+          en móvil y escritorio, y `non-scaling-stroke` mantiene la línea en 1px
+          aunque se estire. */}
+      <svg
         aria-hidden="true"
-        className="pointer-events-none absolute top-0 left-0 z-0 h-[7.5rem] w-40 rounded-br-[2.5rem] border-r border-b border-xo-blanco/10 bg-xo-negro sm:h-[10.5rem] sm:w-60 sm:rounded-br-[3.5rem]"
-      />
+        viewBox="0 0 216 64"
+        preserveAspectRatio="none"
+        className="pointer-events-none absolute top-[calc(100%-1px)] left-3 z-0 h-[27px] w-36 sm:left-8 sm:h-[65px] sm:w-54 lg:left-10"
+      >
+        <path
+          className="fill-xo-negro"
+          d="M0 0H216C206 0 200 3 200 12C200 44 164 64 108 64C52 64 16 44 16 12C16 3 10 0 0 0Z"
+        />
+        <path
+          className="fill-none stroke-xo-blanco/10"
+          vectorEffect="non-scaling-stroke"
+          d="M0 0.5C10 0.5 16 3 16 12C16 44 52 63.5 108 63.5C164 63.5 200 44 200 12C200 3 206 0.5 216 0.5"
+        />
+      </svg>
 
       <Link
         href="/"
         aria-label="XO Dance Studio, ir al inicio"
-        className="absolute top-4 left-5 z-10 sm:top-6 sm:left-8"
+        className="absolute top-[1.1rem] left-[2.2rem] z-10 sm:top-5 sm:left-[4.2rem] lg:left-[4.7rem]"
       >
         <Image
           src="/logo-xo.png"
