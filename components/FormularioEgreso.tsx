@@ -48,8 +48,17 @@ export function FormularioEgreso({
     );
   }
 
+  // `onSubmit` y no `action`: con `action`, React vacía el formulario al
+  // terminar la acción, también cuando la base rechazó el egreso, y la
+  // persona tendría que escribir todo de nuevo por un cero en el monto.
   return (
-    <form action={guardar} className="max-w-xl space-y-8">
+    <form
+      onSubmit={(ev) => {
+        ev.preventDefault();
+        guardar(new FormData(ev.currentTarget));
+      }}
+      className="max-w-xl space-y-8"
+    >
       <div className="grid gap-6 sm:grid-cols-2">
         <Campo etiqueta="Fecha en que se pagó" requerido>
           <input name="fecha" type="date" required defaultValue={hoy} max={hoy} className={ENTRADA} />
