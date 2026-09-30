@@ -40,6 +40,29 @@ export const ES = {
   borrador: "Borrador del escenario",
 };
 
+/**
+ * Los seis egresos de PRD-0010 parte 2 (fase 0.2 del plan). Fijos, para que
+ * `verificar-finanzas.mjs` los pueda nombrar. E4 está anulado y E6 queda fuera
+ * de los dos períodos, a propósito.
+ */
+export const EG = {
+  E1: "66666666-6666-4666-8666-000000000001",
+  E2: "66666666-6666-4666-8666-000000000002",
+  E3: "66666666-6666-4666-8666-000000000003",
+  E4: "66666666-6666-4666-8666-000000000004",
+  E5: "66666666-6666-4666-8666-000000000005",
+  E6: "66666666-6666-4666-8666-000000000006",
+};
+
+/** Las cinco clases del escenario de PRD-0010 §11.4, por id fijo. */
+export const CL = {
+  1: "22222222-2222-4222-8222-000000000001",
+  2: "22222222-2222-4222-8222-000000000002",
+  3: "22222222-2222-4222-8222-000000000003",
+  4: "22222222-2222-4222-8222-000000000004",
+  5: "22222222-2222-4222-8222-000000000005",
+};
+
 export async function conectar() {
   const hosts = [
     `aws-0-sa-east-1.pooler.supabase.com`,
