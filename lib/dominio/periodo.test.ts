@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { instanteEnSantiago, mesAnterior, mesEnCurso, nombreDelMes } from "./periodo.ts";
+import { diaLegible, instanteEnSantiago, mesAnterior, mesEnCurso, nombreDelMes } from "./periodo.ts";
 
 /** Qué hora de Santiago es un instante UTC, para leer los asertos. */
 const enSantiago = (d: Date) =>
@@ -90,4 +90,21 @@ test("instanteEnSantiago: acepta el formato con espacio y el texto roto devuelve
   );
   assert.equal(instanteEnSantiago("20 de septiembre"), null);
   assert.equal(instanteEnSantiago(""), null);
+});
+
+// ---------------------------------------------------------------------------
+// diaLegible — un `date` de la base no es un instante
+// ---------------------------------------------------------------------------
+
+test("diaLegible: un YYYY-MM-DD se lee como ese día, no como la medianoche UTC corrida a Santiago", () => {
+  // `fechaCorta("2026-09-06")` daba "5 de septiembre": new Date() lo toma como
+  // medianoche UTC y en Santiago todavía es el día anterior.
+  assert.equal(diaLegible("2026-09-06"), "6 de septiembre");
+  assert.equal(diaLegible("2026-09-01"), "1 de septiembre");
+  assert.equal(diaLegible("2026-12-31"), "31 de diciembre");
+});
+
+test("diaLegible: null o vacío dan null", () => {
+  assert.equal(diaLegible(null), null);
+  assert.equal(diaLegible(""), null);
 });

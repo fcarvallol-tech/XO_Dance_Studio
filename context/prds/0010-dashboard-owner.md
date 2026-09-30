@@ -686,6 +686,15 @@ verificar el flujo.
 - Mutaciones deliberadas dentro de transacciones revertidas, para comprobar que el arnés puede
   fallar: detecta las tres y la conciliación caza los dos tipos de descuadre.
 
+### La revisión final
+
+Un revisor fresco leyó la rama entera: nada crítico y dos textos incorrectos, corregidos con test
+primero. La tarjeta de caja decía "el mes anterior fue cero" cuando fue **negativo** —ahora dice
+"sin porcentaje: el mes anterior fue negativo", y el verificador comprueba las dos frases—, y la
+fecha del último egreso salía **un día antes** por leer un `date` como instante: `diaLegible` en
+`lib/dominio/periodo.ts`, con tests, y se usa en la lista y en los estados vacíos. Lo menor que
+se dejó anotado y sin hacer está en el mensaje de cierre y en `ARCHITECTURE.md` §10.
+
 ### Lo que quedó pendiente
 
 - **La migración no está aplicada a producción.** Solo a staging.
@@ -800,10 +809,10 @@ de rutas de Next con el aviso del formulario—. Los dos son el argumento de pro
 
 ### Verificación
 
-- 19 tests nuevos en `lib/dominio/finanzas.test.ts`; 171 en total, sin dependencias nuevas.
+- 21 tests nuevos (`lib/dominio/finanzas.test.ts` y `diaLegible` en `periodo.test.ts`); 173 en total, sin dependencias nuevas.
 - `scripts/verificar-finanzas.mjs`: **48/48** contra staging con los valores del juez, incluidos
   los rechazos de `registrar_egreso`, la clase sin costo y las filas que ve cada rol.
-- `scripts/verificar-finanzas-navegador.mjs`: **41/41** con Chromium a 390 px y el enlace del
+- `scripts/verificar-finanzas-navegador.mjs`: **43/43** con Chromium a 390 px y el enlace del
   correo. Egreso registrado desde el formulario, anulado desde el botón, comprobante subido y
   visto por URL firmada, admin rebotado por URL directa y con `42501` por REST.
 - **3 llamadas a Supabase por render** de `/owner/finanzas` y de `/owner/finanzas/nuevo-egreso`,

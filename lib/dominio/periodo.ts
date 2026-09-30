@@ -120,3 +120,20 @@ export function instanteEnSantiago(local: string): Date | null {
   for (let i = 0; i < 2; i++) instante = nominal - desfase(new Date(instante));
   return new Date(instante);
 }
+
+/**
+ * Un `date` de la base —`"2026-09-06"`— como "6 de septiembre".
+ *
+ * **No es un instante.** `new Date("2026-09-06")` es la medianoche UTC, y
+ * formateada en Santiago da el 5: `fechaCorta` de `Metricas.tsx` sirve para
+ * un `timestamptz`, no para esto. Acá se ancla al mediodía UTC y se formatea
+ * en UTC, así el día es el día. `null` si no hay fecha.
+ */
+export function diaLegible(fecha: string | null): string | null {
+  if (!fecha) return null;
+  return new Intl.DateTimeFormat("es-CL", {
+    timeZone: "UTC",
+    day: "numeric",
+    month: "long",
+  }).format(new Date(`${fecha}T12:00:00Z`));
+}

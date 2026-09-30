@@ -83,6 +83,10 @@ try {
   caso("denominador de la caja", tiene("$112.500 que entraron menos $103.000 que salieron"), true);
   caso("variación +$15.500 en pesos", tiene("+$15.500"), true);
   caso("el mes anterior cerró en -$6.000", tiene("cerró en -$6.000"), true);
+  // Un anterior negativo no es un anterior en cero: la tarjeta no puede decir
+  // las dos cosas en la misma pantalla (revisión final, hallazgo 1).
+  caso("no dice «el mes anterior fue cero»", tiene("el mes anterior fue cero"), false);
+  caso("dice que el anterior fue negativo", tiene("el mes anterior fue negativo"), true);
   caso("nunca «$-»", texto.includes("$-"), false);
   caso("3 egresos registrados", tiene("3 egresos registrados"), true);
   caso("egreso E1 en la lista", tiene("Arriendo de sala, 4 clases"), true);

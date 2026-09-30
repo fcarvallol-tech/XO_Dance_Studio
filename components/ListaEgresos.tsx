@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { anularEgreso } from "@/lib/acciones";
 import { clp } from "@/lib/planes";
+import { diaLegible } from "@/lib/dominio/periodo";
 import type { EgresoFila } from "@/lib/finanzas-consultas";
 
 /**
@@ -59,7 +60,7 @@ export function ListaEgresos({ egresos }: { egresos: EgresoFila[] }) {
                   <strong className="font-semibold">{clp(e.monto_clp)}</strong>
                 </p>
                 <p className="text-sm text-xo-gris">
-                  {fechaDia(e.fecha)} · {e.categoria_nombre}
+                  {diaLegible(e.fecha)} · {e.categoria_nombre}
                   {e.sede ? ` · ${e.sede}` : ""}
                 </p>
               </div>
@@ -110,15 +111,6 @@ export function ListaEgresos({ egresos }: { egresos: EgresoFila[] }) {
       </ul>
     </div>
   );
-}
-
-/** "6 de septiembre", a partir de un `YYYY-MM-DD` que es un día y no un instante. */
-function fechaDia(fecha: string): string {
-  return new Intl.DateTimeFormat("es-CL", {
-    timeZone: "UTC",
-    day: "numeric",
-    month: "long",
-  }).format(new Date(`${fecha}T12:00:00Z`));
 }
 
 function Comprobante({

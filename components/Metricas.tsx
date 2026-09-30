@@ -147,9 +147,13 @@ export function Indicador({
                   ? clpConSigno(comparacion.absoluta)
                   : `${signo}${comparacion.absoluta}`}
               </span>{" "}
-              {comparacion.relativa === null
-                ? "· el mes anterior fue cero"
-                : `· ${signo}${pct(comparacion.relativa)} vs. el mes anterior`}
+              {/* Sin porcentaje hay dos motivos distintos, y la caja puede
+                  traer el segundo: contra un negativo el % no dice nada. */}
+              {comparacion.relativa !== null
+                ? `· ${signo}${pct(comparacion.relativa)} vs. el mes anterior`
+                : comparacion.anterior !== null && comparacion.anterior < 0
+                  ? "· sin porcentaje: el mes anterior fue negativo"
+                  : "· el mes anterior fue cero"}
             </>
           )}
         </p>

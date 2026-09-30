@@ -19,7 +19,7 @@ import { requiereNivel } from "@/lib/sesion";
 import { clp } from "@/lib/planes";
 import { getResumen } from "@/lib/metricas-consultas";
 import { getFinanzas, type ClaseFinanzas } from "@/lib/finanzas-consultas";
-import { mesAnterior, mesEnCurso, nombreDelMes } from "@/lib/dominio/periodo";
+import { diaLegible, mesAnterior, mesEnCurso, nombreDelMes } from "@/lib/dominio/periodo";
 import { comparar } from "@/lib/dominio/metricas";
 import {
   cajaNeta,
@@ -139,7 +139,9 @@ function BloqueCaja({
   const cmp = compararCaja(caja.netoClp, cajaAnt.netoClp);
 
   const nadaEsteMes = ingresos === 0 && egresos === 0;
-  const ultimoDato = [fechaCorta(ultimaCompra), fechaCorta(ultimoEgreso)].filter(Boolean);
+  // `ultimaCompra` es un timestamptz; `ultimoEgreso` es un `date`, y un date
+  // leído como instante cae un día antes en Santiago. Cada uno con su formato.
+  const ultimoDato = [fechaCorta(ultimaCompra), diaLegible(ultimoEgreso)].filter(Boolean);
 
   return (
     <Bloque
@@ -182,8 +184,8 @@ function BloqueCaja({
           comparacionEnPesos
           sinDatoDesde={
             egresos === 0
-              ? fechaCorta(ultimoEgreso)
-                ? `Ninguno este mes. El último registrado fue el ${fechaCorta(ultimoEgreso)}.`
+              ? diaLegible(ultimoEgreso)
+                ? `Ninguno este mes. El último registrado fue el ${diaLegible(ultimoEgreso)}.`
                 : "Ninguno este mes, y nunca se ha registrado uno."
               : undefined
           }
@@ -228,8 +230,8 @@ function BloqueEgresos({ F, mes }: { F: Datos; mes: string }) {
         // El vacío solo se muestra si NO hubo error: eso lo decide la página.
         <p className="text-xo-gris">
           Ningún egreso registrado en {mes}.{" "}
-          {fechaCorta(F.desde_siempre.ultimo_egreso)
-            ? `El último fue el ${fechaCorta(F.desde_siempre.ultimo_egreso)}.`
+          {diaLegible(F.desde_siempre.ultimo_egreso)
+            ? `El último fue el ${diaLegible(F.desde_siempre.ultimo_egreso)}.`
             : "Nunca se ha registrado uno."}
         </p>
       )}
