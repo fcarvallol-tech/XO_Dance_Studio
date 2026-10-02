@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | ✅ **Construido el 28/09/2026**, fases 0 a 6, **más once ajustes de Felipe el 29/09/2026** y **cuatro más al calendario** el mismo día (§14). ⏸ **Falta desplegar**: el video del hero y el visto bueno de Felipe |
+| **Estado** | ✅ **Construido el 28/09/2026**, fases 0 a 6, **más once ajustes de Felipe el 29/09/2026** y **cuatro más al calendario** el mismo día (§14). 🚀 **Publicado en `main` el 02/10/2026** por decisión de Felipe, **sin el video del hero**, que sigue pendiente de Carla |
 | **Autor** | Claude, a pedido de Felipe Carvallo |
 | **Fecha** | 28 de septiembre de 2026 |
 | **Hito** | Hito 0 — Lanzamiento |
@@ -475,4 +475,29 @@ del logo, que queda medio dentro y medio fuera de la barra.
 a producción): verificador **44/44**, sin desborde a 375 y 1280, y el contenido sigue empezando
 debajo del cuenco (168 px en escritorio, 128 en móvil). **A 1024 px la barra desborda 142 px**: los
 seis enlaces y Mi Cuenta no caben en una línea. **No es de este cambio**: `main` desborda lo mismo,
-medido. El verificador no lo ve porque mide 375, 768 y 1280. Queda pendiente.
+medido. El verificador no lo ve porque mide 375, 768 y 1280. ~~Queda pendiente.~~ **Resuelto el
+02/10/2026**, ver la tercera vuelta.
+
+### El logo, tercera vuelta: un círculo, y el verificador en doce anchos (02/10/2026)
+
+El cuenco en SVG pasa a **un círculo negro completo** alrededor del logo: 104 px en el teléfono y
+144 desde `sm`, con 12, 32 y 40 px de aire con el borde de la ventana. El logo cede, no la forma:
+se achica hasta caber, medido sobre sus píxeles y no sobre el rectángulo del PNG.
+
+**El desborde de 1024 px se resolvió**: los seis caminos en línea pasan de `lg` a `xl`, y bajo
+1280 px va el botón Menú. Medido a 1024: el documento mide 1024 px y la página no se desplaza a lo
+ancho. Antes eran 142 px.
+
+**El verificador mide ahora doce anchos** —cada quiebre de Tailwind, el píxel anterior a cada uno,
+320 y 1920— y suma casos del círculo (redondo, con aire, sobresale, el logo cabe, nada de la barra
+se le mete) y del menú del teléfono (el círculo no tapa el primer camino, el menú no corta el
+logo). Contra staging dio **147/148**. El que falla no es de la barra: **una clase que empieza a
+las 14:50 se dibuja en el tramo de las 15:00**, porque la grilla es de medias horas y una hora que
+no cae en :00 ni :30 queda corrida. Está en staging; no se comprobó si producción tiene horarios
+así. **Pendiente.**
+
+**Pendiente, decisión de Felipe (02/10/2026): el borde debe seguir el contorno del logo, con el
+logo sobresaliendo.** El círculo es geométricamente un círculo, pero su mitad de arriba es negro
+sobre el negro de la barra y no se ve: lo que se percibe es la línea de la barra bajando en
+semicírculo, y a 375 px solo cuelgan 32 de sus 104 px.
+
