@@ -1,18 +1,33 @@
 /**
- * PRD-0022: el sitio público, mirado con un navegador en tres anchos.
+ * PRD-0022: el sitio público, mirado con un navegador en todos sus quiebres.
  *
- * Lo que esto comprueba no se ve compilando: que el logo sobresalga **sin tapar**
- * el primer texto de cada página, que a 375 px se pueda llegar a todos lados, y
- * que ninguna página desborde a lo ancho.
+ * Lo que esto comprueba no se ve compilando: que el círculo del logo sobresalga
+ * **sin tapar** el primer título de cada página, que el logo quepa dentro, que
+ * a 375 px se pueda llegar a todos lados, y que ninguna página desborde a lo
+ * ancho.
+ *
+ * **Los anchos son todos los quiebres de Tailwind y el píxel de antes de cada
+ * uno**, más los extremos. Medía 375, 768 y 1280, y a 1024 la barra desbordaba
+ * 142 px sin que nadie lo viera: el problema no fue el desborde, fue que ese
+ * ancho no se medía. Un quiebre nuevo en el código es un ancho nuevo acá.
  *
  *   npm i --no-save playwright && npx playwright install chromium
  *   node scripts/verificar-sitio.mjs
+ *   SITIO=http://localhost:3100 node scripts/verificar-sitio.mjs
  */
 const S = process.env.SCRATCHPAD ?? process.cwd();
 const pw = await import(`${S}/node_modules/playwright/index.js`);
 const chromium = (pw.default ?? pw).chromium;
 
-const SITIO = "http://localhost:3000";
+const SITIO = process.env.SITIO ?? "http://localhost:3000";
+// sm 640 · md 768 · lg 1024 · xl 1280, cada uno con su píxel anterior.
+const ANCHOS = [320, 375, 639, 640, 767, 768, 1023, 1024, 1279, 1280, 1440, 1920];
+// Desde este ancho los seis caminos van en la barra; bajo él, el botón Menú.
+const BARRA_COMPLETA = 1280;
+// El círculo mínimo que contiene los píxeles de `logo-xo.png`, en fracciones
+// del ancho y alto del logo. Medido del PNG; si el logo cambia, se remide.
+const LOGO = { cx: 0.487, cy: 0.6, r: 0.52 };
+
 const PAGINAS = [
   "/", "/calendario", "/nuestras-profes", "/comprar",
   "/clases-especiales", "/nosotros", "/ayuda", "/profesoras/carli",
@@ -24,39 +39,71 @@ const caso = (n, esperado, real) =>
 
 const nav = await chromium.launch();
 try {
-  // --- ninguna página desborda, en ningún ancho ---------------------------
-  for (const ancho of [375, 768, 1280]) {
+  // --- en cada ancho: sin desborde, y el círculo del logo en su lugar ------
+  for (const ancho of ANCHOS) {
     const p = await (await nav.newContext({ viewport: { width: ancho, height: 900 } })).newPage();
     const desbordan = [];
+    const tapados = [];
     for (const ruta of PAGINAS) {
       await p.goto(`${SITIO}${ruta}`, { waitUntil: "networkidle" });
-      if (await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) {
-        desbordan.push(ruta);
-      }
+      const m = await p.evaluate(() => ({
+        desborda: document.documentElement.scrollWidth > window.innerWidth,
+        circuloAbajo: document.querySelector("[data-circulo-logo]")?.getBoundingClientRect().bottom ?? 0,
+        tituloArriba: document.querySelector("main h1, main h2")?.getBoundingClientRect().top ?? 0,
+      }));
+      if (m.desborda) desbordan.push(ruta);
+      if (!(m.tituloArriba > m.circuloAbajo)) tapados.push(ruta);
     }
     caso(`a ${ancho}px ninguna página desborda a lo ancho`, "", desbordan.join(", "));
+    caso(`a ${ancho}px el círculo no tapa el primer título`, "", tapados.join(", "));
+
+    await p.goto(`${SITIO}/`, { waitUntil: "networkidle" });
+    const c = await p.evaluate(({ LOGO }) => {
+      const circulo = document.querySelector("[data-circulo-logo]");
+      const cr = circulo.getBoundingClientRect();
+      const lr = document.querySelector("header a[aria-label] img").getBoundingClientRect();
+      const barra = document.querySelector("header").getBoundingClientRect();
+      const R = cr.width / 2;
+      const dentro = Math.hypot(
+        lr.left + LOGO.cx * lr.width - (cr.left + R),
+        lr.top + LOGO.cy * lr.height - (cr.top + R),
+      ) + LOGO.r * lr.width;
+      // Lo que se puede apretar en la barra, fuera del logo, que se vea.
+      const visibles = [...document.querySelectorAll("header a, header button")]
+        .filter((e) => !e.matches("a[aria-label]") && !e.closest("#menu-movil"))
+        .map((e) => e.getBoundingClientRect())
+        .filter((x) => x.width > 1 && x.height > 1);
+      const miCuenta = [...document.querySelectorAll("header a")].find((e) => e.textContent.trim() === "Mi Cuenta");
+      const mc = miCuenta.getBoundingClientRect();
+      return {
+        redondo: Math.abs(cr.width - cr.height) < 0.5 &&
+          getComputedStyle(circulo.firstElementChild).borderRadius !== "0px",
+        aire: cr.left,
+        sobresale: cr.bottom > barra.bottom,
+        cabe: dentro <= R,
+        choca: visibles.some((x) => x.left < cr.right && x.top < cr.bottom),
+        miCuenta: mc.width > 0 && mc.left >= 0 && mc.right <= window.innerWidth,
+        caminosEnBarra: [...document.querySelectorAll('header nav[aria-label="Secciones"]:not(#menu-movil) a')]
+          .filter((e) => e.getBoundingClientRect().width > 0).length,
+        menu: [...document.querySelectorAll("header button")].some((e) => e.textContent.trim() === "Menú" && e.getBoundingClientRect().width > 0),
+      };
+    }, { LOGO });
+    caso(`a ${ancho}px el logo va en un círculo`, true, c.redondo);
+    caso(`a ${ancho}px el círculo tiene aire con el borde (≥ 12 px)`, true, c.aire >= 12);
+    caso(`a ${ancho}px el círculo sobresale de la barra`, true, c.sobresale);
+    caso(`a ${ancho}px el logo cabe dentro del círculo`, true, c.cabe);
+    caso(`a ${ancho}px nada de la barra se mete en el círculo`, false, c.choca);
+    caso(`a ${ancho}px Mi Cuenta se ve entero`, true, c.miCuenta);
+    caso(
+      `a ${ancho}px ${ancho >= BARRA_COMPLETA ? "los seis caminos van en la barra" : "los caminos van en el menú"}`,
+      ancho >= BARRA_COMPLETA ? "6 · sin Menú" : "0 · con Menú",
+      `${c.caminosEnBarra} · ${c.menu ? "con" : "sin"} Menú`,
+    );
+    await p.close();
   }
 
-  // --- el logo sobresale y no tapa ---------------------------------------
   const esc = await (await nav.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
   await esc.goto(`${SITIO}/ayuda`, { waitUntil: "networkidle" });
-
-  const medidas = await esc.evaluate(() => {
-    const logo = document.querySelector("header a img");
-    const barra = document.querySelector("header");
-    const titulo = document.querySelector("h1");
-    return {
-      logo: logo?.getBoundingClientRect().height ?? 0,
-      barra: barra?.getBoundingClientRect().height ?? 0,
-      logoAbajo: logo?.getBoundingClientRect().bottom ?? 0,
-      barraAbajo: barra?.getBoundingClientRect().bottom ?? 0,
-      tituloArriba: titulo?.getBoundingClientRect().top ?? 0,
-    };
-  });
-
-  caso("el logo es más alto que la barra", true, medidas.logo > medidas.barra);
-  caso("y sobresale por abajo", true, medidas.logoAbajo > medidas.barraAbajo);
-  caso("sin tapar el título de la página", true, medidas.tituloArriba > medidas.logoAbajo);
 
   // --- los seis caminos y Mi Cuenta ---------------------------------------
   const html = await esc.content();
@@ -79,6 +126,19 @@ try {
   // menú: sin eso, el selector encuentra dos y no distingue cuál se abrió.
   caso("el menú abre y muestra los seis", true,
        await mov.locator("#menu-movil").getByRole("link", { name: "Nuestras Profes" }).isVisible());
+  // `isVisible` no ve lo que queda debajo de otra cosa: el círculo del logo
+  // cuelga justo sobre el primer camino. Se pregunta qué recibe el toque.
+  caso("y el círculo no le tapa el primer camino", true, await mov.evaluate(() => {
+    const a = document.querySelector("#menu-movil a");
+    const r = a.getBoundingClientRect();
+    return a.contains(document.elementFromPoint(r.left + 20, r.top + r.height / 2));
+  }));
+  caso("y el menú abierto no le corta el logo", true, await mov.evaluate(() => {
+    const img = document.querySelector("header a[aria-label] img");
+    const r = img.getBoundingClientRect();
+    // El punto más bajo del logo que cae sobre el menú.
+    return img.closest("a").contains(document.elementFromPoint(r.left + r.width * 0.75, r.bottom - 2));
+  }));
 
   // --- la portada quedó mínima --------------------------------------------
   await esc.goto(`${SITIO}/`, { waitUntil: "networkidle" });
