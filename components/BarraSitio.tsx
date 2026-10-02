@@ -7,27 +7,43 @@ import { usePathname } from "next/navigation";
 import { CAMINOS, MI_CUENTA } from "@/lib/navegacion";
 
 /**
- * La barra del sitio público, con el logo **dentro de un bulto de la barra**.
+ * La barra del sitio público, con el logo **dentro de un círculo de la barra**.
  *
- * El efecto que pidió Felipe (PRD-0022 §8.5) no es un logo que sobresale sobre
- * la barra: es que **la barra acompañe la forma del logo**, bajando con él para
- * que se lean como una sola pieza. Se fue a mirar la referencia con un navegador
- * —el fetch no la muestra, devuelve un header plano— y lo que hace Death Wish es
- * exactamente eso: una protuberancia del mismo negro de la barra, que baja por
- * detrás del logo. Allá va centrada; acá, anclada a la izquierda.
+ * El efecto que pidió Felipe (PRD-0022 §8.5, §14) es el de deathwishcoffee.com:
+ * la barra baja y forma **un círculo negro completo** alrededor del logo, que
+ * sobresale por abajo. Allá va centrado; acá, anclado a la izquierda con aire
+ * respecto al borde de la ventana.
+ *
+ * **Es un círculo, no un óvalo.** El logo XO es ancho (1192 × 789), y estirar
+ * la forma para que calce ya se probó: se lee como un cuenco, no como la marca
+ * de la referencia. Lo que cede es el logo, que se achica hasta caber.
+ *
+ * Cuánto se achica no sale del rectángulo del PNG sino de **sus píxeles**: el
+ * círculo mínimo que contiene la parte opaca mide 1,04 veces el ancho del logo,
+ * con centro en el 48,7 % del ancho y el 60 % del alto —las esquinas de arriba a
+ * la izquierda y abajo a la derecha están vacías—. Con 7 px de aire queda:
+ *
+ *   escritorio  círculo 144 px · logo 124 × 82 · desde el círculo 12, 23
+ *   teléfono    círculo 104 px · logo  88 × 58 · desde el círculo  9, 17
+ *
+ * `scripts/verificar-sitio.mjs` usa esas mismas proporciones para medir que el
+ * logo quede dentro. Si el logo cambia, se vuelven a medir.
  *
  * Cómo está hecho, porque cada pieza se rompe sola:
  *
- * 1. **El bulto es un SVG que cuelga bajo la barra**, del mismo negro. No es un
- *    `div` con esquinas redondeadas: un rectángulo se lee como una caja pegada
- *    a la barra, y lo que se busca es que la **línea de la barra se curve** y
- *    baje rodeando el logo. Por eso el trazo es una sola curva que sale de la
- *    línea de la barra, baja en cuenco y vuelve a subir, sin paredes verticales.
- * 2. **El logo va encima** (`z-10` contra el bulto), con aire arriba y abajo: el
- *    PNG llega hasta el borde superior de su lienzo, así que sin ese aire se ve
- *    **cortado por arriba**, que es lo que pasaba.
+ * 1. **El relleno es un círculo entero** del negro de la barra. **El borde
+ *    solo se dibuja bajo la línea de la barra**: dentro de ella el círculo es
+ *    negro sobre negro, y un contorno ahí lo convertiría en un botón pegado. Se
+ *    recorta con una caja `overflow-hidden` que empieza en esa línea.
+ * 2. **Tres capas:** el círculo abajo (`z-0`), el menú del teléfono encima
+ *    (`z-20`) para que el círculo no le tape el primer camino, y el logo arriba
+ *    de todo (`z-30`), porque baja unos píxeles de la barra y el menú abierto
+ *    le cortaba el corazón.
  * 3. **`overflow-visible` en la barra**, o el navegador recorta lo que baja.
  * 4. **El espacio de abajo lo reserva `MarcoSitio`**, no cada página.
+ * 5. **Los seis caminos van en línea desde `xl`.** Con Mi Cuenta suman unos
+ *    925 px, y a 1024 no caben ni con el círculo chico: desbordaban 142 px sin
+ *    que el verificador lo viera. Bajo `xl`, el botón Menú.
  *
  * No se achica al hacer scroll, por decisión de Felipe.
  */
@@ -44,37 +60,25 @@ export function BarraSitio() {
         Saltar al contenido
       </a>
 
-      {/* El bulto y el logo cuelgan del `header`, que ocupa el ancho de la
+      {/* El círculo y el logo cuelgan del `header`, que ocupa el ancho de la
           ventana, y **no del contenedor centrado**: anclados al costado
-          izquierdo de la pantalla, pero **separados de su borde**. Pegado al
-          borde el logo se leía apretado; con aire se lee como una pieza propia.
-
-          El SVG empieza 1px arriba del final de la barra para tapar su borde
-          justo donde nace la curva: así la línea no atraviesa el cuenco, sino
-          que baja con él. `preserveAspectRatio="none"` deja usar el mismo dibujo
-          en móvil y escritorio, y `non-scaling-stroke` mantiene la línea en 1px
-          aunque se estire. */}
-      <svg
+          izquierdo de la pantalla, separados de su borde. */}
+      <div
         aria-hidden="true"
-        viewBox="0 0 216 64"
-        preserveAspectRatio="none"
-        className="pointer-events-none absolute top-[calc(100%-1px)] left-3 z-0 h-[27px] w-36 sm:left-8 sm:h-[65px] sm:w-54 lg:left-10"
+        data-circulo-logo
+        className="pointer-events-none absolute top-0 left-3 z-0 size-26 sm:left-8 sm:size-36 lg:left-10"
       >
-        <path
-          className="fill-xo-negro"
-          d="M0 0H216C206 0 200 3 200 12C200 44 164 64 108 64C52 64 16 44 16 12C16 3 10 0 0 0Z"
-        />
-        <path
-          className="fill-none stroke-xo-blanco/10"
-          vectorEffect="non-scaling-stroke"
-          d="M0 0.5C10 0.5 16 3 16 12C16 44 52 63.5 108 63.5C164 63.5 200 44 200 12C200 3 206 0.5 216 0.5"
-        />
-      </svg>
+        <div className="absolute inset-0 rounded-full bg-xo-negro" />
+        {/* 71 px: la línea de la barra, que es su último píxel. */}
+        <div className="absolute inset-x-0 top-[71px] bottom-0 overflow-hidden">
+          <div className="absolute inset-x-0 -top-[71px] size-26 rounded-full border border-xo-blanco/10 sm:size-36" />
+        </div>
+      </div>
 
       <Link
         href="/"
         aria-label="XO Dance Studio, ir al inicio"
-        className="absolute top-[1.1rem] left-[2.2rem] z-10 sm:top-5 sm:left-[4.2rem] lg:left-[4.7rem]"
+        className="absolute top-[17px] left-[21px] z-30 sm:top-[23px] sm:left-[44px] lg:left-[52px]"
       >
         <Image
           src="/logo-xo.png"
@@ -82,16 +86,20 @@ export function BarraSitio() {
           width={1192}
           height={789}
           priority
-          className="h-16 w-auto sm:h-24"
+          className="h-[58px] w-auto sm:h-[82px]"
         />
       </Link>
 
-      <div className="relative mx-auto flex h-full max-w-6xl items-center justify-between gap-4 px-6 sm:px-10">
-        {/* Deja el hueco del bulto: la navegación no empieza debajo de él. */}
-        <div aria-hidden="true" className="h-full w-36 shrink-0 sm:w-56" />
+      <div className="relative mx-auto flex h-full max-w-6xl items-center justify-between gap-4 px-4 min-[375px]:px-6 sm:px-10">
+        {/* Deja el hueco del círculo, que se mide desde la ventana y no desde el
+            contenedor: desde `xl` el contenedor ya empieza a 104 px del borde,
+            y al círculo le bastan 184. Bajo 375 px todo se aprieta un poco
+            —hueco, márgenes, botones— o Mi Cuenta y Menú no caben al lado del
+            círculo; de 375 para arriba queda como estaba. */}
+        <div aria-hidden="true" className="h-full w-22 shrink-0 min-[375px]:w-32 sm:w-40 xl:w-24" />
 
-        <nav aria-label="Secciones" className="hidden lg:block">
-          <ul className="flex items-center gap-6 xl:gap-8">
+        <nav aria-label="Secciones" className="hidden xl:block">
+          <ul className="flex items-center gap-8">
             {CAMINOS.map((camino) => {
               const activo = aqui === camino.href || aqui.startsWith(`${camino.href}/`);
               return (
@@ -111,10 +119,10 @@ export function BarraSitio() {
           </ul>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 min-[375px]:gap-3">
           <Link
             href={MI_CUENTA.href}
-            className="xo-eyebrow inline-flex items-center justify-center rounded-full bg-xo-rosa px-4 py-2.5 whitespace-nowrap text-xo-negro transition-colors hover:bg-xo-rosa-claro sm:px-5"
+            className="xo-eyebrow inline-flex items-center justify-center rounded-full bg-xo-rosa px-3 py-2.5 min-[375px]:px-4 whitespace-nowrap text-xo-negro transition-colors hover:bg-xo-rosa-claro sm:px-5"
           >
             {MI_CUENTA.texto}
           </Link>
@@ -124,7 +132,7 @@ export function BarraSitio() {
             onClick={() => setAbierto((a) => !a)}
             aria-expanded={abierto}
             aria-controls="menu-movil"
-            className="xo-eyebrow rounded-full border border-xo-blanco/25 px-3 py-2.5 text-xo-blanco/80 transition-colors hover:border-xo-blanco/60 lg:hidden"
+            className="xo-eyebrow rounded-full border border-xo-blanco/25 px-3 py-2.5 text-xo-blanco/80 transition-colors hover:border-xo-blanco/60 xl:hidden"
           >
             {abierto ? "Cerrar" : "Menú"}
           </button>
@@ -136,7 +144,7 @@ export function BarraSitio() {
         <nav
           id="menu-movil"
           aria-label="Secciones"
-          className="absolute inset-x-0 top-18 border-b border-xo-blanco/10 bg-xo-negro lg:hidden"
+          className="absolute inset-x-0 top-18 z-20 border-b border-xo-blanco/10 bg-xo-negro xl:hidden"
         >
           <ul className="mx-auto max-w-6xl px-6 py-2 sm:px-10">
             {CAMINOS.map((camino) => (
