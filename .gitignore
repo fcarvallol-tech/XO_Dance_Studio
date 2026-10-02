@@ -42,6 +42,11 @@ yarn-error.log*
 # En public/ solo viven las versiones comprimidas.
 Assets/Videos/originales/
 
+# Fotos originales: personas reales en alta resolución, y el repo es público.
+# Lo publicado es la versión recortada de public/ (scripts/fotos-profesoras.mjs).
+# El .gitkeep ya estaba versionado y sigue: la carpeta existe en los dos lados.
+Assets/Fotos/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
