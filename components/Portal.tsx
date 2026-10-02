@@ -17,13 +17,16 @@ export function Portal({
   perfil,
   children,
   correosFallidos = 0,
+  transferenciasPendientes = 0,
 }: {
   perfil: Perfil;
   children: React.ReactNode;
   /** Cuántos correos no salieron. Va al lado del enlace, no escondido adentro. */
   correosFallidos?: number;
+  /** Cuántas transferencias esperan aprobación. Mismo criterio. */
+  transferenciasPendientes?: number;
 }) {
-  const grupos = gruposPara(perfil.rol, correosFallidos);
+  const grupos = gruposPara(perfil.rol, correosFallidos, transferenciasPendientes);
 
   return (
     <div className="min-h-dvh bg-xo-blanco text-xo-negro">
@@ -111,7 +114,7 @@ type Grupo = { de: string | null; enlaces: { href: string; texto: string }[] };
  * Dos arreglos: los nombres dicen **en calidad de qué** es cada cosa, y los
  * grupos van separados para que se lean como bloques y no como una lista larga.
  */
-function gruposPara(rol: Rol, correosFallidos = 0): Grupo[] {
+function gruposPara(rol: Rol, correosFallidos = 0, transferenciasPendientes = 0): Grupo[] {
   const grupos: Grupo[] = [
     {
       // Lo que hace cualquiera con cuenta. Sin etiqueta: es lo de base.
@@ -140,7 +143,16 @@ function gruposPara(rol: Rol, correosFallidos = 0): Grupo[] {
     grupos.push({
       de: "Administración",
       enlaces: [
-        { href: "/admin/compras", texto: "Transferencias" },
+        // Con número, igual que Correos: con transferencias por transferencia
+        // y sin pasarela, cada compra espera a que alguien entre a aprobarla, y
+        // antes no había nada en el sitio que dijera que había una (PRD-0017 §19).
+        {
+          href: "/admin/compras",
+          texto:
+            transferenciasPendientes > 0
+              ? `Transferencias (${transferenciasPendientes})`
+              : "Transferencias",
+        },
         { href: "/admin/planes", texto: "Planes y links" },
         { href: "/admin/especiales", texto: "Clases especiales" },
         // El número va en el enlace y no adentro de la página: una sección que

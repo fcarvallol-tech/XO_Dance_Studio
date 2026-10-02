@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { clienteServidor } from "./supabase/servidor";
 import { clienteAdmin } from "./supabase/admin";
 import { clientePublico } from "./supabase/publico";
@@ -151,6 +152,8 @@ type FilaCompra = {
   planes: { nombre: string } | null;
   clases?: { titulo: string | null; inicio: string } | null;
   perfiles?: { nombre: string | null; email: string | null } | null;
+  titular_declarado?: string | null;
+  nota_alumna?: string | null;
 };
 
 function aCompra(fila: FilaCompra): Compra {
@@ -174,6 +177,8 @@ function aCompra(fila: FilaCompra): Compra {
     perfilId: fila.perfil_id,
     alumna: fila.perfiles?.nombre ?? null,
     correoAlumna: fila.perfiles?.email ?? null,
+    titularDeclarado: fila.titular_declarado ?? null,
+    notaAlumna: fila.nota_alumna ?? null,
   };
 }
 
@@ -184,7 +189,7 @@ function aCompra(fila: FilaCompra): Compra {
 const CAMPOS_COMPRA =
   "id, cantidad_clases, monto_clp, estado, medio_pago, declarada_at, motivo_rechazo, clase_id, planes ( nombre ), clases ( titulo, inicio )";
 const CAMPOS_COMPRA_ADMIN =
-  `id, perfil_id, cantidad_clases, monto_clp, estado, medio_pago, declarada_at, motivo_rechazo, clase_id, planes ( nombre ), clases ( titulo, inicio ), ${ALUMNA_DE_COMPRA} ( nombre, email )`;
+  `id, perfil_id, cantidad_clases, monto_clp, estado, medio_pago, declarada_at, motivo_rechazo, clase_id, titular_declarado, nota_alumna, planes ( nombre ), clases ( titulo, inicio ), ${ALUMNA_DE_COMPRA} ( nombre, email )`;
 
 export async function getMisCompras(perfilId: string): Promise<Lectura<Compra[]>> {
   const supabase = await clienteServidor();
@@ -199,6 +204,28 @@ export async function getMisCompras(perfilId: string): Promise<Lectura<Compra[]>
     error: comoTexto(error),
   };
 }
+
+/**
+ * Cuántas transferencias esperan aprobación: el contador del menú y el
+ * aterrizaje de admin (PRD-0017 §19).
+ *
+ * Con `cache()` porque en una misma petición lo piden el layout y, al entrar,
+ * `inicioPara`. Con la sesión: si no es admin, RLS cuenta cero. Si falla, cero
+ * y al log —no puede tumbar la página—, igual que `contarEnviosFallidos`.
+ */
+export const contarComprasPendientes = cache(async (): Promise<number> => {
+  const supabase = await clienteServidor();
+  const { count, error } = await supabase
+    .from("compras")
+    .select("id", { count: "exact", head: true })
+    .eq("estado", "pendiente");
+
+  if (error) {
+    console.error("No se pudo contar las transferencias pendientes:", error.message);
+    return 0;
+  }
+  return count ?? 0;
+});
 
 /** La bandeja de admin. Lee con la sesión: si no es admin, sale vacía. */
 export async function getComprasPendientes(): Promise<Lectura<Compra[]>> {

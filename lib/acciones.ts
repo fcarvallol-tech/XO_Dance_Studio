@@ -12,6 +12,7 @@ import {
   avisarEspecialPendiente,
   avisarReserva,
   avisarTransferenciaDeclarada,
+  avisarTransferenciaRecibida,
 } from "./correo";
 import { cuandoLegible } from "./compras";
 import { instanteEnSantiago } from "./dominio/periodo";
@@ -116,10 +117,23 @@ export async function declararTransferencia(datos: FormData): Promise<Resultado>
     });
   }
 
+  // Y a ella, que antes no recibía nada hasta la aprobación (PRD-0017 §19).
+  // Este sí se le cuenta si no sale, en gris y sin alarma (PRD-0019 §8.6): el
+  // aviso quedó registrado igual, que es lo que importa.
+  let correoEnviado = true;
+  if (creada?.id) {
+    correoEnviado = await avisarTransferenciaRecibida({
+      para: perfil.email ?? "",
+      nombre: perfil.nombre,
+      clases: oferta.clases,
+      monto: oferta.precioClp,
+      compraId: creada.id,
+      perfilId: perfil.id,
+    });
+  }
+
   revalidatePath("/mis-clases");
-  // Este aviso es para la academia, no para la alumna: si no sale, la compra
-  // igual está en la bandeja. No se le muestra nada a ella.
-  return { ok: true };
+  return { ok: true, correoEnviado };
 }
 
 /** Admin aprueba: acredita las clases. Idempotente en la base. */

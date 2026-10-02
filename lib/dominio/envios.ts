@@ -32,6 +32,7 @@ export type EstadoEnvio = "pendiente" | "enviado" | "fallido" | "descartado";
 /** Una por cada función de `lib/correo.ts`. */
 export type Plantilla =
   | "transferenciaDeclarada"
+  | "transferenciaRecibida"
   | "compraAprobada"
   | "compraRechazada"
   | "reserva"
@@ -109,6 +110,10 @@ export function caducaAt(plantilla: Plantilla, contexto: ContextoDeCaducidad): D
       return contexto.inicioClase;
     case "transferenciaDeclarada":
       // Aviso operativo a la academia: a las 24 h la bandeja ya lo muestra.
+      return sumarMinutos(contexto.encoladoAt, 24 * 60);
+    case "transferenciaRecibida":
+      // El acuse a la alumna dice "queda pendiente", y eso deja de ser cierto
+      // al aprobarse. Pasado un día lo que le sirve es el de aprobada.
       return sumarMinutos(contexto.encoladoAt, 24 * 60);
     case "compraAprobada":
     case "compraRechazada":

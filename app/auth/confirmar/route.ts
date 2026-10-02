@@ -1,5 +1,6 @@
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { volverInterno } from "@/lib/rutas";
 import { clienteServidor } from "@/lib/supabase/servidor";
 
 /**
@@ -31,7 +32,9 @@ import { clienteServidor } from "@/lib/supabase/servidor";
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const volver = destinoSeguro(url.searchParams.get("volver"));
+  // Solo rutas internas (`volverInterno`). Sin una pedida, a `/entrar`, que
+  // con la sesión ya puesta manda a cada rol a su inicio.
+  const volver = volverInterno(url.searchParams.get("volver")) ?? "/entrar";
 
   // Supabase puede devolver su propio error en la query.
   const errorSupabase = url.searchParams.get("error_description") ?? url.searchParams.get("error");
@@ -79,15 +82,4 @@ export async function GET(request: Request) {
       "en vez de a esta ruta. Ver PRD-0004 §13.",
   );
   return NextResponse.redirect(new URL("/entrar?error=configuracion", url.origin));
-}
-
-/**
- * Solo rutas internas. Un `?volver=` con host ajeno convertiría el login en un
- * redirector abierto para phishing.
- */
-function destinoSeguro(valor: string | null): string {
-  if (!valor || !valor.startsWith("/") || valor.startsWith("//")) {
-    return "/mis-clases";
-  }
-  return valor;
 }

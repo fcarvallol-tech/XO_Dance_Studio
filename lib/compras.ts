@@ -32,6 +32,9 @@ export type Compra = {
   alumna?: string | null;
   correoAlumna?: string | null;
   perfilId?: string;
+  /** Lo que ella escribió al declarar. Es con lo que se calza la cartola. */
+  titularDeclarado?: string | null;
+  notaAlumna?: string | null;
 };
 
 export type ClaseDelCalendario = {

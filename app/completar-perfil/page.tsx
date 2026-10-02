@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Portal, TituloPortal } from "@/components/Portal";
-import { inicioSegunRol } from "@/lib/roles";
-import { requiereSesionSinCompletar } from "@/lib/sesion";
+import { volverInterno } from "@/lib/rutas";
+import { inicioPara, requiereSesionSinCompletar } from "@/lib/sesion";
 import { validarPerfil, type ErroresPerfil } from "@/lib/perfil";
 import { clienteServidor } from "@/lib/supabase/servidor";
 
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-type Props = { searchParams: Promise<{ error?: string }> };
+type Props = { searchParams: Promise<{ error?: string; volver?: string }> };
 
 /**
  * El paso que falta después del primer ingreso.
@@ -32,15 +32,25 @@ type Props = { searchParams: Promise<{ error?: string }> };
  * La escritura pasa por el cliente con la sesión de la persona, no por la
  * service role key: RLS le deja editar su propia fila y los grants por columna
  * hacen que `rol` no sea alcanzable ni queriendo.
+ *
+ * **El `?volver=` sobrevive a todo**: al formulario como campo oculto, a cada
+ * error de validación y al guardar. Es la página a la que iba antes de que la
+ * mandaran acá —el pack que eligió, casi siempre—, y perderlo la dejaba en
+ * "Mis reservas" con saldo 0 (PRD-0017 §19). Se valida de nuevo en el
+ * servidor: el campo oculto lo puede reescribir cualquiera.
  */
 export default async function CompletarPerfil({ searchParams }: Props) {
   const perfil = await requiereSesionSinCompletar();
-  const { error } = await searchParams;
+  const { error, volver } = await searchParams;
+  const destino = volverInterno(volver);
 
-  if (perfil.perfilCompleto) redirect(inicioSegunRol(perfil.rol));
+  if (perfil.perfilCompleto) redirect(destino ?? (await inicioPara(perfil)));
 
   async function guardar(datos: FormData) {
     "use server";
+
+    const despues = volverInterno(String(datos.get("volver") ?? ""));
+    const conVolver = despues ? `&volver=${encodeURIComponent(despues)}` : "";
 
     const validacion = validarPerfil({
       nombre: datos.get("nombre"),
@@ -49,7 +59,7 @@ export default async function CompletarPerfil({ searchParams }: Props) {
 
     if (!validacion.ok) {
       const primero = Object.keys(validacion.errores)[0] as keyof ErroresPerfil;
-      redirect(`/completar-perfil?error=${primero}`);
+      redirect(`/completar-perfil?error=${primero}${conVolver}`);
     }
 
     const actual = await requiereSesionSinCompletar();
@@ -66,10 +76,10 @@ export default async function CompletarPerfil({ searchParams }: Props) {
 
     if (fallo) {
       console.error("No se pudo guardar el perfil:", fallo.message);
-      redirect("/completar-perfil?error=guardar");
+      redirect(`/completar-perfil?error=guardar${conVolver}`);
     }
 
-    redirect(inicioSegunRol(actual.rol));
+    redirect(despues ?? (await inicioPara(actual)));
   }
 
   return (
@@ -81,6 +91,7 @@ export default async function CompletarPerfil({ searchParams }: Props) {
       />
 
       <form action={guardar} className="max-w-md space-y-6">
+        {destino ? <input type="hidden" name="volver" value={destino} /> : null}
         <Campo
           id="nombre"
           etiqueta="¿Cómo te llamas?"

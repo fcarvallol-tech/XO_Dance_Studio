@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { exigeSesion } from "@/lib/rutas";
+import { CABECERA_RUTA, exigeSesion } from "@/lib/rutas";
 
 /**
  * Proxy — en Next 16 es lo que antes se llamaba middleware.
@@ -13,13 +13,25 @@ import { exigeSesion } from "@/lib/rutas";
  * 2. **Chequeo optimista.** Redirige a /entrar a quien claramente no tiene
  *    sesión, para no renderizar media página primero.
  *
+ * Y una tercera, que no decide nada: **marca la ruta pedida** en la cabecera
+ * `CABECERA_RUTA`, para que el layout que descubre un perfil incompleto sepa a
+ * dónde volver después (PRD-0017 §19). Un layout no tiene otra forma de saberlo.
+ *
  * La autorización de verdad vive en el layout de cada grupo (`requiereNivel`) y
  * en las políticas RLS. La doc de Next es explícita: el proxy corre en cada
  * ruta, incluidas las prefetcheadas, y "should not be used as a full session
  * management or authorization solution". Acá no se consulta el rol.
  */
 export async function proxy(request: NextRequest) {
-  let respuesta = NextResponse.next({ request });
+  // Se arma de nuevo cada vez que cambian las cookies, para que la petición que
+  // sigue lleve **las dos cosas**: el token refrescado y la ruta. Con `set` y
+  // no `append`, lo que haya mandado el navegador con ese nombre se pisa.
+  const seguir = () => {
+    const cabeceras = new Headers(request.headers);
+    cabeceras.set(CABECERA_RUTA, request.nextUrl.pathname + request.nextUrl.search);
+    return NextResponse.next({ request: { headers: cabeceras } });
+  };
+  let respuesta = seguir();
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const llave =
@@ -39,7 +51,7 @@ export async function proxy(request: NextRequest) {
         for (const { name, value } of nuevas) {
           request.cookies.set(name, value);
         }
-        respuesta = NextResponse.next({ request });
+        respuesta = seguir();
         for (const { name, value, options } of nuevas) {
           respuesta.cookies.set(name, value, options);
         }

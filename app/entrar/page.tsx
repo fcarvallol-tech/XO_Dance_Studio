@@ -3,8 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { FormularioEntrar } from "@/components/FormularioEntrar";
-import { perfilActual } from "@/lib/sesion";
-import { inicioSegunRol } from "@/lib/roles";
+import { inicioPara, perfilActual } from "@/lib/sesion";
+import { empiezaEn, volverInterno } from "@/lib/rutas";
 
 export const metadata: Metadata = {
   title: "Entrar — XO Dance Studio",
@@ -38,15 +38,21 @@ const ERRORES: Record<string, string> = {
 export default async function Entrar({ searchParams }: Props) {
   const { volver, error } = await searchParams;
 
-  const pedido = volver?.startsWith("/") && !volver.startsWith("//") ? volver : null;
+  // `/entrar` como destino de sí misma sería un bucle con sesión puesta.
+  const interno = volverInterno(volver);
+  const pedido = interno && !empiezaEn(interno.split("?")[0], "/entrar") ? interno : null;
 
   // Quien ya tiene sesión no ve la puerta. Si venía pidiendo una página —el
   // botón de una clase especial, por ejemplo— se va a **esa**: mandarla a su
   // inicio la obligaría a buscar de nuevo lo que ya había elegido.
   const perfil = await perfilActual();
-  if (perfil) redirect(pedido ?? inicioSegunRol(perfil.rol));
+  if (perfil) redirect(pedido ?? (await inicioPara(perfil)));
 
-  const destino = pedido ?? "/mi-perfil";
+  // Sin una página pedida, el enlace vuelve **acá**: con la sesión ya puesta,
+  // esta misma página decide el inicio según el rol, y para admin eso depende
+  // de si hay transferencias esperando (PRD-0017 §19). Un destino fijo como el
+  // `/mi-perfil` de antes no puede saberlo.
+  const destino = pedido ?? "/entrar";
 
   return (
     <main className="xo-grain relative flex min-h-dvh flex-col justify-center px-6 py-16 sm:px-10">

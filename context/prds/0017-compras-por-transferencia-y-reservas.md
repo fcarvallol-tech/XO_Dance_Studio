@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | **Aprobado** el 31/08/2026 · **partes 1 y 2 implementadas** · **parte 3 (importación) descartada el 09/09/2026**, ver §14 |
+| **Estado** | **Aprobado** el 31/08/2026 · **partes 1 y 2 implementadas** · **parte 3 (importación) descartada el 09/09/2026**, ver §14 · **cuatro ajustes de Felipe para operar, el 02/10/2026**, ver §19 |
 | **Autor** | Felipe Carvalho |
 | **Fecha** | 31 de agosto de 2026 |
 | **Hito** | Hito 2 — Venta de clases · Hito 3 — Reservas |
@@ -801,3 +801,84 @@ y encima escribe en el libro.
 Las dos mitades de una operación reversible se revisan juntas, y **la que devuelve se revisa con
 el mismo cuidado que la que descuenta**. Lo mismo vale para las que compensan: acreditar y
 reembolsar, inscribir y dar de baja.
+
+## 19. Cuatro ajustes para operar con transferencias (Felipe, 02/10/2026)
+
+El 03/10 entran las primeras alumnas reales comprando por transferencia, y sin pasarela **cada
+compra depende de que alguien la apruebe a mano**. El 02/10 se recorrió el camino entero contra
+staging como alumna nueva y como admin —no leyendo el código— y aparecieron cuatro huecos. Felipe
+pidió arreglarlos como ajustes de este PRD.
+
+| # | Lo que se encontró | Cómo quedó |
+|---|---|---|
+| 1 | **El destino se perdía al completar el perfil.** Quien apretaba "Comprar" en un pack, entraba con el enlace y completaba el perfil terminaba en `/mis-clases` con saldo 0, sin el pack | El destino sobrevive todo el camino: comprar → entrar → completar perfil → **el pack que eligió**, incluso si se equivoca en el teléfono |
+| 2 | **La bandeja no mostraba a nombre de quién se transfirió ni la nota.** Se guardaban y ninguna pantalla los mostraba; el titular solo iba en el correo a la academia, y la nota en ningún lado. Aprobar era un clic | Cada fila muestra el titular declarado y la nota. **Aprobar son dos pasos**: un diálogo con alumna, monto, clases, titular, nota y fecha, y recién ahí el botón que acredita |
+| 3 | **Nada en el sitio decía que había algo esperando.** "Transferencias" no tenía contador, y admin entraba a Personas | `Transferencias (n)` en el menú, como `Correos (n)`. Con pendientes, **admin y owner aterrizan en la bandeja** |
+| 4 | **La alumna no recibía nada al declarar.** Le quedaba la duda de si había pagado bien hasta la aprobación | Correo `transferenciaRecibida` —"Recibimos tu aviso"—, por la cola de PRD-0019. Explica que la compra queda pendiente hasta confirmar el abono y que se le avisará |
+
+### Cómo se hizo, porque cada uno tenía su trampa
+
+**1. Un layout no sabe en qué página está.** Es el layout de `(cuenta)` el que descubre que el
+perfil está incompleto y manda a completarlo, y Next no le pasa la ruta. Ahora `proxy.ts` —que sí
+la conoce— la pone en la cabecera `x-xo-ruta` de cada petición, siempre con `set`, así que lo que
+mande el navegador con ese nombre se pisa. `requiereSesion` la lee y la manda como
+`/completar-perfil?volver=…`. La página la lleva en un campo oculto, la conserva en cada error de
+validación y vuelve ahí al guardar.
+
+El `volver` llega de la URL y lo escribe cualquiera, así que pasa por **una sola función**,
+`volverInterno` en `lib/rutas.ts`, con tests: solo rutas de este sitio —`//host` y `/\host` los
+navegadores los leen como otro dominio—, nunca `/completar-perfil` (bucle) ni `/auth/…` (enlaces de
+un solo uso). Antes había una copia en cada ruta de `/auth`, y ninguna miraba `/\`.
+
+**2. El diálogo es el `<dialog>` nativo**, sin librería: trae fondo, foco atrapado y Escape. **El
+foco entra en "Volver", no en "Aprobar"**, para que un Enter apurado no acredite. No alcanzó con
+`autoFocus`: React no deja el atributo en el HTML y `showModal()` enfoca el primer botón, que es
+Aprobar; el foco se pone a mano después de abrir. Para una **clase especial** el diálogo no dice
+"acreditar 1 clase" —esa compra no acredita créditos, confirma un cupo— sino "Aprobar y confirmar
+su lugar". Lo hizo ver `verificar-fase6.mjs`, que aprobaba con un clic.
+
+**3. El aterrizaje va por jerarquía.** `inicioPara(perfil)` es `inicioSegunRol` más una regla: con
+nivel admin y transferencias pendientes, `/admin/compras`. Incluye a owner a propósito: es quien
+aprueba hoy, y una regla solo para `admin` no la vería nunca. Por lo mismo el contador está también
+en el layout de owner, que muestra el menú de administración.
+
+Lo que **no** se sabía al pedirlo: admin **no** entraba a Personas al iniciar sesión. Sin un
+destino pedido, el login mandaba a todos a `/mi-perfil`; Personas solo salía con la sesión ya
+abierta. Para que el aterrizaje funcione en el login real, el destino por defecto pasó a ser
+`/entrar`, que con la sesión puesta decide según el rol. **Efecto lateral: una alumna que entra sin
+destino cae en Mis reservas y no en Mi perfil**, que es lo que `inicioSegunRol` ya decía para ella.
+
+Cuesta una consulta más por página de admin y de owner, en paralelo con la de correos fallidos:
+una vuelta, no dos. Va con `cache()` porque al entrar la piden el layout y `inicioPara`.
+
+**4. Sin migración.** La cola no restringe los nombres de plantilla en la base, y las columnas
+`titular_declarado` y `nota_alumna` ya tenían `SELECT` para `authenticated` (comprobado en
+`information_schema.column_privileges`). El acuse **caduca a las 24 h**, como el aviso a la
+academia: dice "queda pendiente", y pasado un día lo probable es que ya no sea cierto. Si no sale,
+la alumna lo ve en gris y sin alarma (PRD-0019 §8.6); el aviso quedó registrado igual. Se le pide
+además que, si transfirió otra persona y no lo dijo, responda con el nombre: es lo que se busca en
+la cartola.
+
+### Lo verificado
+
+Contra **staging**, con el sitio construido en `localhost:3300`:
+
+- **`scripts/verificar-transferencias.mjs`, nuevo: 34/34.** Los nueve pasos con una alumna nueva
+  por corrida. El enlace de entrada se arma con el `redirect_to` que el formulario de `/entrar` le
+  pide de verdad a Supabase —capturado en la red— más el token real: si el formulario pierde el
+  destino, la prueba lo pierde igual. Comprueba también qué correo se encola en cada paso y para
+  quién, que "Volver" no aprueba, que el foco entra en "Volver" y que el contador baja.
+- **`verificar-sitio.mjs`: 147/148**, el mismo de antes: la clase de las 14:50 (PRD-0022 §14).
+- **`verificar-fase6.mjs`: 24/26.** Los pasos de la bandeja pasan, con el diálogo de la especial.
+  Los dos que fallan **ya fallaban antes de esto**, comprobado: uno busca "Te guardamos el cupo
+  hasta", un texto que se sacó el 26/09 (`e626409`); el otro es un `networkidle` que no llega
+  porque la página de una especial repite los prefetches de sus enlaces, **idéntico con el código
+  anterior** en otro servidor. Su limpieza final también falla ahora —la llave de `envios_correo` a
+  `clases` no le deja borrar la especial—, así que cada corrida deja una especial publicada en
+  staging. Pendientes de ese verificador.
+- `npm test` 183/183, `npm run build` y `npm run lint` limpios.
+
+**No probado:** que admin sin pendientes aterrice en Personas. En staging siempre queda una
+compra pendiente del escenario sembrado, y aprobarla cambiaría los números de los verificadores de
+métricas. Tampoco la entrega real de los correos: staging no tiene llave de Resend.
+

@@ -1,8 +1,16 @@
 import { cache } from "react";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { clienteServidor } from "./supabase/servidor";
+import { contarComprasPendientes } from "./compras-consultas";
 import { esRol, inicioSegunRol, tieneNivel, type Rol } from "./roles";
-import { RUTA_NEUTRAL, cubiertaPor, type Grupo } from "./rutas";
+import {
+  CABECERA_RUTA,
+  RUTA_NEUTRAL,
+  cubiertaPor,
+  volverInterno,
+  type Grupo,
+} from "./rutas";
 
 export type Perfil = {
   id: string;
@@ -112,10 +120,35 @@ export async function requiereSesion(grupo?: Grupo): Promise<Perfil> {
   const perfil = await requiereSesionSinCompletar();
 
   if (!perfil.perfilCompleto) {
-    redirect(destinoSeguro("/completar-perfil", grupo));
+    // La página que se estaba pidiendo viaja como `volver`: es a donde iba la
+    // persona antes de que la interrumpiéramos. Sin esto, quien apretó
+    // "Comprar" terminaba en su inicio, sin el pack (PRD-0017 §19).
+    const pedida = volverInterno((await headers()).get(CABECERA_RUTA));
+    const destino = pedida
+      ? `/completar-perfil?volver=${encodeURIComponent(pedida)}`
+      : "/completar-perfil";
+    redirect(destinoSeguro(destino, grupo));
   }
 
   return perfil;
+}
+
+/**
+ * A dónde va alguien que entra sin haber pedido una página.
+ *
+ * Es `inicioSegunRol` más una excepción: **si hay transferencias esperando,
+ * quien puede aprobarlas aterriza en la bandeja** (PRD-0017 §19). Va por
+ * jerarquía, así que `owner` también: es quien aprueba hoy, y una regla solo
+ * para `admin` no la vería nunca.
+ *
+ * Asíncrona porque cuenta, y por eso aparte de `inicioSegunRol`, que sigue
+ * siendo la que usan los guards para devolver a quien no alcanza el nivel.
+ */
+export async function inicioPara(perfil: Perfil): Promise<string> {
+  if (tieneNivel(perfil.rol, "admin") && (await contarComprasPendientes()) > 0) {
+    return "/admin/compras";
+  }
+  return inicioSegunRol(perfil.rol);
 }
 
 /**

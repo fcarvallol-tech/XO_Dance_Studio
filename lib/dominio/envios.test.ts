@@ -94,6 +94,20 @@ test("caducaAt: los comprobantes de clase caducan cuando la clase empieza", () =
   }
 });
 
+test("caducaAt: el acuse a la alumna caduca a las 24 h, como el aviso a la academia", () => {
+  // "Tu compra queda pendiente" deja de ser cierto cuando se aprueba. Pasadas
+  // 24 h lo más probable es que ya se haya resuelto, y ahí lo que le sirve es
+  // el correo de aprobado, no este.
+  assert.equal(
+    caducaAt("transferenciaRecibida", {
+      expiraAt: null,
+      inicioClase: null,
+      encoladoAt: AHORA,
+    })?.toISOString(),
+    utc("2026-09-23T20:00:00").toISOString(),
+  );
+});
+
 test("caducaAt: lo que sigue siendo cierto no caduca nunca", () => {
   for (const plantilla of ["compraAprobada", "compraRechazada"] as const) {
     assert.equal(

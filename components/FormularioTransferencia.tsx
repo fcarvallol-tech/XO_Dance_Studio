@@ -28,6 +28,7 @@ export function FormularioTransferencia({
   const router = useRouter();
   const [fallo, setFallo] = useState<string | null>(null);
   const [listo, setListo] = useState(false);
+  const [sinCorreo, setSinCorreo] = useState(false);
   const [enviando, iniciar] = useTransition();
 
   if (listo) {
@@ -43,6 +44,14 @@ export function FormularioTransferencia({
           Miramos la cuenta y te acreditamos las clases. Te llega un correo
           cuando estén listas y ahí ya puedes reservar.
         </p>
+        {/* El aviso quedó registrado igual: esto es solo que el acuse por
+            correo no salió. En gris y sin alarma (PRD-0019 §8.6). */}
+        {sinCorreo ? (
+          <p className="mt-3 text-sm leading-relaxed text-xo-gris">
+            No pudimos mandarte el correo con este aviso, pero quedó registrado.
+            Tu compra aparece en Mis reservas.
+          </p>
+        ) : null}
         <button
           type="button"
           onClick={() => router.push("/mis-clases")}
@@ -105,7 +114,10 @@ export function FormularioTransferencia({
             setFallo(null);
             iniciar(async () => {
               const resultado = await declararTransferencia(datosForm);
-              if (resultado.ok) setListo(true);
+              if (resultado.ok) {
+                setSinCorreo(resultado.correoEnviado === false);
+                setListo(true);
+              }
               else setFallo(resultado.mensaje);
             });
           }}

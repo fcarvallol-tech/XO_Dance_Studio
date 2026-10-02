@@ -26,6 +26,7 @@ export type EnvioFallido = {
 /** Cómo se llama cada plantilla en pantalla. */
 export const NOMBRE_PLANTILLA: Record<string, string> = {
   transferenciaDeclarada: "Aviso a la academia",
+  transferenciaRecibida: "Aviso recibido",
   compraAprobada: "Compra aprobada",
   compraRechazada: "Compra rechazada",
   reserva: "Comprobante de reserva",

@@ -261,6 +261,21 @@ const CUERPOS: Cuerpos = {
     };
   },
 
+  transferenciaRecibida: (d) => {
+    const clases = Number(d.clases ?? 0);
+    const palabra = clases === 1 ? "clase" : "clases";
+    return {
+      asunto: "Recibimos tu aviso de transferencia",
+      html: plantilla(
+        "Recibimos tu aviso",
+        `<p ${P}>${d.nombre ? `${d.nombre}, nos` : "Nos"} avisaste que transferiste <strong>${clp(Number(d.monto ?? 0))}</strong> por ${clases} ${palabra}.</p>
+       <p ${P}>Tu compra queda <strong>pendiente</strong> hasta que veamos el abono en la cuenta. Cuando lo confirmemos te escribimos de nuevo, y ahí ya puedes reservar.</p>
+       <p ${P}>No tienes que hacer nada más. Si transferiste desde la cuenta de otra persona y no nos dijiste su nombre, respóndenos este correo con él: es lo que buscamos en la cartola.</p>
+       <p style="margin:24px 0 0;"><a href="${sitio()}/mis-clases" style="display:inline-block;background:#f7adbf;color:#1a1a1a;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;">Ver mi compra</a></p>`,
+      ),
+    };
+  },
+
   compraAprobada: (d) => {
     const clases = Number(d.clases ?? 0);
     const palabra = clases === 1 ? "clase" : "clases";
@@ -346,6 +361,32 @@ export async function avisarTransferenciaDeclarada(datos: {
     datos: cuerpo,
     clave: claveDeEvento("transferencia-declarada", compraId ?? `${datos.alumna}:${Date.now()}`),
     compraId,
+  });
+}
+
+/**
+ * A la alumna: recibimos su aviso y la compra queda pendiente (PRD-0017 §19).
+ *
+ * Antes no le llegaba nada entre apretar "Ya transferí" y la aprobación, y
+ * quedaba la duda de si había pagado bien. Caduca a las 24 h: pasado eso, lo
+ * que dice —"queda pendiente"— probablemente ya no es cierto.
+ */
+export async function avisarTransferenciaRecibida(datos: {
+  para: string;
+  nombre: string | null;
+  clases: number;
+  monto: number;
+  compraId: string;
+  perfilId?: string | null;
+}): Promise<boolean> {
+  const { para, compraId, perfilId, ...cuerpo } = datos;
+  return despachar({
+    plantilla: "transferenciaRecibida",
+    para,
+    datos: cuerpo,
+    clave: claveDeEvento("transferencia-recibida", compraId),
+    compraId,
+    perfilId,
   });
 }
 

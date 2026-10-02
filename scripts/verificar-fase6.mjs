@@ -39,7 +39,7 @@ import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 
 const RAIZ = "/Users/carlatati/Desktop/Proyectos de Felipi/XO_Dance_Studio";
-const SITIO = "http://localhost:3000";
+const SITIO = process.env.SITIO ?? "http://localhost:3000";
 const STAGING_REF = "ybopuahlzbjkkwumkllk";
 /**
  * Una portada de verdad, hecha al vuelo desde el logo: el Route Handler valida
@@ -261,8 +261,14 @@ try {
   caso("la bandeja dice de qué clase es la transferencia",
        true, (await admin.pagina.content()).includes(TITULO));
 
+  // Aprobar son dos pasos desde PRD-0017 §19: el botón abre un diálogo con lo
+  // que hay que calzar con la cartola, y el que aprueba de verdad está adentro.
   await admin.pagina.locator("li", { hasText: TITULO }).first()
     .getByRole("button", { name: /Aprobar/ }).click();
+  const dialogo = admin.pagina.getByRole("dialog");
+  caso("aprobar abre el diálogo con la clase especial",
+       true, (await dialogo.textContent())?.includes(TITULO));
+  await dialogo.getByRole("button", { name: "Aprobar y confirmar su lugar" }).click();
   await admin.pagina.waitForTimeout(5000);
 
   const [aprobada] = await sql(
