@@ -335,6 +335,12 @@ atribuye ingreso a la profesora — ver PRD-0010 §7.1 y §8.5.b.
 ⚠️ **Teens se calcula sobre otra base.** Ver más abajo: allá el variable va por inscripción
 mensual, no por crédito. Son dos ramas de negocio distintas y el pago sigue a cada una.
 
+⚠️ **Las clases especiales tampoco llevan base** (Felipe, 30/09/2026). Ahí la profesora recibe el
+**50% de lo recaudado después de descontar la sala**: sin sueldo base por hora y sin variable por
+crédito, porque en una especial nadie consume créditos —se paga la clase suelta—. Es una tercera
+regla de pago, no un caso de las otras dos, y **todavía no está construida**: el margen por clase de
+`/owner/finanzas` es solo de la parrilla y lo dice; entra con la liquidación (PRD-0010 parte 3).
+
 **Alumnas necesarias para cubrir el costo de una clase:**
 
 Cada alumna aporta su tarifa menos los $250 que se lleva la profesora por ella.

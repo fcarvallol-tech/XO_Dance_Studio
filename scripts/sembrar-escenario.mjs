@@ -38,7 +38,7 @@
  * borra la fila él mismo, dentro de su transacción revertida: así el escenario
  * no depende de un efecto secundario de la siembra.
  */
-import { conectar, ES } from "./staging.mjs";
+import { conectar, EG, ES } from "./staging.mjs";
 
 const U = {
   ana: "11111111-1111-4111-8111-000000000001",
@@ -118,6 +118,52 @@ try {
   // 0. Borrón. En orden de llaves foráneas.
   // -------------------------------------------------------------------------
   const usuarios = Object.values(U);
+  // Las clases del escenario: las cinco por id, más TODA especial que haya
+  // creado el owner o el admin de prueba —los otros verificadores dejan
+  // algunas con títulos propios, y `clases.creada_por` apunta al perfil—.
+  const CLASES_DE_PRUEBA = `(
+    select id from public.clases where id = any($2)
+    union
+    select cl.id from public.clases cl
+    join public.perfiles p on p.id = cl.creada_por
+    where p.user_id = any($1)
+  )`;
+  // Los correos que dejó PRD-0019 apuntan a perfiles, compras, reservas y
+  // clases del escenario: van primero o el borrón rebota por llave foránea.
+  await q(
+    `delete from public.envios_correo
+     where perfil_id in (select id from public.perfiles where user_id = any($1))
+        or reserva_id in (select r.id from public.reservas r
+                          join public.perfiles p on p.id = r.perfil_id
+                          where p.user_id = any($1))
+        or reserva_id in (select id from public.reservas where clase_id in ${CLASES_DE_PRUEBA})
+        or compra_id in (select c.id from public.compras c
+                         join public.perfiles p on p.id = c.perfil_id
+                         where p.user_id = any($1))
+        or clase_id in ${CLASES_DE_PRUEBA}`,
+    [usuarios, Object.values(CL)],
+  );
+  // Reservas de cualquiera sobre clases de prueba, y su rastro en el libro.
+  await q(
+    `delete from public.movimientos_credito
+     where reserva_id in (select id from public.reservas where clase_id in ${CLASES_DE_PRUEBA})`,
+    [usuarios, Object.values(CL)],
+  );
+  await q(
+    `delete from public.reservas where clase_id in ${CLASES_DE_PRUEBA}`,
+    [usuarios, Object.values(CL)],
+  );
+  // Lo que el staff de prueba firmó sobre filas que no son suyas.
+  await q(
+    `update public.clases set asistencia_registrada_por = null
+     where asistencia_registrada_por in (select id from public.perfiles where user_id = any($1))`,
+    [usuarios],
+  );
+  await q(
+    `update public.compras set aprobada_por = null
+     where aprobada_por in (select id from public.perfiles where user_id = any($1))`,
+    [usuarios],
+  );
   await q(
     `delete from public.movimientos_credito
      where perfil_id in (select id from public.perfiles where user_id = any($1))`,
@@ -138,13 +184,20 @@ try {
      where perfil_id in (select id from public.perfiles where user_id = any($1))`,
     [usuarios],
   );
-  await q(`delete from public.clases where id = any($1)`, [Object.values(CL)]);
-  // Las especiales de corridas anteriores, por título. Van antes que los
-  // perfiles: `clases.creada_por` apunta a quien la creó.
+  // Los egresos del owner de prueba (PRD-0010 parte 2), incluidos los que se
+  // hayan registrado desde el formulario: `registrado_por` apunta al perfil,
+  // así que van antes que los perfiles.
   await q(
-    `delete from public.clases where tipo = 'especial' and titulo = any($1)`,
-    [Object.values(ES)],
+    `delete from public.egresos
+     where registrado_por in (select id from public.perfiles where user_id = any($1))`,
+    [usuarios],
   );
+  // Las cinco del escenario y toda especial creada por el staff de prueba. Van
+  // antes que los perfiles: `clases.creada_por` apunta a quien la creó.
+  await q(`delete from public.clases where id in ${CLASES_DE_PRUEBA}`, [
+    usuarios,
+    Object.values(CL),
+  ]);
   await q(`delete from public.perfiles where user_id = any($1)`, [usuarios]);
   await q(`delete from auth.users where id = any($1)`, [usuarios]);
 
@@ -244,6 +297,33 @@ try {
     [CL[5], hB, enEsteMes(0.35)], // la que XO va a cancelar
   ];
   for (const [id, h, cuando] of clases) {
+    // Desde que el cron de `generar_clases` corre en staging (26/09/2026), la
+    // parrilla real ya ocupa (horario, fecha) para esos días, y el par es único.
+    // Se libera el hueco: en staging no hay alumnas reales, y las reservas de
+    // prueba ya se borraron arriba.
+    await q(
+      `delete from public.envios_correo where clase_id in
+         (select id from public.clases where horario_id = $1 and fecha = ${cuando}::date)
+       or reserva_id in
+         (select r.id from public.reservas r join public.clases c on c.id = r.clase_id
+          where c.horario_id = $1 and c.fecha = ${cuando}::date)`,
+      [h.id],
+    );
+    await q(
+      `delete from public.movimientos_credito where reserva_id in
+         (select r.id from public.reservas r join public.clases c on c.id = r.clase_id
+          where c.horario_id = $1 and c.fecha = ${cuando}::date)`,
+      [h.id],
+    );
+    await q(
+      `delete from public.reservas where clase_id in
+         (select id from public.clases where horario_id = $1 and fecha = ${cuando}::date)`,
+      [h.id],
+    );
+    await q(
+      `delete from public.clases where horario_id = $1 and fecha = ${cuando}::date`,
+      [h.id],
+    );
     await q(
       `insert into public.clases
          (id, horario_id, fecha, inicio, curso_id, profesora_id, sede_id,
@@ -322,6 +402,53 @@ try {
              'Cortesía del escenario de prueba', $3, ${enEsteMes(0.5)})`,
     [perfil.cata, CR.R1, perfil.owner],
   );
+
+  // -------------------------------------------------------------------------
+  // 3b. Los egresos (PRD-0010 parte 2, fase 0.2 del plan). Directo, con
+  //     `registrado_por = owner`; el camino real —`registrar_egreso`— lo
+  //     ejercita el verificador dentro de transacciones que se revierten.
+  // -------------------------------------------------------------------------
+  // ⚠️ El costo por hora de las dos salas viejas quedó en NULL cuando PRD-0021
+  // agregó la columna (solo EB nació con valor). Sin él, el margen por clase
+  // dice "sin costo cargado" para todo y no hay nada que contrastar. Acá, en
+  // STAGING, se cargan los valores de CONTEXT.md §5.b —Los Leones $17.000,
+  // Diaguitas $0— y solo si siguen en NULL. **En producción los carga Felipe**,
+  // por el Table Editor o por migración: no es un dato que se invente.
+  await q(
+    `update public.sedes set costo_hora_clp = v.costo
+     from (values ('seduccion-latina', 17000), ('diaguitas', 0)) as v(slug, costo)
+     where sedes.slug = v.slug and sedes.costo_hora_clp is null`,
+  );
+
+  //  `fecha` es un día de Santiago: se convierte antes de cortar a date.
+  const diaSantiago = (expr) => `((${expr}) at time zone 'America/Santiago')::date`;
+  const { rows: leonesSede } = await q(
+    `select id from public.sedes where slug = 'seduccion-latina'`,
+  );
+  const sedeLeones = leonesSede[0]?.id ?? null;
+
+  //  id  fecha  categoría  sede  monto  descripción  anulado
+  const egresos = [
+    [EG.E1, diaSantiago(enEsteMes(0.2)), "arriendo_sala", sedeLeones, 68000, "Arriendo de sala, 4 clases", false],
+    [EG.E2, diaSantiago(enEsteMes(0.5)), "insumos", null, 15000, "Parlante y cables", false],
+    [EG.E3, diaSantiago(enEsteMes(0.6)), "marketing", null, 20000, "Pauta de Instagram", false],
+    // Anulado: prueba que `deleted_at` filtra en todas partes.
+    [EG.E4, diaSantiago(enEsteMes(0.3)), "servicios", null, 99000, "Cobro duplicado (anulado)", true],
+    [EG.E5, diaSantiago(enElMesAnterior(0.4)), "arriendo_sala", sedeLeones, 50000, "Arriendo del mes anterior", false],
+    // Fuera de los dos períodos, como C0.
+    [EG.E6, diaSantiago(antesDeTodo), "otro", null, 30000, "Gasto viejo", false],
+  ];
+  for (const [id, fecha, categoria, sede, monto, descripcion, anulado] of egresos) {
+    await q(
+      `insert into public.egresos
+         (id, fecha, categoria, descripcion, monto_clp, sede_id, registrado_por,
+          deleted_at, anulado_por, motivo_anulacion)
+       values ($1, ${fecha}, $2, $3, $4, $5, $6,
+               ${anulado ? "now()" : "null"}, ${anulado ? "$6" : "null"},
+               ${anulado ? "'Se cobró dos veces'" : "null"})`,
+      [id, categoria, descripcion, monto, sede, perfil.owner],
+    );
+  }
 
   // -------------------------------------------------------------------------
   // 4. Las reservas pasadas. A mano, porque `reservar()` no deja reservar una

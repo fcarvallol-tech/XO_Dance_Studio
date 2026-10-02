@@ -15,6 +15,7 @@ import {
 } from "./correo";
 import { cuandoLegible } from "./compras";
 import { instanteEnSantiago } from "./dominio/periodo";
+import { montoDesdeTexto } from "./dominio/finanzas";
 import { resolverOferta } from "./ofertas-consultas";
 import { fechaLegible } from "./planes";
 
@@ -655,5 +656,68 @@ export async function reintentarEnvio(envioId: string): Promise<Resultado> {
   if (error) return { ok: false, mensaje: comoMensaje(error) };
 
   revalidatePath("/admin/correos");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Egresos — PRD-0010 parte 2
+// ---------------------------------------------------------------------------
+
+/**
+ * El owner registra lo que salió de la caja. `registrar_egreso` vuelve a
+ * verificar el rol adentro y rechaza monto cero, fecha futura y categoría
+ * desactivada con mensajes escritos para mostrarse. Lo que se valida acá antes
+ * de llamar es solo el formato: que el monto sea un entero y la fecha un día.
+ */
+export async function registrarEgreso(
+  datos: FormData,
+): Promise<Resultado & { id?: string }> {
+  const actor = await perfilActual();
+  if (!actor || !tieneNivel(actor.rol, "owner")) {
+    return { ok: false, mensaje: "Solo el owner registra egresos." };
+  }
+
+  // "68.000" se acepta y se lee como 68000; "12.5" no es 125 y se rechaza. La
+  // regla vive en `montoDesdeTexto`, con tests: acá solo se pregunta.
+  const monto = montoDesdeTexto(String(datos.get("monto_clp") ?? ""));
+  if (monto === null) {
+    return { ok: false, mensaje: "El monto tiene que ser un número entero, en pesos." };
+  }
+  const fecha = String(datos.get("fecha") ?? "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+    return { ok: false, mensaje: "La fecha no tiene el formato esperado." };
+  }
+
+  const { data, error } = await clienteAdmin().rpc("registrar_egreso", {
+    p_actor_user_id: actor.userId,
+    p_fecha: fecha,
+    p_categoria: String(datos.get("categoria") ?? "").trim(),
+    p_descripcion: String(datos.get("descripcion") ?? ""),
+    p_monto_clp: monto,
+    p_sede_id: String(datos.get("sede_id") ?? "").trim() || null,
+  });
+
+  if (error) return { ok: false, mensaje: comoMensaje(error) };
+
+  revalidatePath("/owner/finanzas");
+  return { ok: true, id: (data as { id: string } | null)?.id };
+}
+
+/** Anular, no borrar: la fila queda con autor y motivo, como el libro de créditos. */
+export async function anularEgreso(egresoId: string, motivo: string): Promise<Resultado> {
+  const actor = await perfilActual();
+  if (!actor || !tieneNivel(actor.rol, "owner")) {
+    return { ok: false, mensaje: "Solo el owner anula egresos." };
+  }
+
+  const { error } = await clienteAdmin().rpc("anular_egreso", {
+    p_actor_user_id: actor.userId,
+    p_egreso_id: egresoId,
+    p_motivo: motivo,
+  });
+
+  if (error) return { ok: false, mensaje: comoMensaje(error) };
+
+  revalidatePath("/owner/finanzas");
   return { ok: true };
 }

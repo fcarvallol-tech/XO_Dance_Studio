@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | Borrador — en revisión de Felipe |
+| **Estado** | Parte 1 ✅ implementada el 08/09/2026 · **Parte 2 en desarrollo desde el 30/09/2026** (§17) · Parte 3 enunciada |
 | **Fecha** | 21 de agosto de 2026 · reescrito el 6 de septiembre de 2026 |
 | **Hito** | Hito 5 |
 | **Relacionados** | PRD-0009 · PRD-0017 · `ARCHITECTURE.md` §8 · ADR-0002 |
@@ -686,6 +686,15 @@ verificar el flujo.
 - Mutaciones deliberadas dentro de transacciones revertidas, para comprobar que el arnés puede
   fallar: detecta las tres y la conciliación caza los dos tipos de descuadre.
 
+### La revisión final
+
+Un revisor fresco leyó la rama entera: nada crítico y dos textos incorrectos, corregidos con test
+primero. La tarjeta de caja decía "el mes anterior fue cero" cuando fue **negativo** —ahora dice
+"sin porcentaje: el mes anterior fue negativo", y el verificador comprueba las dos frases—, y la
+fecha del último egreso salía **un día antes** por leer un `date` como instante: `diaLegible` en
+`lib/dominio/periodo.ts`, con tests, y se usa en la lista y en los estados vacíos. Lo menor que
+se dejó anotado y sin hacer está en el mensaje de cierre y en `ARCHITECTURE.md` §10.
+
 ### Lo que quedó pendiente
 
 - **La migración no está aplicada a producción.** Solo a staging.
@@ -695,3 +704,132 @@ verificar el flujo.
 - Sembrar en staging necesita dos parches que no son del dominio y conviene recordar: insertar en
   `auth.users` a mano deja las columnas de token en `NULL` y GoTrue falla al leerlas, y sin
   `perfil_completo_at` los layouts mandan a `/completar-perfil`.
+
+## 17. Parte 2 — detalle (aprobado el 30/09/2026)
+
+Lo que §3.8–9 y §8.4 enunciaban, ya decidido. El plan con fases, juez y verificación está en
+`0010-plan-de-implementacion-parte-2.md`.
+
+### 17.1 Dos preguntas, no una
+
+**Caja neta** = ingresos del período (compras `pagadas`, por `aprobada_at`, como §7.3) − **egresos
+registrados** del período. No resta costos calculados: si Carla anota el arriendo que pagó como
+egreso y el sistema además lo calcula por clase, se descontaría dos veces. La caja mide lo que
+salió de la cuenta.
+
+**Margen por clase dictada** = ingreso atribuido a la clase (regla §7.1, por reserva que consumió
+y no recuperó) − costo calculado de dictarla: hora de sala (`sedes.costo_hora_clp`) × horas +
+base de la profesora × horas + variable × créditos consumidos. Mide la economía unitaria de
+`CONTEXT.md` §5.b, clase por clase. **Solo parrilla.** Las especiales quedan fuera porque se
+pagan con otra regla —**la profesora recibe el 50% de lo recaudado después de descontar la
+sala, sin base** (Felipe, 30/09/2026)— que todavía no está construida y **hay que incorporar**.
+
+Un costo que no está cargado —profesora sin fila, sede sin costo— da margen **`null`**, la fila
+dice "sin costo cargado" y el total del mes declara cuántas quedaron fuera. Nunca cero.
+
+### 17.2 Modelo de datos
+
+- **`categorias_egreso`** (`slug` pk, `nombre`, `orden`, `activa`). Editable desde el Table
+  Editor, porque la lista se va a revisar con Carla. Nace con: arriendo de sala, sueldo de
+  profesora, marketing, insumos, servicios, otro.
+- **`egresos`** (`fecha date`, `categoria` → `categorias_egreso`, `descripcion`, `monto_clp > 0`,
+  `sede_id` opcional, `comprobante_path`, `registrado_por`, `anulado_por`, `motivo_anulacion`,
+  `deleted_at`). Se **registra y se anula**; no se edita. Como el libro de créditos.
+- **`costos_profesoras`** (`profesora_id` pk, `base_hora_clp`, `variable_credito_clp`). Una fila
+  por profesora, sembrada con **$18.000 y $250** para todas, Carli incluida.
+- Bucket privado `comprobantes-egresos` (PDF/JPG/WebP, 2 MB), URL firmada desde el servidor.
+
+Las tres tablas tienen **RLS de solo owner** (`tiene_nivel('owner')`), las primeras del proyecto.
+Solo `select` para `authenticated`; toda escritura va por `registrar_egreso`, `anular_egreso` y
+`adjuntar_comprobante_egreso`, concedidas solo a `service_role`, con el actor como parámetro.
+
+`metricas_finanzas(p_desde, p_hasta, p_desde_ant, p_hasta_ant)` es **`security definer`**, a
+diferencia de las de la parte 1: lee `sedes.costo_hora_clp`, que no está concedido a
+`authenticated`. La primera línea es el chequeo de owner. Agrega y agrupa; no divide: la caja,
+las horas y el margen salen de `lib/dominio/finanzas.ts`.
+
+### 17.3 Rutas
+
+`/owner/finanzas` (caja neta, egresos del mes, margen por clase) y
+`/owner/finanzas/nuevo-egreso`. Enlace **Finanzas** junto a Métricas. Tres llamadas por render:
+identidad, `metricas_resumen` (que ya trae los ingresos) y `metricas_finanzas`.
+
+### 17.4 Reglas
+
+1. El monto es entero, mayor que cero. La fecha no puede ser futura: un egreso es algo que ya se
+   pagó. La categoría tiene que existir y estar activa. Lo valida la función, no el formulario.
+2. Una caja negativa se muestra con el signo antes del peso (`-$6.000`) y, si el mes anterior fue
+   cero o negativo, la comparación va **solo en pesos**: un porcentaje contra un negativo no
+   significa nada.
+3. Créditos consumidos de una clase = reservas con crédito y `credito_devuelto = false`, fuera de
+   `pendiente_pago`, `expirada` y `liberada`. Es el mismo predicado de §7.1.3 y §8.5.b.
+4. Una clase sin `fin` dura una hora. Con `fin`, lo que dure.
+
+### 17.5 Criterios de aceptación
+
+Los valores esperados están en la fase 0.2 del plan: egresos del mes $103.000 en 3, anterior
+$50.000, caja neta **$9.500** y anterior **−$6.000**, y las tres clases del escenario con
+ingreso $15.000 / $7.000 / $15.500, costo de profesora $18.500 cada una y sala según su sede.
+
+- [x] `npm test` en verde con los tests de `finanzas.ts`.
+- [x] `verificar-finanzas.mjs` en verde contra staging, incluidos los rechazos de la función, la
+      clase sin costo y las filas que ve un admin (cero).
+- [x] Un egreso registrado **desde el formulario** aparece en la lista y baja la caja; anulado
+      desde el botón, desaparece y la fila sigue en la base con `deleted_at`.
+- [x] Un admin no ve `/owner/finanzas`, recibe `42501` por `/rest/v1/rpc/metricas_finanzas` y
+      `[]` en `/rest/v1/egresos`.
+- [x] `GET /rest/v1/` expone lo nuevo y nada más.
+- [x] `/owner/finanzas` resuelve en tres llamadas o menos.
+- [x] `npm run build` pasa.
+
+## 18. Notas de implementación — parte 2
+
+Implementada el 30/09/2026 sobre `main`, en seis commits, uno por fase del plan.
+
+### Lo que se desvió del plan
+
+- **Las categorías viven en una tabla**, no en un `check`: Felipe pidió que fueran editables porque
+  las va a revisar con Carla. `categorias_egreso` se edita desde el Table Editor; no tiene pantalla.
+- **El formulario usa `onSubmit`, no `action`.** Con `action`, React vacía el formulario al terminar
+  la acción aunque la base haya rechazado el egreso: por un cero en el monto había que escribir
+  todo de nuevo. Se vio en la fase 5, no antes.
+- **La siembra de staging carga `sedes.costo_hora_clp`** para las dos salas viejas —$17.000 y $0,
+  de `CONTEXT.md` §5.b— porque PRD-0021 agregó la columna sin cargarlas y **también están en NULL en
+  producción**. Lo carga Felipe; hasta entonces, cada clase de esas sedes dice "sin costo cargado",
+  que es el comportamiento correcto y el que el verificador prueba.
+- **La auditoría de `GET /rest/v1/` no se pudo hacer por el OpenAPI**: responde 401 en staging.
+  Se hizo ruta por ruta, con sesión de admin y de anon, sobre las tres tablas y las cuatro funciones.
+
+### Lo que solo se vio abriendo la página
+
+Nada de lo de la parte 1 reapareció: los signos, los plurales y las horas se copiaron del tablero.
+Lo que sí apareció fue lo del formulario que se vacía, y dos errores del verificador —apretaba el
+botón **Salir** de la cabecera por ser el primer `submit` de la página, y confundía el anunciador
+de rutas de Next con el aviso del formulario—. Los dos son el argumento de probar el artefacto.
+
+### Verificación
+
+- 25 tests nuevos (`lib/dominio/finanzas.test.ts` y `diaLegible` en `periodo.test.ts`); 177 en total, sin dependencias nuevas.
+- `scripts/verificar-finanzas.mjs`: **48/48** contra staging con los valores del juez, incluidos
+  los rechazos de `registrar_egreso`, la clase sin costo y las filas que ve cada rol.
+- `scripts/verificar-finanzas-navegador.mjs`: **47/47** con Chromium a 390 px y el enlace del
+  correo. Egreso registrado desde el formulario, anulado desde el botón, comprobante subido y
+  visto por URL firmada, admin rebotado por URL directa y con `42501` por REST.
+- **3 llamadas a Supabase por render** de `/owner/finanzas` y de `/owner/finanzas/nuevo-egreso`,
+  medidas con un `fetch` instrumentado que no se commiteó.
+- `npm run build` y `npm test` en verde.
+
+### Lo que quedó pendiente
+
+- ~~La migración está aplicada a staging y no a producción~~ ✅ **Aplicada a producción el 30/09/2026**
+  con la aprobación de Felipe, junto con `20260930170000_costo_hora_sedes_viejas.sql`.
+- ~~`sedes.costo_hora_clp` en producción~~ ✅ Cargado por esa migración: $17.000 y $0.
+- **El pago de las clases especiales** —50% de lo recaudado después de descontar la sala, sin
+  base— está en `CONTEXT.md` §5.b y no construido. Va con la parte 3.
+- De los menores de la revisión final, Felipe pidió arreglar dos y se arreglaron con test primero:
+  **"12.5" ya no se lee como $125** (`montoDesdeTexto`: el punto solo vale en grupos de tres, y el
+  cero lo sigue rechazando la base con su mensaje) y **el motivo de anulación es de cada fila**
+  (`FilaEgreso` con su propio estado). Los demás quedan anotados en `ARCHITECTURE.md` §10.
+- Una pantalla para las categorías, si editarlas por el Table Editor resulta incómodo.
+- La parte 3: liquidación de profesoras, `dictada` / `no_dictada`, causa y reemplazo. Reusa
+  `costos_profesoras` y el predicado de créditos consumidos de `metricas_finanzas`.

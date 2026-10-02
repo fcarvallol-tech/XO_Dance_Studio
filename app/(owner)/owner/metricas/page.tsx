@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { TituloPortal } from "@/components/Portal";
 import { ErrorDeLectura } from "@/components/ErrorDeLectura";
 import {
@@ -193,7 +194,7 @@ function BloqueVenta({ R }: { R: Datos }) {
   return (
     <Bloque
       titulo="Venta"
-      bajada="Ingresos brutos: lo que entró por packs pagados. La caja neta necesita los egresos, que son la parte 2 de este PRD."
+      bajada="Ingresos brutos: lo que entró por packs pagados. La caja neta, con los egresos restados, está en Finanzas."
     >
       <Rejilla>
         <Indicador
@@ -458,18 +459,17 @@ function BloqueRecortes() {
     >
       <Rejilla>
         <SinDato
-          rotulo="Caja neta"
-          porque="Necesita los egresos, que son la parte 2 de este PRD. Arriba hay ingresos brutos, rotulados como tales: un número que dijera «neto» sin restar nada sería peor que no tenerlo."
-        />
-        <SinDato
-          rotulo="Margen por clase dictada"
-          porque="Necesita el costo de sala y el pago a la profesora en la base. Van con la parte 2."
-        />
-        <SinDato
           rotulo="Ingresos de Teens"
           porque="Teens se vende como suscripción mensual y todavía no está construido (PRD-0011). Todo lo de arriba es solo packs."
         />
       </Rejilla>
+      <p className="mt-4 max-w-prose text-sm leading-relaxed text-xo-gris">
+        La caja neta y el margen por clase dictada ya no están acá: viven en{" "}
+        <Link href="/owner/finanzas" className="text-xo-negro underline underline-offset-4">
+          Finanzas
+        </Link>
+        , junto con los egresos del mes.
+      </p>
     </Bloque>
   );
 }

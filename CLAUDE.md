@@ -231,6 +231,10 @@ de a una, y una página que hace ocho tarda el doble que una que hace cuatro.
     para **esa** migración.
   - Lo mismo vale para cualquier comando que escriba en la base remota: `db reset`, `db pull`,
     `migration repair`, o SQL suelto contra producción.
+  - **`db push` aplica TODO lo pendiente, no solo lo aprobado.** Antes de correrlo, comparar la lista
+    del `--dry-run` con lo que Felipe autorizó en ese mensaje. Si aparece una migración más, **parar y
+    preguntar**: no se aplica "de paso". Pasó el 30/09/2026 con la dirección de Los Leones (PRD-0022),
+    que salió en el push de PRD-0010 parte 2 sin haber sido aprobada por su nombre.
   - Sin aprobación, el trabajo termina en: migración escrita, `npm run build` corrido, y avisar que
     queda lista para aplicar.
   - El procedimiento completo está en `supabase/README.md`.
