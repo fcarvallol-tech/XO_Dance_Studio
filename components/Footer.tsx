@@ -18,7 +18,10 @@ export function Footer() {
           alt="XO Dance Studio"
           width={1192}
           height={789}
-          className="h-14 w-auto"
+          // `self-start`: en el teléfono esto es una columna flex, y sin él el
+          // logo se estira al ancho entero con el alto fijo —se veía aplastado—.
+          // Desde `sm` es una fila alineada abajo, y ahí manda la fila.
+          className="h-14 w-auto self-start sm:self-auto"
         />
 
         <ul className="space-y-3 text-sm sm:text-right">

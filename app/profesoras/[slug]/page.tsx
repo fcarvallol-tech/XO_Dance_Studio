@@ -113,14 +113,15 @@ export default async function PerfilProfesora({ params }: Props) {
               <Image
                 src={profesora.foto}
                 alt={`${profesora.nombre}, profesora de XO Dance Studio`}
-                width={640}
-                height={853}
-                className="w-full"
+                // Las medidas reales: todas salen 4:5 de `scripts/fotos-profesoras.mjs`.
+                width={960}
+                height={1200}
+                className="aspect-[4/5] w-full object-cover"
               />
             ) : (
               <Placeholder
                 etiqueta={`Foto de ${profesora.nombre} pendiente`}
-                className="aspect-[3/4]"
+                className="aspect-[4/5]"
               />
             )}
 

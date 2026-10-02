@@ -271,8 +271,11 @@ npx supabase db push             # ⚠️ solo con aprobación explícita de Fel
 
 - **Video del hero.** Es lo que más falta: la portada de PRD-0022 es mínima y hoy el hero es negro
   plano. Bloquea el despliegue.
-- Videos y fotos de las profesoras.
-- **Bio real de Carli** — su perfil sigue diciendo `Acá la bio de "Nombre"`. Pau, Drimy y Lina ya
-  entregaron la suya (comprobado en las páginas, 29/09/2026). La de Maida dejó de ser pendiente:
-  está inactiva.
+- **Videos de las profesoras.** ~~Las fotos~~ llegaron el 02/10/2026: las cuatro activas están en
+  `public/profesoras/`, con el mismo encuadre, generadas por `scripts/fotos-profesoras.mjs`. La de
+  **Lina** se agrandó 1,58x desde un JPG chico: si hay una versión más grande, se reemplaza el
+  archivo de `Assets/`, se vuelven a medir los ojos y se corre el script.
+- **Bio real de Carli** — su perfil sigue diciendo `Acá la bio de "Carli"`, **y así se queda hasta
+  que ella la mande**: no se inventa ni se rellena (Felipe, 02/10/2026). Pau, Drimy y Lina ya
+  entregaron la suya. La de Maida dejó de ser pendiente: está inactiva.
 - ~~Horarios, cupos y ubicación~~: resueltos. El catálogo está cargado y las tres sedes también.
