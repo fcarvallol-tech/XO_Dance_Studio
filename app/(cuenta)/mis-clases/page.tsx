@@ -8,6 +8,7 @@ import { clp } from "@/lib/planes";
 import { NOMBRE_ESTADO, cuandoLegible, type EstadoCompra } from "@/lib/compras";
 import {
   getMisCompras,
+  getMisRegalos,
   getMisReservas,
   getProximoVencimiento,
   getSaldo,
@@ -21,11 +22,12 @@ export const metadata: Metadata = {
 export default async function MisClases() {
   const perfil = await requiereSesion("cuenta");
 
-  const [saldo, vence, reservas, compras] = await Promise.all([
+  const [saldo, vence, reservas, compras, regalos] = await Promise.all([
     getSaldo(perfil.id),
     getProximoVencimiento(perfil.id),
     getMisReservas(perfil.id),
     getMisCompras(perfil.id),
+    getMisRegalos(perfil.id),
   ]);
 
   const ahora = new Date().toISOString();
@@ -92,6 +94,35 @@ export default async function MisClases() {
       <ErrorDeLectura que="tus reservas" error={reservas.error} />
       {reservas.error ? null : (
         <MisReservas proximas={proximas} pasadas={pasadas} />
+      )}
+
+      {/* PRD-0023: lo regalado, aparte de lo comprado. Sin el motivo: es del
+          registro interno. Solo aparece si hay algo. */}
+      <ErrorDeLectura que="tus clases de regalo" error={regalos.error} />
+      {regalos.error || regalos.datos.length === 0 ? null : (
+        <>
+          <h2 className="xo-eyebrow mt-14 text-xo-gris">Clases de regalo</h2>
+          <ul className="mt-4 divide-y divide-xo-negro/10 border-y border-xo-negro/10" data-mis-regalos>
+            {regalos.datos.map((r) => (
+              <li key={r.id} className="flex flex-wrap justify-between gap-3 py-4">
+                <div>
+                  <p className="text-xo-negro">
+                    {r.cantidad} {r.cantidad === 1 ? "clase" : "clases"} de regalo
+                  </p>
+                  <p className="text-sm text-xo-gris">
+                    {cuandoLegible(r.regaladoAt).split(",")[0]} · vencen el{" "}
+                    {cuandoLegible(r.vence).split(",")[0]}
+                  </p>
+                </div>
+                <p className="xo-eyebrow self-center text-xo-gris">
+                  {new Date(r.vence) <= new Date(ahora)
+                    ? "Vencidas"
+                    : `${r.disponibles} sin usar`}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       <h2 className="xo-eyebrow mt-14 text-xo-gris">Tus compras</h2>

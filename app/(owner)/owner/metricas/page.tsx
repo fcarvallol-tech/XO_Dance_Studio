@@ -23,6 +23,7 @@ import { mesAnterior, mesEnCurso, nombreDelMes } from "@/lib/dominio/periodo";
 import {
   atribuir,
   brecha,
+  pasivoPorOrigen,
   comparar,
   conciliacion,
   ocupacionPromedio,
@@ -124,19 +125,37 @@ function BloqueCreditos({ R }: { R: Datos }) {
     disponibles: R.creditos.disponibles,
     vencidas: R.creditos.vencidas_sin_usar,
   });
+  // PRD-0023: el pasivo partido por origen. Lo cobrado y lo regalado miden
+  // cosas distintas —plata que se debe, y una obligación asumida sin cobrar—,
+  // y sumados el número no sirve para decidir nada (Felipe, 04/10/2026).
+  const p = pasivoPorOrigen({
+    vigentesVendidas: R.creditos.vigentes_vendidas,
+    vigentesRegaladas: R.creditos.vigentes_regaladas,
+    pasivoVigente: b.pasivoVigente,
+  });
 
   return (
     <Bloque
       titulo="Créditos"
-      bajada="La diferencia entre lo vendido y lo consumido es plata cobrada por un servicio que todavía se debe. Es pasivo, no utilidad, y es el indicador propio de este modelo."
+      bajada="Lo vendido y no tomado es plata cobrada por un servicio que todavía se debe: pasivo, no utilidad. Lo regalado y no tomado va aparte: también son clases que hay que dar, pero no se cobraron."
     >
       <Rejilla>
         <Indicador
           destacado
-          rotulo="Brecha — pasivo vigente"
-          valor={String(b.pasivoVigente)}
-          denominador={`clases pagadas y no tomadas, sobre ${b.otorgadas} otorgadas desde siempre`}
-          nota="Vencen si no se usan. No es utilidad hasta que la clase se dicta o el crédito expira."
+          rotulo="Vendidas sin usar"
+          valor={String(p.vendidas)}
+          denominador="clases cobradas y no tomadas: plata que se debe"
+          nota={
+            p.cuadra
+              ? "Vencen si no se usan. No es utilidad hasta que la clase se dicta o el crédito expira."
+              : `Ojo: vendidas y regaladas suman ${p.vendidas + p.regaladas} y el total medido es ${b.pasivoVigente}. Algo se está contando dos veces o perdiendo.`
+          }
+        />
+        <Indicador
+          rotulo="Regaladas sin usar"
+          valor={String(p.regaladas)}
+          denominador="clases regaladas y no tomadas: obligación asumida sin cobrar"
+          nota="No se cobraron, pero hay que darlas, y cada una que se toma le paga $250 a la profesora."
         />
         <Indicador
           rotulo="Vendidas este mes"
@@ -172,14 +191,22 @@ function BloqueCreditos({ R }: { R: Datos }) {
         />
         <Indicador
           rotulo="Vencidas sin usar"
-          valor={String(R.creditos.vencidas_sin_usar)}
-          denominador="clases pagadas que ya nadie va a tomar"
+          valor={String(R.creditos.vencidas_vendidas)}
+          denominador={
+            R.creditos.vencidas_regaladas > 0
+              ? `clases pagadas que ya nadie va a tomar · más ${R.creditos.vencidas_regaladas} regaladas`
+              : "clases pagadas que ya nadie va a tomar"
+          }
           nota="Dejaron de ser deuda: eso ya es margen."
         />
         <Indicador
           rotulo="Por vencer en 30 días"
-          valor={String(R.creditos.por_vencer_30d)}
-          denominador={`de las ${b.pasivoVigente} vigentes`}
+          valor={String(R.creditos.por_vencer_30d_vendidas)}
+          denominador={
+            R.creditos.por_vencer_30d_regaladas > 0
+              ? `de las ${p.vendidas} vendidas vigentes · más ${R.creditos.por_vencer_30d_regaladas} regaladas`
+              : `de las ${p.vendidas} vendidas vigentes`
+          }
           nota="Cada una es alguien que pagó y todavía no vino."
         />
       </Rejilla>

@@ -81,8 +81,9 @@ export type Creditos = {
 
 export type Brecha = Creditos & {
   /**
-   * Lo que todavía se debe: plata cobrada por un servicio no entregado, que
-   * sigue siendo exigible.
+   * Lo que todavía se debe, **sumando** lo cobrado y lo regalado. Para decidir
+   * se usa partido en `pasivoPorOrigen` (PRD-0023); el total queda para la
+   * conciliación.
    */
   pasivoVigente: number;
   /** Tasa de utilización, acumulada. Ver PRD-0010 §5.1. */
@@ -107,6 +108,38 @@ export function brecha(c: Creditos): Brecha {
     ...c,
     pasivoVigente: c.disponibles - c.vencidas,
     utilizacion: tasa(c.consumidas, c.otorgadas),
+  };
+}
+
+export type PasivoPorOrigen = {
+  /** Clases cobradas y no tomadas: plata que se debe. */
+  vendidas: number;
+  /** Clases regaladas y no tomadas: una obligación asumida sin cobrar. */
+  regaladas: number;
+  /** Si las dos partes suman el pasivo vigente medido. */
+  cuadra: boolean;
+};
+
+/**
+ * El pasivo vigente, **separado por origen** (PRD-0023, Felipe, 04/10/2026).
+ *
+ * Un lote con compra es plata cobrada por un servicio que se debe; uno sin
+ * compra es un regalo, una obligación que se asumió sin cobrar. Miden cosas
+ * distintas, y sumados el número no sirve para decidir nada. El total sigue
+ * existiendo —es contra lo que se concilia el libro—, pero se muestra partido.
+ *
+ * Las tres cifras vienen de la misma tabla con filtros distintos: si las partes
+ * no suman el total, algo se está contando dos veces o perdiendo, y se dice.
+ */
+export function pasivoPorOrigen(c: {
+  vigentesVendidas: number;
+  vigentesRegaladas: number;
+  pasivoVigente: number;
+}): PasivoPorOrigen {
+  return {
+    vendidas: c.vigentesVendidas,
+    regaladas: c.vigentesRegaladas,
+    cuadra: c.vigentesVendidas + c.vigentesRegaladas === c.pasivoVigente,
   };
 }
 

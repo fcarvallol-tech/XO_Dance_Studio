@@ -332,6 +332,12 @@ alumna reservó y no llegó, el crédito se gastó y se paga igual. Una cancelad
 el crédito y no cuenta; una cancelada tarde sí. Es exactamente el mismo hecho con el que se le
 atribuye ingreso a la profesora — ver PRD-0010 §7.1 y §8.5.b.
 
+**Un crédito regalado se le paga igual a la profesora** (Felipe, 04/10/2026). Si una alumna toma
+una clase con un crédito que XO le regaló (PRD-0023), la profesora cobra sus $250 como por
+cualquier otro crédito consumido: **hizo el mismo trabajo, y el costo del regalo es de XO, no de
+ella**. Es una regla de negocio, no un efecto del código. Consecuencia que hay que tener presente:
+una clase pagada con regalo **cuesta $250 y aporta $0** de ingreso, así que regalar no es gratis.
+
 ⚠️ **Teens se calcula sobre otra base.** Ver más abajo: allá el variable va por inscripción
 mensual, no por crédito. Son dos ramas de negocio distintas y el pago sigue a cada una.
 

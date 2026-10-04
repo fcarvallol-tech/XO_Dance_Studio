@@ -26,7 +26,23 @@ const SITIO = process.env.SITIO ?? "http://localhost:3000";
 const CAPTURAS = process.env.CAPTURAS ?? null;
 const CON_RESERVA = "ana@ejemplo.invalid"; // tiene una reserva: se ve "Reservada"
 const CON_SALDO = "alumna.prueba.0210@example.com";
-const SIN_SALDO = "alumna.flujo.1790921763295@example.com";
+// Se busca al correr, no se fija: otros verificadores (PRD-0023) le regalan
+// clases a alumnas de staging, y una "sin saldo" fija deja de serlo.
+const SIN_SALDO = (
+  await (async () => {
+    const db = await conectar();
+    try {
+      return (await db.query(
+        `select p.email from perfiles p
+         where p.rol = 'alumna' and p.perfil_completo_at is not null and p.deleted_at is null
+           and not exists (select 1 from creditos c where c.perfil_id = p.id
+                           and c.cantidad_disponible > 0 and c.fecha_vencimiento > now())
+         order by p.created_at limit 1`)).rows[0]?.email;
+    } finally {
+      await db.end().catch(() => {});
+    }
+  })()
+) ?? "sin-alumna-sin-saldo";
 const FILTRO = "Pau";
 
 const env = Object.fromEntries(

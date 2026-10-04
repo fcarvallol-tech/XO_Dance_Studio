@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { TituloPortal } from "@/components/Portal";
 import { CambiarRol } from "@/components/CambiarRol";
+import { RegalarClases } from "@/components/RegalarClases";
+import { cuandoLegible } from "@/lib/compras";
+import { getRegalosRecientes, getSaldosVigentes } from "@/lib/compras-consultas";
 import { NOMBRE_ROL, esRol, type Rol } from "@/lib/roles";
 import { nombreDe } from "@/lib/catalogo";
 import { getCatalogoCompleto } from "@/lib/catalogo-consultas";
@@ -37,12 +40,20 @@ export default async function Admin() {
   const { profesoras, error: errorCatalogo } = await getCatalogoCompleto();
   const activas = profesoras.filter((p) => p.activa);
 
-  const { data, error } = await supabase
-    .from("perfiles")
-    .select("id, nombre, email, rol, profesora_id, created_at")
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const [{ data, error }, saldos, regalos, { data: vigencia }] = await Promise.all([
+    supabase
+      .from("perfiles")
+      .select("id, nombre, email, rol, profesora_id, created_at")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(200),
+    getSaldosVigentes(),
+    getRegalosRecientes(),
+    // Preferencia con valor por defecto, como `calendario_dias`: si no se lee,
+    // 60 es lo mismo que dice el parámetro. La base usa el suyo al regalar.
+    supabase.from("parametros").select("valor").eq("clave", "regalo_vigencia_dias").maybeSingle(),
+  ]);
+  const vigenciaDias = Number(vigencia?.valor ?? 60) || 60;
 
   const perfiles = (data ?? []) as FilaPerfil[];
 
@@ -59,15 +70,17 @@ export default async function Admin() {
         error={error ? `${error.message} (${error.code})` : null}
       />
       <ErrorDeLectura que="el catálogo de profesoras" error={errorCatalogo} />
+      <ErrorDeLectura que="los saldos de clases" error={saldos.error} />
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[52rem] border-collapse text-left">
+        <table className="w-full min-w-[60rem] border-collapse text-left">
           <thead>
             <tr className="border-b border-xo-negro/20">
               <Th>Nombre</Th>
               <Th>Correo</Th>
               <Th>Rol</Th>
               <Th>Profesora</Th>
+              <Th>Clases</Th>
               <Th>Cambiar a</Th>
             </tr>
           </thead>
@@ -87,6 +100,17 @@ export default async function Admin() {
                   ) : (
                     <span className="text-xo-gris">—</span>
                   )}
+                </td>
+                <td className="py-3 pr-4">
+                  {/* Clases vigentes y el regalo (PRD-0023). También a sí
+                      misma y a una profesora: las dos toman clases. */}
+                  <RegalarClases
+                    perfilId={fila.id}
+                    nombre={fila.nombre}
+                    correo={fila.email}
+                    saldo={saldos.datos.get(fila.id) ?? 0}
+                    vigenciaDias={vigenciaDias}
+                  />
                 </td>
                 <td className="py-3">
                   {fila.id === actor.id ? (
@@ -110,6 +134,45 @@ export default async function Admin() {
       {perfiles.length === 0 && !error ? (
         <p className="text-xo-gris">Todavía no hay nadie registrado.</p>
       ) : null}
+
+      {/* PRD-0023: lo regalado queda a la vista, con por qué y quién. Es plata
+          que no entró, y cada clase regalada que se toma cuesta $250. */}
+      <h2 className="xo-eyebrow mt-14 text-xo-gris">Regalos recientes</h2>
+      <p className="mt-2 max-w-prose text-sm text-xo-gris">
+        Clases regaladas: no son venta y no entran en los ingresos. Cada una que se toma le paga
+        igual los $250 a la profesora.
+      </p>
+      <ErrorDeLectura que="los regalos" error={regalos.error} />
+      {regalos.error ? null : regalos.datos.length === 0 ? (
+        <p className="mt-4 text-xo-gris">Todavía no se ha regalado ninguna clase.</p>
+      ) : (
+        <ul className="mt-4 divide-y divide-xo-negro/10 border-y border-xo-negro/10" data-regalos>
+          {regalos.datos.map((r) => (
+            <li key={r.id} className="flex flex-wrap justify-between gap-3 py-3">
+              <div>
+                <p className="text-sm text-xo-negro">
+                  {r.alumna ?? "Sin nombre"} · {r.cantidad} {r.cantidad === 1 ? "clase" : "clases"}
+                </p>
+                <p className="text-sm text-xo-negro">
+                  <span className="text-xo-gris">Por qué: </span>
+                  {r.motivo}
+                </p>
+                <p className="text-sm text-xo-gris">
+                  {cuandoLegible(r.regaladoAt)} · por {r.autor ?? "alguien sin perfil"}
+                </p>
+              </div>
+              <p className="self-center text-right text-sm text-xo-gris">
+                {r.vence ? `Vale hasta el ${cuandoLegible(r.vence).split(",")[0]}` : null}
+                {r.disponibles !== null ? (
+                  <span className="block">
+                    {r.disponibles} sin usar
+                  </span>
+                ) : null}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
     </>
   );
 }

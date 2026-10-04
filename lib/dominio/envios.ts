@@ -34,6 +34,7 @@ export type Plantilla =
   | "transferenciaDeclarada"
   | "transferenciaRecibida"
   | "compraAprobada"
+  | "regalo"
   | "compraRechazada"
   | "reserva"
   | "especialPendiente"
@@ -117,7 +118,9 @@ export function caducaAt(plantilla: Plantilla, contexto: ContextoDeCaducidad): D
       return sumarMinutos(contexto.encoladoAt, 24 * 60);
     case "compraAprobada":
     case "compraRechazada":
-      // Siguen siendo ciertos la semana que viene.
+    case "regalo":
+      // Siguen siendo ciertos la semana que viene. El de regalo dice hasta
+      // cuándo valen las clases, y eso es cierto mientras no venzan (PRD-0023).
       return null;
   }
 }

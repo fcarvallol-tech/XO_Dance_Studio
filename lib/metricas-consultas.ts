@@ -42,6 +42,13 @@ export type Resumen = {
     disponibles: number;
     vencidas_sin_usar: number;
     por_vencer_30d: number;
+    /** PRD-0023: las mismas cifras, separadas por origen del lote. */
+    vigentes_vendidas: number;
+    vigentes_regaladas: number;
+    vencidas_vendidas: number;
+    vencidas_regaladas: number;
+    por_vencer_30d_vendidas: number;
+    por_vencer_30d_regaladas: number;
   };
   creditos_anterior: { vendidas: number; regaladas: number; consumidas: number };
   conciliacion: { libro: number; lotes: number };
