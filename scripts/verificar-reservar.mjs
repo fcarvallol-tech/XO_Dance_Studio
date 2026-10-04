@@ -71,13 +71,15 @@ async function sesion(email, ancho) {
 }
 
 /**
- * Avanza hasta la primera semana con clases. El calendario abre en la semana
- * de hoy aunque ya no le queden —un domingo, por ejemplo—, y eso es de la
- * grilla, igual que en el sitio público.
+ * Avanza hasta la primera semana con clases que no hayan pasado. Desde
+ * PRD-0006 §13 la grilla ya abre ahí sola; esto queda para cuando el
+ * verificador vuelve atrás con "Antes".
  */
 async function aSemanaConClases(p) {
+  // Clases **no pasadas**: desde PRD-0006 §13 la semana de hoy muestra
+  // también las que ya ocurrieron, y con esas no hay nada que probar.
   const hay = () =>
-    p.locator("main [data-estado]").evaluateAll((xs) => xs.length > 0);
+    p.locator("main [data-estado]:not([data-estado='pasada'])").evaluateAll((xs) => xs.length > 0);
   for (let i = 0; i < 9 && !(await hay()); i++) {
     await p.getByRole("button", { name: /Después/ }).click();
     await p.waitForTimeout(150);

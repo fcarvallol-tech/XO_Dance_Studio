@@ -43,11 +43,12 @@ import { GrillaCalendario, type Ubicacion } from "@/components/GrillaCalendario"
 export function Calendario({
   clases,
   saldo,
-  hoy,
+  ahora,
 }: {
   clases: ClaseDelCalendario[];
   saldo: number;
-  hoy: string;
+  /** El instante del servidor; la grilla lo pasa al del navegador al cargar. */
+  ahora: string;
 }) {
   const [profesora, setProfesora] = useState<string | null>(null);
   const [abierta, setAbierta] = useState<ClaseDelCalendario | null>(null);
@@ -132,7 +133,7 @@ export function Calendario({
 
       <GrillaCalendario
         clases={clases}
-        hoy={hoy}
+        ahora={ahora}
         tema="claro"
         marca={profesora ? (c) => c.profesoraSlug === profesora : undefined}
         pie={
@@ -144,7 +145,7 @@ export function Calendario({
           <BloqueAlumna
             clase={clase}
             ubicacion={ubicacion}
-            estado={estadoParaAlumna(clase, saldo)}
+            estado={estadoParaAlumna(clase, saldo, ubicacion.pasada)}
             resalte={destaque(clase.profesoraSlug, profesora)}
             onAbrir={() => {
               setFallo(null);
@@ -233,6 +234,29 @@ function BloqueAlumna({
 }) {
   const libres = lugaresLibres(clase);
   const mia = estado === "reservada";
+
+  // Una pasada se ve pero no se selecciona: no es botón. En gris sobre blanco
+  // sólido —5,0:1, medido— y con borde punteado, y lo dice en palabras. Gana
+  // sobre el filtro y sobre "reservada": ya no hay nada que hacer con ella
+  // (PRD-0006 §13).
+  if (estado === "pasada") {
+    return (
+      <div
+        style={ubicacion.style}
+        data-estado="pasada"
+        className={`${ubicacion.className} border-dashed border-xo-negro/30 bg-xo-blanco`}
+      >
+        <p className="text-xs leading-tight font-semibold text-xo-gris">
+          {clase.especial ? clase.especial.titulo : clase.cursoNombre}
+        </p>
+        <p className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] leading-tight text-xo-gris">
+          <span>{rangoHorario(clase.inicio, clase.fin)}</span>
+          <span>{clase.reservaId ? "Ya pasó · era tuya" : "Ya pasó"}</span>
+        </p>
+        <p className="mt-0.5 text-[11px] leading-tight text-xo-gris">{clase.profesoraNombre}</p>
+      </div>
+    );
+  }
 
   // Una sola fuente de colores por caso: fondo, texto principal y secundario
   // van juntos para que el contraste se pueda razonar —y medir— de a uno.

@@ -141,8 +141,8 @@ Contra staging, con el sitio construido:
 
 - ~~En el teléfono, con una profesora elegida, los botones de día no dicen qué días tienen
   clases de ella~~ — resuelto el mismo día, ver §8.2.
-- **La grilla abre en la semana de hoy aunque ya no le queden clases** (un domingo): hay que
-  apretar "Después". Es de la grilla, igual en el sitio público.
+- ~~La grilla abre en la semana de hoy aunque ya no le queden clases~~ — resuelto el
+  04/10/2026, junto con las clases pasadas y la marca de hoy: ver PRD-0006 §13.
 - **El portal de profesora sigue con `GrillaSemanal`**, que apila sin eje de tiempo. Es la otra
   grilla que diverge.
 - La clase que empieza fuera de una media hora (14:50) sigue dibujándose corrida (PRD-0022 §14).

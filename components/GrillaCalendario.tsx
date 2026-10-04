@@ -1,10 +1,18 @@
 "use client";
 
-import { Fragment as Fragmento, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  Fragment as Fragmento,
+  useEffect,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import { rangoHorario } from "@/lib/dominio/horarios";
 import {
   MINUTOS_POR_TRAMO,
+  esPasada,
+  semanaInicial,
   semanasDeLaGrilla,
   tramoDe,
   tramosQueOcupa,
@@ -14,7 +22,6 @@ import { lugaresLibres, type ClaseDelCalendario } from "@/lib/compras";
 import {
   diaEnSantiago,
   diasDeLaSemana,
-  lunesDe,
   nombreDelDia,
   rangoLegible,
 } from "@/lib/semana";
@@ -67,18 +74,37 @@ import {
  *   reservar; en el portal, un botón con el estado de ella. La posición la
  *   calcula la grilla y se la entrega armada, así que lo que cambia es el
  *   contenido, nunca dónde cae ni cuánto mide.
+ *
+ * ---
+ *
+ * **Qué semana abre, las pasadas y hoy** (PRD-0006 §13, Felipe, 04/10/2026):
+ *
+ * - **Abre en la primera semana con algo que reservar** (`semanaInicial`). Un
+ *   domingo la semana actual ya ocurrió entera y se veía vacía, como si no
+ *   hubiera clases. Si a la actual le queda algo, se queda en esa.
+ * - **Las pasadas se ven**, marcadas y sin poder tocarse: esconderlas era lo
+ *   que dejaba la semana vacía. La consulta trae desde el lunes de esta semana.
+ * - **Hoy se marca con un tono de columna y una línea**, no con un número: los
+ *   encabezados no llevan fecha, por decisión de Felipe del 29/09/2026.
+ *
+ * **El "ahora" lo pone el navegador.** Parte con el del servidor —para que lo
+ * primero que se dibuja sea igual en los dos lados— y al cargar pasa al del
+ * navegador, que se actualiza cada minuto. `/calendario` se sirve de caché
+ * hasta 10 minutos, y una página generada el sábado en la noche no puede
+ * decidir qué ya pasó el domingo en la mañana. De paso, eso hace que se pueda
+ * verificar simulando el reloj, sin esperar al domingo.
  */
 export function GrillaCalendario({
   clases,
-  hoy,
+  ahora: ahoraDelServidor,
   tema = "oscuro",
   bloque,
   pie,
   marca,
 }: {
   clases: ClaseDelCalendario[];
-  /** Hoy en Santiago, del servidor: así la página y la grilla usan el mismo día. */
-  hoy: string;
+  /** El instante del servidor, en ISO. El navegador lo reemplaza al cargar. */
+  ahora: string;
   tema?: Tema;
   /**
    * Lo que se dibuja en cada clase. Recibe la posición ya calculada y **la
@@ -97,6 +123,22 @@ export function GrillaCalendario({
   marca?: (clase: ClaseDelCalendario) => boolean;
 }) {
   const T = TEMAS[tema];
+
+  const [ahoraIso, setAhora] = useState(ahoraDelServidor);
+  useEffect(() => {
+    const tic = () => setAhora(new Date().toISOString());
+    tic();
+    const reloj = setInterval(tic, 60_000);
+    return () => clearInterval(reloj);
+  }, []);
+  const ahora = new Date(ahoraIso);
+  const hoy = diaEnSantiago(ahora);
+
+  // Reservable: no empezó y tiene lugar, o es una especial —que se reserva en
+  // su página, con su propio cupo—. Es lo que decide qué semana abre y qué día
+  // se muestra primero en el teléfono.
+  const reservable = (c: ClaseDelCalendario) =>
+    !esPasada(c.inicio, ahora) && (c.especial !== null || lugaresLibres(c) > 0);
   const porDia = new Map<string, ClaseDelCalendario[]>();
   for (const clase of clases) {
     const dia = diaEnSantiago(new Date(clase.inicio));
@@ -104,11 +146,16 @@ export function GrillaCalendario({
   }
 
   const semanas = semanasDeLaGrilla([...porDia.keys()], hoy);
-  const [indice, setIndice] = useState(
-    // La de hoy, que siempre está. Solo no es la primera si llegó una clase ya
-    // pasada, y el calendario no debería mandarlas.
-    Math.max(0, semanas.indexOf(lunesDe(hoy))),
-  );
+  // `null` mientras la persona no navegue: la semana la decide la regla, y se
+  // recalcula si cambia la hora. Apenas aprieta Antes o Después, manda ella.
+  const [navegada, setNavegada] = useState<number | null>(null);
+  const indice =
+    navegada ??
+    semanaInicial(
+      semanas,
+      clases.filter(reservable).map((c) => diaEnSantiago(new Date(c.inicio))),
+      hoy,
+    );
   const lunes = semanas[Math.min(indice, semanas.length - 1)];
   const dias = diasDeLaSemana(lunes);
   const deLaSemana = dias.flatMap((d) => porDia.get(d) ?? []);
@@ -117,13 +164,13 @@ export function GrillaCalendario({
   // se recalcula al cambiar de semana.
   const [elegido, setElegido] = useState<string | null>(null);
   const diaVisible =
-    elegido && dias.includes(elegido) ? elegido : diaPorDefecto(dias, porDia, hoy);
+    elegido && dias.includes(elegido) ? elegido : diaPorDefecto(dias, porDia, hoy, reservable);
 
   const { desde, hasta } = ventanaDeHoras(deLaSemana);
   const filas = (hasta - desde) * (60 / MINUTOS_POR_TRAMO);
 
   const irA = (i: number) => {
-    setIndice(i);
+    setNavegada(i);
     setElegido(null);
   };
 
@@ -165,18 +212,29 @@ export function GrillaCalendario({
           // de otras profesoras sigue teniendo clases.
           const marcado = (porDia.get(dia) ?? []).some((c) => (marca ? marca(c) : true));
           const activo = dia === diaVisible;
+          const esHoy = dia === hoy;
           return (
             <button
               key={dia}
               type="button"
               aria-pressed={activo}
+              aria-current={esHoy ? "date" : undefined}
               aria-label={nombreDelDia(dia)}
               onClick={() => setElegido(dia)}
               className={`xo-eyebrow flex min-h-11 flex-col items-center justify-center gap-1 rounded border transition-colors ${
                 activo ? T.diaActivo : tiene ? T.diaTiene : T.diaVacio
               }`}
             >
-              {abreviado(dia)}
+              {/* Hoy, subrayado: sin número, como los encabezados. */}
+              <span
+                className={
+                  esHoy
+                    ? `underline decoration-2 underline-offset-4 ${activo ? "decoration-xo-negro" : "decoration-xo-rosa"}`
+                    : undefined
+                }
+              >
+                {abreviado(dia)}
+              </span>
               <span
                 aria-hidden="true"
                 data-marca={marcado ? "si" : "no"}
@@ -198,9 +256,17 @@ export function GrillaCalendario({
           {dias.map((dia) => (
             <div
               key={dia}
-              className={`${dia === diaVisible ? "block" : "hidden"} border-r border-b py-3 text-center lg:block ${T.borde}`}
+              aria-current={dia === hoy ? "date" : undefined}
+              data-hoy={dia === hoy ? "si" : undefined}
+              className={`${dia === diaVisible ? "block" : "hidden"} relative border-r border-b py-3 text-center lg:block ${T.borde} ${dia === hoy ? T.hoyColumna : ""}`}
             >
+              {/* Hoy: una línea arriba y el tono de la columna. **Nunca un
+                  número**: los encabezados no llevan fecha (29/09/2026). */}
+              {dia === hoy ? (
+                <span aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px] bg-xo-rosa" />
+              ) : null}
               <p className={`xo-eyebrow ${T.encabezado}`}>{nombreDelDia(dia)}</p>
+              {dia === hoy ? <span className="sr-only">, hoy</span> : null}
             </div>
           ))}
 
@@ -233,7 +299,8 @@ export function GrillaCalendario({
             return (
               <div
                 key={dia}
-                className={`${dia === diaVisible ? "grid" : "hidden"} relative border-r lg:grid ${T.borde}`}
+                data-hoy={dia === hoy ? "si" : undefined}
+                className={`${dia === diaVisible ? "grid" : "hidden"} relative border-r lg:grid ${T.borde} ${dia === hoy ? T.hoyColumna : ""}`}
                 style={{ gridTemplateRows: `repeat(${filas}, 1.75rem)` }}
               >
                 {/* Una línea al pie de cada tramo: la que cierra la hora en punto
@@ -266,9 +333,35 @@ export function GrillaCalendario({
                     style: { gridRow: `${inicio + 1} / span ${alto}`, gridColumn: 1 },
                     className: "z-10 mx-1 overflow-hidden rounded border px-2 py-1",
                     tramos: alto,
+                    pasada: esPasada(clase.inicio, ahora),
                   };
 
                   if (bloque) return <Fragmento key={clase.id}>{bloque(clase, ubicacion)}</Fragmento>;
+
+                  // Una pasada se ve pero no se toca: no es enlace. Atenuada
+                  // **legible** —fondo sólido y blanco al 60-70 %, medido sobre
+                  // 4,5:1—, porque sigue siendo información (PRD-0006 §13).
+                  if (ubicacion.pasada) {
+                    return (
+                      <div
+                        key={clase.id}
+                        data-pasada="si"
+                        style={ubicacion.style}
+                        className={`${ubicacion.className} border-dashed border-xo-blanco/20 bg-xo-negro`}
+                      >
+                        <p className="text-xs leading-tight font-semibold text-xo-blanco/70">
+                          {clase.especial ? clase.especial.titulo : clase.cursoNombre}
+                        </p>
+                        <p className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] leading-tight text-xo-blanco/60">
+                          <span>{rangoHorario(clase.inicio, clase.fin)}</span>
+                          <span>Ya pasó</span>
+                        </p>
+                        <p className="mt-0.5 text-[11px] leading-tight text-xo-blanco/60">
+                          {clase.profesoraNombre}
+                        </p>
+                      </div>
+                    );
+                  }
 
                   const libres = lugaresLibres(clase);
                   // Una especial se paga aparte y tiene su página: ahí está su
@@ -342,15 +435,20 @@ export function GrillaCalendario({
 }
 
 /**
- * El día que se abre en el teléfono: hoy si le quedan clases; si no, el primer
- * día de la semana con clases desde hoy; y en una semana vacía, hoy si está en
- * ella o el lunes.
+ * El día que se abre en el teléfono: el primero desde hoy con algo que
+ * reservar; si no hay, el primero desde hoy con clases; y en una semana vacía,
+ * hoy si está en ella o el lunes.
  */
 function diaPorDefecto(
   dias: string[],
   porDia: Map<string, ClaseDelCalendario[]>,
   hoy: string,
+  reservable: (c: ClaseDelCalendario) => boolean,
 ): string {
+  // Primero, el primer día desde hoy con algo que reservar: no abrir en un día
+  // cuyas clases ya pasaron todas.
+  const conAlgo = dias.filter((d) => d >= hoy && (porDia.get(d) ?? []).some(reservable));
+  if (conAlgo.length > 0) return conAlgo[0];
   const conClases = dias.filter((d) => d >= hoy && (porDia.get(d)?.length ?? 0) > 0);
   if (conClases.length > 0) return conClases[0];
   return dias.includes(hoy) ? hoy : dias[0];
@@ -368,6 +466,8 @@ export type Ubicacion = {
   className: string;
   /** Cuántos tramos de media hora mide: dice cuánto texto cabe. */
   tramos: number;
+  /** Si ya empezó: se muestra, pero no se selecciona (PRD-0006 §13). */
+  pasada: boolean;
 };
 
 export type Tema = "oscuro" | "claro";
@@ -398,6 +498,7 @@ const TEMAS: Record<Tema, Record<string, string>> = {
     vacio: "text-xo-blanco/50",
     pie: "text-xo-blanco/50",
     pieSub: "text-xo-blanco/70",
+    hoyColumna: "bg-xo-blanco/[0.05]",
   },
   claro: {
     boton:
@@ -414,5 +515,6 @@ const TEMAS: Record<Tema, Record<string, string>> = {
     vacio: "text-xo-gris",
     pie: "text-xo-gris",
     pieSub: "text-xo-negro",
+    hoyColumna: "bg-xo-negro/[0.04]",
   },
 };

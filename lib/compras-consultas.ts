@@ -2,6 +2,7 @@ import { cache } from "react";
 import { clienteServidor } from "./supabase/servidor";
 import { clienteAdmin } from "./supabase/admin";
 import { clientePublico } from "./supabase/publico";
+import { hoyEnSantiago, inicioDelDia, lunesDe } from "./semana";
 import type {
   ClaseDelCalendario,
   Compra,
@@ -301,8 +302,11 @@ export async function getCalendarioPublico(
 ): Promise<Lectura<ClaseDelCalendario[]>> {
   const publico = clientePublico();
   const admin = clienteAdmin();
-  const desde = new Date();
-  const hasta = new Date(desde.getTime() + dias * 24 * 60 * 60 * 1000);
+  // Desde el lunes de esta semana y no desde ahora: las clases que ya pasaron
+  // en la semana se muestran, marcadas, para que no parezca vacía (PRD-0006
+  // §13). El tope sigue contándose desde hoy.
+  const desde = inicioDelDia(lunesDe(hoyEnSantiago()));
+  const hasta = new Date(Date.now() + dias * 24 * 60 * 60 * 1000);
 
   const { data, error } = await publico
     .from("clases")
@@ -313,7 +317,7 @@ export async function getCalendarioPublico(
     // de en RLS: la consulta filtra igual que la política, no confía en ella.
     .or("tipo.eq.parrilla,publicada_at.not.is.null")
     .eq("estado", "programada")
-    .gt("inicio", desde.toISOString())
+    .gte("inicio", desde.toISOString())
     .lt("inicio", hasta.toISOString())
     .order("inicio");
 
@@ -366,8 +370,11 @@ export async function getCalendario(
   dias: number,
 ): Promise<Lectura<ClaseDelCalendario[]>> {
   const supabase = await clienteServidor();
-  const desde = new Date();
-  const hasta = new Date(desde.getTime() + dias * 24 * 60 * 60 * 1000);
+  // Desde el lunes de esta semana y no desde ahora: las clases que ya pasaron
+  // en la semana se muestran, marcadas, para que no parezca vacía (PRD-0006
+  // §13). El tope sigue contándose desde hoy.
+  const desde = inicioDelDia(lunesDe(hoyEnSantiago()));
+  const hasta = new Date(Date.now() + dias * 24 * 60 * 60 * 1000);
 
   const { data, error } = await supabase
     .from("clases")
@@ -381,7 +388,7 @@ export async function getCalendario(
     // canceladas, filtrar es responsabilidad de quien consulta. La alumna no
     // reserva una clase cancelada, así que no la ve en el calendario.
     .eq("estado", "programada")
-    .gt("inicio", desde.toISOString())
+    .gte("inicio", desde.toISOString())
     .lt("inicio", hasta.toISOString())
     .order("inicio");
 

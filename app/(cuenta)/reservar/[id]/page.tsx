@@ -7,6 +7,7 @@ import { ReservarClase } from "@/components/ReservarClase";
 import { requiereSesion } from "@/lib/sesion";
 import { getCalendario, getSaldo } from "@/lib/compras-consultas";
 import { cuandoLegible } from "@/lib/compras";
+import { esPasada } from "@/lib/dominio/grilla";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -49,6 +50,9 @@ export default async function ReservarUna({ params }: Props) {
   // Una especial se paga aparte y se reserva desde su página: acá la base la
   // rechazaría con el pack (PRD-0018).
   if (clase.especial) redirect(`/clases-especiales/${clase.especial.slug}`);
+  // Desde PRD-0006 §13 el calendario trae también las que ya pasaron en la
+  // semana. Una que ya empezó no se reserva: de vuelta al calendario.
+  if (yaEmpezo(clase.inicio)) redirect("/reservar");
 
   return (
     <>
@@ -67,4 +71,9 @@ export default async function ReservarUna({ params }: Props) {
       </p>
     </>
   );
+}
+
+/** La misma regla que la grilla: una clase que ya empezó es pasada. */
+function yaEmpezo(inicio: string): boolean {
+  return esPasada(inicio, new Date());
 }
