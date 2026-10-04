@@ -6,7 +6,6 @@ import { ErrorDeLectura } from "@/components/ErrorDeLectura";
 import { requiereSesion } from "@/lib/sesion";
 import { clienteServidor } from "@/lib/supabase/servidor";
 import { getCalendario, getSaldo } from "@/lib/compras-consultas";
-import { hoyEnSantiago } from "@/lib/semana";
 
 export const metadata: Metadata = {
   title: "Reservar — XO Dance Studio",
@@ -79,7 +78,7 @@ export default async function Reservar() {
           Todavía no hay clases publicadas para las próximas semanas.
         </p>
       ) : (
-        <Calendario clases={clases.datos} saldo={saldo.datos} hoy={hoyEnSantiago()} />
+        <Calendario clases={clases.datos} saldo={saldo.datos} ahora={new Date().toISOString()} />
       )}
     </>
   );

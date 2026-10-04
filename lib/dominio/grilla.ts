@@ -110,3 +110,35 @@ export function semanasDeLaGrilla(dias: string[], hoy: string): string[] {
   for (let d = primero; d <= ultimo; d = sumarDias(d, 7)) salida.push(d);
   return salida;
 }
+
+/**
+ * Si una clase ya ocurrió: **empezó**, no terminó. Una clase en curso ya no se
+ * puede reservar ni cancelar, así que para el calendario es pasada.
+ */
+export function esPasada(inicio: string, ahora: Date): boolean {
+  return new Date(inicio).getTime() <= ahora.getTime();
+}
+
+/**
+ * En qué semana abre la grilla (PRD-0006 §13).
+ *
+ * Antes abría siempre en la de hoy, y un domingo —con todo lo de la semana ya
+ * ocurrido— se veía vacía, como si no hubiera clases. Ahora abre en **la
+ * primera semana, desde la de hoy, que tenga algo que reservar**. Si a la de
+ * hoy le queda algo, se queda en esa.
+ *
+ * Recibe los **días** que tienen algo reservable, no las clases: qué es
+ * reservable —no empezó, tiene lugar, o es una especial con su página— lo
+ * decide quien llama, que sabe la hora y los cupos.
+ *
+ * Sin nada reservable en ninguna, la semana de hoy: mejor ver la actual, con
+ * sus pasadas, que una semana cualquiera.
+ */
+export function semanaInicial(semanas: string[], diasReservables: string[], hoy: string): number {
+  const actual = Math.max(0, semanas.indexOf(lunesDe(hoy)));
+  const conAlgo = new Set(diasReservables.map(lunesDe));
+  for (let i = actual; i < semanas.length; i++) {
+    if (conAlgo.has(semanas[i])) return i;
+  }
+  return actual;
+}

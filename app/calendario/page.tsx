@@ -4,7 +4,6 @@ import { MarcoSitio } from "@/components/MarcoSitio";
 import { GrillaCalendario } from "@/components/GrillaCalendario";
 import { ErrorDeLectura } from "@/components/ErrorDeLectura";
 import { getCalendarioPublico } from "@/lib/compras-consultas";
-import { hoyEnSantiago } from "@/lib/semana";
 
 /**
  * `/calendario` — los horarios, **sin sesión** (PRD-0022 §8.3).
@@ -69,7 +68,7 @@ export default async function CalendarioPagina() {
               </Link>
             </div>
           ) : (
-            <GrillaCalendario clases={clases.datos} hoy={hoyEnSantiago()} />
+            <GrillaCalendario clases={clases.datos} ahora={new Date().toISOString()} />
           )}
         </div>
       </section>

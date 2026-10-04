@@ -55,6 +55,14 @@ test("estadoParaAlumna: una especial que ya es suya sigue siendo suya", () => {
   assert.equal(estadoParaAlumna(clase({ especial: true, reservaId: "r1" }), 0), "reservada");
 });
 
+test("estadoParaAlumna: una pasada es pasada, aunque haya sido suya o tenga lugar", () => {
+  // Ya empezó: no se reserva ni se cancela. Se ve, pero no se selecciona
+  // (PRD-0006 §13).
+  assert.equal(estadoParaAlumna(clase(), 4, true), "pasada");
+  assert.equal(estadoParaAlumna(clase({ reservaId: "r1" }), 4, true), "pasada");
+  assert.equal(estadoParaAlumna(clase({ especial: true }), 4, true), "pasada");
+});
+
 test("destaque: sin filtro, ninguna se destaca ni se atenúa", () => {
   assert.equal(destaque("pau", null), "normal");
 });

@@ -238,3 +238,42 @@ Ajuste de Felipe, documentado en detalle en **PRD-0007 §8**. Lo que toca a este
   `titulo` y `precio_clp` y filtran las sin publicar. Antes se ofrecían para reservar con el pack
   y la base rechazaba la reserva; PRD-0018 lo había especificado y no se había hecho.
 
+## 13. Qué semana abre, las clases pasadas y hoy (Felipe, 04/10/2026)
+
+En los dos calendarios —el público y el del portal—, porque son la misma grilla.
+
+**1. Abre en la primera semana con algo que reservar.** Antes abría siempre en la semana de hoy,
+y un domingo —con todo lo de la semana ya ocurrido— se veía vacía, como si no hubiera clases.
+Ahora `semanaInicial` (`lib/dominio/grilla.ts`, con tests sobre un domingo fijo) elige la primera
+semana desde la de hoy con algo reservable: que no haya empezado y tenga lugar, o que sea una
+especial, que se reserva en su página. Si a la de hoy le queda algo, se queda en esa. En el
+teléfono el día que abre es el primero desde hoy con algo reservable.
+
+**2. Las pasadas se ven, marcadas y sin poder seleccionarse.** Esconderlas era lo que dejaba la
+semana vacía. Las consultas (`getCalendario`, `getCalendarioPublico`) traen **desde el lunes de
+esta semana** y no desde ahora. Una clase es pasada cuando **empezó** (`esPasada`): ya no se
+reserva ni se cancela. Se dibuja con borde punteado, dice "Ya pasó" —"Ya pasó · era tuya" si la
+había reservado— y no es enlace ni botón. Gana sobre el filtro por profesora y sobre "reservada".
+`/reservar/<id>` de una que ya empezó vuelve al calendario.
+
+**Atenuada pero legible, medido**: sobre negro, blanco al 70 % y 60 % con fondo sólido — **6,58:1**
+como mínimo; sobre blanco, `xo-gris` con fondo sólido — **4,97:1**. Los dos sobre 4,5:1.
+
+**3. Hoy se marca con un tono de columna y una línea rosa arriba del encabezado.** Sin número: los
+encabezados no llevan fecha, por decisión de Felipe del 29/09/2026, y eso no se toca. Para quien
+usa lector de pantalla, `aria-current="date"` y un "hoy" oculto, fuera del nombre del día. En el
+teléfono, el botón del día de hoy va subrayado.
+
+**El "ahora" lo pone el navegador.** La grilla parte con la hora del servidor —para que lo
+primero que se dibuja sea igual en los dos lados— y al cargar pasa a la del navegador,
+actualizada cada minuto. `/calendario` se sirve de caché hasta 10 minutos: una página generada el
+sábado en la noche no puede decidir qué ya pasó el domingo en la mañana. Es también lo que
+permite verificar simulando el reloj.
+
+**Verificado simulando un domingo**, no esperándolo: `scripts/verificar-semana.mjs` fija el reloj
+del navegador en el domingo siguiente a las 21:30 y comprueba, en el público y en el portal, que
+abre en la semana siguiente, que la del domingo no tenía nada reservable pero muestra sus clases
+como pasadas, que ninguna pasada se puede tocar, el contraste, la marca de hoy sin número, el día
+que abre a 375 px, y que con la hora real también abre en una semana con clases: **24/24**. El
+resto: `verificar-sitio` 148/148, `verificar-reservar` 30/30, `verificar-transferencias` 34/34.
+

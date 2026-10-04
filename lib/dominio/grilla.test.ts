@@ -12,6 +12,8 @@ import assert from "node:assert/strict";
 
 import {
   MINUTOS_POR_TRAMO,
+  esPasada,
+  semanaInicial,
   semanasDeLaGrilla,
   tramoDe,
   tramosQueOcupa,
@@ -136,4 +138,42 @@ test("semanasDeLaGrilla: una clase anterior a hoy arrastra el inicio hacia atrá
 test("semanasDeLaGrilla: el domingo pertenece a la semana que empezó el lunes", () => {
   // El domingo 4 es de la semana del lunes 28, no de la del 5.
   assert.deepEqual(semanasDeLaGrilla(["2026-10-04"], "2026-09-30"), ["2026-09-28"]);
+});
+
+// ---------------------------------------------------------------------------
+// semanaInicial y esPasada — qué semana abre y qué clase ya ocurrió
+// (PRD-0006 §13). Todo sobre un domingo fijo: es el día en que la semana
+// actual se queda sin clases y el calendario parecía vacío.
+// ---------------------------------------------------------------------------
+
+// Domingo 11 de octubre de 2026, 21:30 en Santiago (UTC-3).
+const DOMINGO = new Date("2026-10-12T00:30:00Z");
+const SEMANAS = ["2026-10-05", "2026-10-12", "2026-10-19"];
+
+test("esPasada: una clase que ya empezó es pasada; una que no, no", () => {
+  assert.equal(esPasada("2026-10-11T20:00:00Z", DOMINGO), true); // 17:00 del domingo
+  assert.equal(esPasada("2026-10-12T00:30:00Z", DOMINGO), true); // empieza justo ahora
+  assert.equal(esPasada("2026-10-12T23:00:00Z", DOMINGO), false); // lunes 20:00
+});
+
+test("semanaInicial: un domingo sin clases que reservar abre la semana siguiente", () => {
+  // La semana del 5 tiene clases, pero todas pasaron: no cuentan.
+  assert.equal(semanaInicial(SEMANAS, ["2026-10-13", "2026-10-15"], "2026-10-11"), 1);
+});
+
+test("semanaInicial: si a la semana actual todavía le queda una, se queda en esa", () => {
+  assert.equal(semanaInicial(SEMANAS, ["2026-10-11", "2026-10-13"], "2026-10-11"), 0);
+});
+
+test("semanaInicial: se salta las semanas vacías hasta la primera con algo", () => {
+  assert.equal(semanaInicial(SEMANAS, ["2026-10-20"], "2026-10-11"), 2);
+});
+
+test("semanaInicial: sin nada reservable en ninguna, la semana de hoy", () => {
+  // Mejor mostrar la semana actual, con sus pasadas, que una semana cualquiera.
+  assert.equal(semanaInicial(SEMANAS, [], "2026-10-11"), 0);
+});
+
+test("semanaInicial: no vuelve a una semana anterior a la de hoy", () => {
+  assert.equal(semanaInicial(["2026-09-28", ...SEMANAS], ["2026-09-30", "2026-10-13"], "2026-10-11"), 2);
 });

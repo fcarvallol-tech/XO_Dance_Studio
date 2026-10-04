@@ -7,13 +7,21 @@
  * que sí puede hacer. Por eso tiene tests.
  */
 
-export type EstadoParaAlumna = "reservada" | "especial" | "llena" | "sin-saldo" | "reservable";
+export type EstadoParaAlumna =
+  | "pasada"
+  | "reservada"
+  | "especial"
+  | "llena"
+  | "sin-saldo"
+  | "reservable";
 
 /**
  * El orden es de precedencia:
  *
- * 1. **Reservada** antes que todo: es la que puede cancelar, y si se viera como
- *    "llena" o "sin saldo" no encontraría cómo.
+ * 0. **Pasada** antes que todo (PRD-0006 §13): ya empezó, así que no se reserva
+ *    ni se cancela, aunque haya sido suya. Se ve, pero no se selecciona.
+ * 1. **Reservada**: es la que puede cancelar, y si se viera como "llena" o "sin
+ *    saldo" no encontraría cómo.
  * 2. **Especial** antes que lo demás: se paga aparte (PRD-0018), así que ni
  *    el saldo ni los lugares del pack dicen nada de ella. Su cupo y su precio
  *    los resuelve su propia página.
@@ -24,7 +32,9 @@ export type EstadoParaAlumna = "reservada" | "especial" | "llena" | "sin-saldo" 
 export function estadoParaAlumna(
   clase: { cupoMaximo: number; tomados: number; reservaId: string | null; especial: unknown },
   saldo: number,
+  pasada = false,
 ): EstadoParaAlumna {
+  if (pasada) return "pasada";
   if (clase.reservaId !== null) return "reservada";
   if (clase.especial) return "especial";
   if (clase.tomados >= clase.cupoMaximo) return "llena";
