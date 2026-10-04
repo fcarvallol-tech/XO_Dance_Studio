@@ -105,6 +105,12 @@ mínimo** en 25 textos. **Destacado: 9,68:1** en 8. Las dos pasan AA (4,5:1).
 
 Sus reservas van en negro **con o sin filtro**: "Reservada" es un estado de ella, no del filtro.
 
+**En el teléfono, el punto de los botones de día sigue al filtro** (Felipe, 04/10/2026). Se ve un
+día a la vez, así que sin esto había que tocar día por día para encontrar las clases de la
+profesora elegida. Con Pau elegida, solo los días con clases de Pau llevan el punto; el botón
+de un día con clases de otras sigue en negro, porque esas clases siguen ahí. Es la prop `marca`
+de `GrillaCalendario`: sin ella cuentan todas, que es lo que usa el sitio público.
+
 ### 8.3 Lo que apareció al hacerlo
 
 **Las clases especiales se ofrecían para reservar con el pack**, y la base lo rechazaba: "Las
@@ -120,7 +126,9 @@ lugares: su cupo cuenta también las pendientes de pago y este conteo no.
 
 Contra staging, con el sitio construido:
 
-- `scripts/verificar-reservar.mjs`, nuevo: **28/28**. Una alumna con créditos reserva desde la
+- `scripts/verificar-reservar.mjs`, nuevo: **30/30**. Con el filtro puesto a 375 px recorre los
+  siete días y comprueba que el punto esté **si y solo si** al abrir ese día aparece una clase
+  de ella. Una alumna con créditos reserva desde la
   grilla y se le descuenta, y lo cancela desde ahí; una sin créditos no tiene botón de reservar y
   ve que no le quedan; a 375 px los siete botones de día cambian la columna; el contraste se mide.
 - `verificar-sitio.mjs`: **148/148**. Dos arreglos al verificador, no al sitio: leía la posición
@@ -131,8 +139,8 @@ Contra staging, con el sitio construido:
 
 ### 8.5 Pendientes
 
-- **En el teléfono, con una profesora elegida, los botones de día no dicen qué días tienen
-  clases de ella**: el punto marca cualquier clase. Con Pau elegida hay que tocar día por día.
+- ~~En el teléfono, con una profesora elegida, los botones de día no dicen qué días tienen
+  clases de ella~~ — resuelto el mismo día, ver §8.2.
 - **La grilla abre en la semana de hoy aunque ya no le queden clases** (un domingo): hay que
   apretar "Después". Es de la grilla, igual en el sitio público.
 - **El portal de profesora sigue con `GrillaSemanal`**, que apila sin eje de tiempo. Es la otra

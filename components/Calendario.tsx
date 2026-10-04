@@ -134,6 +134,7 @@ export function Calendario({
         clases={clases}
         hoy={hoy}
         tema="claro"
+        marca={profesora ? (c) => c.profesoraSlug === profesora : undefined}
         pie={
           saldo === 0
             ? "Cada línea es media hora. No te quedan clases: puedes mirar el calendario, y para reservar primero compra."

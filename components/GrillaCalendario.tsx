@@ -74,6 +74,7 @@ export function GrillaCalendario({
   tema = "oscuro",
   bloque,
   pie,
+  marca,
 }: {
   clases: ClaseDelCalendario[];
   /** Hoy en Santiago, del servidor: así la página y la grilla usan el mismo día. */
@@ -87,6 +88,13 @@ export function GrillaCalendario({
   bloque?: (clase: ClaseDelCalendario, ubicacion: Ubicacion) => ReactNode;
   /** La nota al pie. Sin ella, la del sitio público. */
   pie?: ReactNode;
+  /**
+   * Qué clases cuentan para el punto de los botones de día. Sin esto, todas.
+   * Con un filtro puesto, solo las que pasan el filtro: con una profesora
+   * elegida, el punto dice qué días tienen clases **de ella**, y en el teléfono
+   * no hay que tocar día por día para encontrarlas (PRD-0007 §8.2).
+   */
+  marca?: (clase: ClaseDelCalendario) => boolean;
 }) {
   const T = TEMAS[tema];
   const porDia = new Map<string, ClaseDelCalendario[]>();
@@ -153,6 +161,9 @@ export function GrillaCalendario({
       <div className="mb-4 grid grid-cols-7 gap-1 lg:hidden" role="group" aria-label="Día">
         {dias.map((dia) => {
           const tiene = (porDia.get(dia)?.length ?? 0) > 0;
+          // El punto sigue al filtro; el color del botón no: un día con clases
+          // de otras profesoras sigue teniendo clases.
+          const marcado = (porDia.get(dia) ?? []).some((c) => (marca ? marca(c) : true));
           const activo = dia === diaVisible;
           return (
             <button
@@ -168,8 +179,9 @@ export function GrillaCalendario({
               {abreviado(dia)}
               <span
                 aria-hidden="true"
+                data-marca={marcado ? "si" : "no"}
                 className={`size-1 rounded-full ${
-                  tiene ? (activo ? "bg-xo-negro" : "bg-xo-rosa") : "bg-transparent"
+                  marcado ? (activo ? "bg-xo-negro" : "bg-xo-rosa") : "bg-transparent"
                 }`}
               />
             </button>

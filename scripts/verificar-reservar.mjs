@@ -204,11 +204,28 @@ try {
   await tel.getByRole("button", { name: actual, exact: true }).click();
   await capturar(tel, "reservar-375-sin-filtro");
   await tel.locator("main").getByRole("button", { name: FILTRO, exact: true }).click();
-  // El día abierto puede no tener clases de ella: se busca uno que sí.
+  await tel.waitForTimeout(400);
+  // Con el filtro puesto, el punto de cada día dice si tiene clases **de ella**.
+  // Se comprueba día por día: el punto marcado si y solo si al abrir ese día
+  // aparece una clase destacada.
+  const destacadasVisibles = () =>
+    tel.locator("main [data-resalte='destacada']").evaluateAll((xs) => xs.filter((x) => x.offsetParent !== null).length);
+  const discrepancias = [];
+  let marcados = 0;
+  let primerDiaDeElla = null;
   for (const b of await botonesDia.all()) {
-    if ((await tel.locator("main [data-resalte='destacada']").evaluateAll((xs) => xs.filter((x) => x.offsetParent !== null).length)) > 0) break;
+    const marca = (await b.locator("[data-marca]").getAttribute("data-marca")) === "si";
     await b.click();
+    const tiene = (await destacadasVisibles()) > 0;
+    if (marca) marcados++;
+    if (tiene && !primerDiaDeElla) primerDiaDeElla = b;
+    if (marca !== tiene) discrepancias.push(`${await b.getAttribute("aria-label")}: punto ${marca ? "sí" : "no"}, clases de ella ${tiene ? "sí" : "no"}`);
   }
+  caso(`con ${FILTRO} elegida, el punto marca solo los días con clases de ella`, "", discrepancias.join("; "));
+  caso(`y marca al menos un día (${marcados})`, true, marcados > 0);
+  // La captura, abierta en un día de ella y con las transiciones terminadas.
+  if (primerDiaDeElla) await primerDiaDeElla.click();
+  await tel.waitForTimeout(400);
   await capturar(tel, "reservar-375-con-filtro");
 
   // --- reservar con créditos -----------------------------------------------
