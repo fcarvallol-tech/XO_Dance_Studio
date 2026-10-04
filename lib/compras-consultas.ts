@@ -509,3 +509,116 @@ export async function getMisReservas(
     error: comoTexto(error),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Regalos de créditos (PRD-0023)
+// ---------------------------------------------------------------------------
+
+export type Regalo = {
+  id: string;
+  regaladoAt: string;
+  perfilId: string;
+  alumna: string | null;
+  correo: string | null;
+  cantidad: number;
+  motivo: string | null;
+  autor: string | null;
+  vence: string | null;
+  disponibles: number | null;
+};
+
+/**
+ * Los últimos regalos, para admin. Por `regalos_recientes()` y no por la
+ * tabla: el motivo no se lee con sesión desde PRD-0023, y esa función lo
+ * devuelve después de verificar el rol. Con la sesión: si quien mira no es
+ * admin, la función rechaza y se muestra el error, no una lista vacía.
+ */
+export async function getRegalosRecientes(limite = 30): Promise<Lectura<Regalo[]>> {
+  const supabase = await clienteServidor();
+  const { data, error } = await supabase.rpc("regalos_recientes", { p_limite: limite });
+  return {
+    datos: ((data ?? []) as {
+      movimiento_id: string;
+      regalado_at: string;
+      perfil_id: string;
+      alumna: string | null;
+      correo: string | null;
+      cantidad: number;
+      motivo: string | null;
+      autor: string | null;
+      vence: string | null;
+      disponibles: number | null;
+    }[]).map((f) => ({
+      id: f.movimiento_id,
+      regaladoAt: f.regalado_at,
+      perfilId: f.perfil_id,
+      alumna: f.alumna,
+      correo: f.correo,
+      cantidad: f.cantidad,
+      motivo: f.motivo,
+      autor: f.autor,
+      vence: f.vence,
+      disponibles: f.disponibles,
+    })),
+    error: comoTexto(error),
+  };
+}
+
+/**
+ * Cuántas clases vigentes tiene cada persona, para la tabla de Personas: es lo
+ * que se mira antes de regalar. Una sola consulta para toda la tabla, no una
+ * por fila. Con la sesión: RLS deja a admin leer todos los lotes.
+ */
+export async function getSaldosVigentes(): Promise<Lectura<Map<string, number>>> {
+  const supabase = await clienteServidor();
+  const { data, error } = await supabase
+    .from("creditos")
+    .select("perfil_id, cantidad_disponible")
+    .gt("cantidad_disponible", 0)
+    .gt("fecha_vencimiento", new Date().toISOString());
+
+  const saldos = new Map<string, number>();
+  for (const f of (data ?? []) as { perfil_id: string; cantidad_disponible: number }[]) {
+    saldos.set(f.perfil_id, (saldos.get(f.perfil_id) ?? 0) + f.cantidad_disponible);
+  }
+  return { datos: saldos, error: comoTexto(error) };
+}
+
+export type LoteDeRegalo = {
+  id: string;
+  cantidad: number;
+  disponibles: number;
+  vence: string;
+  regaladoAt: string;
+};
+
+/**
+ * Los lotes de regalo de una alumna, para Mis reservas. **Sin motivo**: está
+ * en el movimiento, no en el lote, y ese campo no se lee con sesión.
+ */
+export async function getMisRegalos(perfilId: string): Promise<Lectura<LoteDeRegalo[]>> {
+  const supabase = await clienteServidor();
+  const { data, error } = await supabase
+    .from("creditos")
+    .select("id, cantidad_inicial, cantidad_disponible, fecha_vencimiento, created_at")
+    .eq("perfil_id", perfilId)
+    .is("compra_id", null)
+    .order("created_at", { ascending: false });
+
+  return {
+    datos: ((data ?? []) as {
+      id: string;
+      cantidad_inicial: number;
+      cantidad_disponible: number;
+      fecha_vencimiento: string;
+      created_at: string;
+    }[]).map((f) => ({
+      id: f.id,
+      cantidad: f.cantidad_inicial,
+      disponibles: f.cantidad_disponible,
+      vence: f.fecha_vencimiento,
+      regaladoAt: f.created_at,
+    })),
+    error: comoTexto(error),
+  };
+}

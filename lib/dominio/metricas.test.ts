@@ -16,6 +16,7 @@ import assert from "node:assert/strict";
 import {
   atribuir,
   brecha,
+  pasivoPorOrigen,
   comparar,
   conciliacion,
   ocupacionPromedio,
@@ -110,6 +111,22 @@ test("brecha: sin créditos otorgados la utilización es null", () => {
   const b = brecha({ otorgadas: 0, consumidas: 0, disponibles: 0, vencidas: 0 });
   assert.equal(b.utilizacion, null);
   assert.equal(b.pasivoVigente, 0);
+});
+
+test("pasivo por origen: vendidas y regaladas van separadas y suman el total", () => {
+  // PRD-0023 (Felipe, 04/10/2026): una es plata cobrada que se debe, la otra
+  // una obligación asumida sin cobrar. Juntas, el número no sirve.
+  const p = pasivoPorOrigen({ vigentesVendidas: 15, vigentesRegaladas: 3, pasivoVigente: 18 });
+  assert.equal(p.vendidas, 15);
+  assert.equal(p.regaladas, 3);
+  assert.equal(p.cuadra, true);
+});
+
+test("pasivo por origen: si las partes no suman el total, lo dice", () => {
+  // Las partes y el total salen de la misma tabla con filtros distintos: si no
+  // calzan, algo se está contando dos veces o se está perdiendo.
+  const p = pasivoPorOrigen({ vigentesVendidas: 15, vigentesRegaladas: 3, pasivoVigente: 20 });
+  assert.equal(p.cuadra, false);
 });
 
 test("conciliación: el escenario cuadra en 20", () => {

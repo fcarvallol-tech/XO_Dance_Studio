@@ -109,7 +109,7 @@ test("caducaAt: el acuse a la alumna caduca a las 24 h, como el aviso a la acade
 });
 
 test("caducaAt: lo que sigue siendo cierto no caduca nunca", () => {
-  for (const plantilla of ["compraAprobada", "compraRechazada"] as const) {
+  for (const plantilla of ["compraAprobada", "compraRechazada", "regalo"] as const) {
     assert.equal(
       caducaAt(plantilla, { expiraAt: null, inicioClase: null, encoladoAt: AHORA }),
       null,

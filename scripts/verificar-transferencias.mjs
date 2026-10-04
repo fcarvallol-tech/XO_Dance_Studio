@@ -168,7 +168,10 @@ try {
          .map((e) => `${e.plantilla}→${e.plantilla === "transferenciaDeclarada" ? "academia" : e.destinatario}`)
          .join(", "));
 
-  await alumna.goto(`${SITIO}/mis-clases`, { waitUntil: "networkidle" });
+  // `load` y no `networkidle`: los enlaces de la página repiten sus prefetches
+  // y la red a veces no se calla nunca. Se espera lo que hace falta ver.
+  await alumna.goto(`${SITIO}/mis-clases`, { waitUntil: "load" });
+  await alumna.getByText("Mis reservas", { exact: false }).first().waitFor();
   caso("4. en Mis reservas la ve esperando confirmación", true,
        (await alumna.locator("main").innerText()).includes("ESPERANDO CONFIRMACIÓN"));
 
@@ -267,7 +270,10 @@ try {
   caso("8. comprobante de reserva encolado para ella", 1, compReserva);
 
   // --- 9. Cancelación ------------------------------------------------------
-  await alumna.goto(`${SITIO}/mis-clases`, { waitUntil: "networkidle" });
+  // `load` y no `networkidle`: los enlaces de la página repiten sus prefetches
+  // y la red a veces no se calla nunca. Se espera lo que hace falta ver.
+  await alumna.goto(`${SITIO}/mis-clases`, { waitUntil: "load" });
+  await alumna.getByText("Mis reservas", { exact: false }).first().waitFor();
   await alumna.getByRole("button", { name: "Cancelar" }).first().click();
   await alumna.waitForTimeout(3000);
   const [cancelada] = await sql("select estado from reservas where id = $1", [reserva.id]);

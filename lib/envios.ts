@@ -28,6 +28,7 @@ export const NOMBRE_PLANTILLA: Record<string, string> = {
   transferenciaDeclarada: "Aviso a la academia",
   transferenciaRecibida: "Aviso recibido",
   compraAprobada: "Compra aprobada",
+  regalo: "Clases de regalo",
   compraRechazada: "Compra rechazada",
   reserva: "Comprobante de reserva",
   especialPendiente: "Cupo tomado de una especial",

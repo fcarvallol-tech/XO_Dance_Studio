@@ -10,6 +10,7 @@ import {
   avisarCompraRechazada,
   avisarEspecialConfirmada,
   avisarEspecialPendiente,
+  avisarRegalo,
   avisarReserva,
   avisarTransferenciaDeclarada,
   avisarTransferenciaRecibida,
@@ -19,6 +20,7 @@ import { instanteEnSantiago } from "./dominio/periodo";
 import { montoDesdeTexto } from "./dominio/finanzas";
 import { resolverOferta } from "./ofertas-consultas";
 import { fechaLegible } from "./planes";
+import { diaEnSantiago } from "./semana";
 
 /**
  * Las escrituras de plata y cupo.
@@ -734,4 +736,82 @@ export async function anularEgreso(egresoId: string, motivo: string): Promise<Re
 
   revalidatePath("/owner/finanzas");
   return { ok: true };
+}
+
+/**
+ * Regalar clases a una persona (PRD-0023). **No es venta**: crea un lote sin
+ * compra y un movimiento `regalo` con motivo y autor, todo en
+ * `regalar_creditos()`, que vuelve a verificar el rol adentro.
+ *
+ * El actor va por parámetro porque la función corre con la service role key y
+ * no tiene sesión: es la única forma de que quede quién lo hizo.
+ */
+export async function regalarCreditos(
+  perfilId: string,
+  cantidad: number,
+  motivo: string,
+): Promise<
+  | { ok: true; correoEnviado: boolean; saldo: number; vence: string }
+  | { ok: false; mensaje: string }
+> {
+  const actor = await perfilActual();
+  if (!actor || !tieneNivel(actor.rol, "admin")) {
+    return { ok: false, mensaje: "No tienes permiso." };
+  }
+
+  // La base valida lo mismo; esto es para responder antes y con el mensaje
+  // del formulario, no para reemplazarla.
+  if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad > 20) {
+    return { ok: false, mensaje: "Se pueden regalar de 1 a 20 clases por vez." };
+  }
+  if (motivo.trim().length < 5) {
+    return { ok: false, mensaje: "Escribe por qué se regalan (al menos 5 caracteres)." };
+  }
+
+  const admin = clienteAdmin();
+  const { data, error } = await admin.rpc("regalar_creditos", {
+    p_perfil_id: perfilId,
+    p_cantidad: cantidad,
+    p_motivo: motivo,
+    p_actor_user_id: actor.userId,
+  });
+  if (error) return { ok: false, mensaje: comoMensaje(error) };
+
+  const lote = data as { id: string; fecha_vencimiento: string } | null;
+  if (!lote) return { ok: false, mensaje: "No se pudo completar la operación." };
+
+  const [{ data: persona }, { data: lotes }] = await Promise.all([
+    admin.from("perfiles").select("nombre, email").eq("id", perfilId).maybeSingle(),
+    admin
+      .from("creditos")
+      .select("cantidad_disponible")
+      .eq("perfil_id", perfilId)
+      .gt("fecha_vencimiento", new Date().toISOString()),
+  ]);
+
+  // El día de Santiago, no el de UTC: un vencimiento de las 21:00 no puede
+  // decir el día siguiente.
+  const vence = fechaLegible(diaEnSantiago(new Date(lote.fecha_vencimiento)));
+
+  const correoEnviado = await avisarRegalo({
+    para: persona?.email ?? "",
+    nombre: persona?.nombre ?? null,
+    clases: cantidad,
+    vence,
+    creditoId: lote.id,
+    perfilId,
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/mis-clases");
+  revalidatePath("/reservar");
+  return {
+    ok: true,
+    correoEnviado,
+    saldo: ((lotes ?? []) as { cantidad_disponible: number }[]).reduce(
+      (total, l) => total + l.cantidad_disponible,
+      0,
+    ),
+    vence,
+  };
 }

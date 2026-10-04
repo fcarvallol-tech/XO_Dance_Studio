@@ -291,6 +291,22 @@ const CUERPOS: Cuerpos = {
     };
   },
 
+  // Sin el motivo: es del registro interno (PRD-0023 §8.6.c).
+  regalo: (d) => {
+    const clases = Number(d.clases ?? 0);
+    const palabra = clases === 1 ? "clase" : "clases";
+    return {
+      asunto: `Te regalamos ${clases} ${palabra}`,
+      html: plantilla(
+        `${clases} ${palabra} de regalo`,
+        `<p ${P}>${d.nombre ? `${d.nombre}, te` : "Te"} dejamos <strong>${clases} ${palabra} de regalo</strong> en tu cuenta. Ya puedes reservarlas.</p>
+       <p ${P}>Sirven para <strong>cualquier clase de la parrilla</strong>, con cualquier profe y en cualquiera de las dos salas.</p>
+       <p ${P}>Valen hasta el <strong>${d.vence}</strong>.</p>
+       <p style="margin:24px 0 0;"><a href="${sitio()}/reservar" style="display:inline-block;background:#f7adbf;color:#1a1a1a;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;">Reservar mis clases</a></p>`,
+      ),
+    };
+  },
+
   compraRechazada: (d) => ({
     asunto: "No pudimos confirmar tu transferencia",
     html: plantilla(
@@ -406,6 +422,28 @@ export async function avisarCompraAprobada(datos: {
     datos: cuerpo,
     clave: claveDeEvento("compra-aprobada", compraId),
     compraId,
+    perfilId,
+  });
+}
+
+/**
+ * A la alumna: le regalaron clases (PRD-0023). **Sin el motivo**, que es del
+ * registro interno. La clave es el lote: un mismo regalo, un solo correo.
+ */
+export async function avisarRegalo(datos: {
+  para: string;
+  nombre: string | null;
+  clases: number;
+  vence: string;
+  creditoId: string;
+  perfilId: string;
+}): Promise<boolean> {
+  const { para, creditoId, perfilId, ...cuerpo } = datos;
+  return despachar({
+    plantilla: "regalo",
+    para,
+    datos: cuerpo,
+    clave: claveDeEvento("regalo", creditoId),
     perfilId,
   });
 }
