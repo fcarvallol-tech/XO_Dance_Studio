@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | ✅ **Aprobado por Felipe el 04/10/2026**, con las cinco decisiones de §8.6 y un cambio al pasivo (§7.3.2) |
+| **Estado** | ✅ **Implementado y en producción el 04/10/2026.** Aprobado por Felipe ese día, con las cinco decisiones de §8.6 y un cambio al pasivo (§7.3.2) |
 | **Autor** | Claude, a pedido de Felipe Carvallo |
 | **Fecha** | 4 de octubre de 2026 |
 | **Hito** | Hito 2 — Venta de clases (créditos) |
@@ -327,8 +327,16 @@ explícita.
   sembrado de septiembre, y lo obtenido ($264.000) son las compras de prueba de octubre más la
   especial sembrada. Hay que resembrar el escenario con fechas de este mes.
 
-### Pendiente
+### En producción (04/10/2026)
 
-- **La migración a producción**, que Felipe aprueba aparte. Hasta entonces **el código no se
-  mergea a `main`**: desplegarlo antes rompería Personas (`regalos_recientes` no existiría) y el
-  tablero de owner (los campos nuevos llegarían vacíos).
+Con aprobación de Felipe en el mensaje, y en este orden —la migración antes que el código, porque
+desplegar el código primero rompía Personas y el tablero de owner—:
+
+1. **Dry-run justo antes**, con el CLI enlazado a producción y entrando con el token de acceso:
+   solo `20261004120000_regalar_creditos.sql`, sin seeds ni roles. El push quedó condicionado a que
+   la lista fuera exactamente esa.
+2. **Aplicada.** `migration list`: 28 migraciones, local y remoto iguales.
+3. Recién entonces, el merge a `main`, el build y el push.
+
+Antes, la `SUPABASE_DB_PASSWORD` de producción se sacó de `.env.local`: con ella el CLI dejaba de
+entrar con el token y producción la rechazaba. El CLI quedó enlazado a staging.
