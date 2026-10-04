@@ -52,6 +52,13 @@ export type ClaseDelCalendario = {
   tomados: number;
   /** La reserva de quien mira, si ya reservó esta clase. */
   reservaId: string | null;
+  /**
+   * Si es una clase especial (PRD-0018): **se paga aparte**, no con el pack, y
+   * se reserva desde su propia página. `null` en las de parrilla. Sin este
+   * dato los calendarios la ofrecían como una más, y la base rechazaba la
+   * reserva.
+   */
+  especial: { slug: string; titulo: string; precioClp: number | null } | null;
 };
 
 export type ReservaPropia = {

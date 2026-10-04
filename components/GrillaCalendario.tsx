@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment as Fragmento, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { rangoHorario } from "@/lib/dominio/horarios";
 import {
@@ -52,15 +52,43 @@ import {
  * la línea de hora y lugares se parten en dos cada uno, y una clase de una hora
  * vuelve a perder los lugares. Medido, no supuesto: ver `verificar-sitio.mjs`.
  * Es el mismo DOM con otras clases de CSS, no dos grillas que mantener.
+ *
+ * ---
+ *
+ * **Es la grilla de todos los portales, no solo la del sitio público**
+ * (PRD-0007 §8). El portal de alumna la usa para reservar, y no puede tener una
+ * propia: dos calendarios divergen al primer ajuste. Lo que cambia entre uno y
+ * otro son dos cosas, y nada más:
+ *
+ * - **`tema`**: el sitio es negro y los portales son claros (BRAND.md §8). Los
+ *   colores del marco salen de `TEMAS`, y en el claro **ningún texto es rosa**:
+ *   sobre blanco da 1,7:1 y `estilo.md` lo prohíbe.
+ * - **`bloque`**: qué va dentro de cada clase. En el sitio es un enlace a
+ *   reservar; en el portal, un botón con el estado de ella. La posición la
+ *   calcula la grilla y se la entrega armada, así que lo que cambia es el
+ *   contenido, nunca dónde cae ni cuánto mide.
  */
 export function GrillaCalendario({
   clases,
   hoy,
+  tema = "oscuro",
+  bloque,
+  pie,
 }: {
   clases: ClaseDelCalendario[];
   /** Hoy en Santiago, del servidor: así la página y la grilla usan el mismo día. */
   hoy: string;
+  tema?: Tema;
+  /**
+   * Lo que se dibuja en cada clase. Recibe la posición ya calculada y **la
+   * tiene que aplicar** —`style` y `className`— al elemento de afuera. Sin él,
+   * el enlace del sitio público.
+   */
+  bloque?: (clase: ClaseDelCalendario, ubicacion: Ubicacion) => ReactNode;
+  /** La nota al pie. Sin ella, la del sitio público. */
+  pie?: ReactNode;
 }) {
+  const T = TEMAS[tema];
   const porDia = new Map<string, ClaseDelCalendario[]>();
   for (const clase of clases) {
     const dia = diaEnSantiago(new Date(clase.inicio));
@@ -91,8 +119,7 @@ export function GrillaCalendario({
     setElegido(null);
   };
 
-  const boton =
-    "xo-eyebrow rounded-full border border-xo-blanco/25 px-4 py-2 text-xo-blanco/80 transition-colors hover:border-xo-blanco/60 disabled:opacity-30";
+  const boton = T.boton;
 
   return (
     <div className="mt-12">
@@ -110,9 +137,9 @@ export function GrillaCalendario({
         </button>
         {/* Sin el número en cada columna, esto es lo único que dice qué semana
             se está mirando. */}
-        <p className="ml-1 basis-full text-sm text-xo-blanco/80 sm:basis-auto" aria-live="polite">
+        <p className={`ml-1 basis-full text-sm sm:basis-auto ${T.rango}`} aria-live="polite">
           Del {rangoLegible(lunes)}
-          <span className="whitespace-nowrap text-xo-blanco/50">
+          <span className={`whitespace-nowrap ${T.rangoSub}`}>
             {" · "}
             {deLaSemana.length === 0
               ? "sin clases"
@@ -135,11 +162,7 @@ export function GrillaCalendario({
               aria-label={nombreDelDia(dia)}
               onClick={() => setElegido(dia)}
               className={`xo-eyebrow flex min-h-11 flex-col items-center justify-center gap-1 rounded border transition-colors ${
-                activo
-                  ? "border-xo-rosa bg-xo-rosa text-xo-negro"
-                  : tiene
-                    ? "border-xo-blanco/25 text-xo-blanco"
-                    : "border-xo-blanco/10 text-xo-blanco/40"
+                activo ? T.diaActivo : tiene ? T.diaTiene : T.diaVacio
               }`}
             >
               {abreviado(dia)}
@@ -157,21 +180,21 @@ export function GrillaCalendario({
       <div className="overflow-x-auto pb-2">
         {/* La cuadrícula completa: borde por fuera, una línea vertical entre
             días y una horizontal por tramo. */}
-        <div className="grid min-w-0 grid-cols-[3rem_minmax(0,1fr)] border-t border-l border-xo-blanco/15 lg:grid-cols-[4rem_repeat(7,minmax(0,1fr))]">
+        <div className={`grid min-w-0 grid-cols-[3rem_minmax(0,1fr)] border-t border-l lg:grid-cols-[4rem_repeat(7,minmax(0,1fr))] ${T.borde}`}>
           {/* Encabezado de días */}
-          <div aria-hidden="true" className="border-r border-b border-xo-blanco/15" />
+          <div aria-hidden="true" className={`border-r border-b ${T.borde}`} />
           {dias.map((dia) => (
             <div
               key={dia}
-              className={`${dia === diaVisible ? "block" : "hidden"} border-r border-b border-xo-blanco/15 py-3 text-center lg:block`}
+              className={`${dia === diaVisible ? "block" : "hidden"} border-r border-b py-3 text-center lg:block ${T.borde}`}
             >
-              <p className="xo-eyebrow text-xo-rosa">{nombreDelDia(dia)}</p>
+              <p className={`xo-eyebrow ${T.encabezado}`}>{nombreDelDia(dia)}</p>
             </div>
           ))}
 
           {/* La columna de horas */}
           <div
-            className="grid border-r border-xo-blanco/15"
+            className={`grid border-r ${T.borde}`}
             style={{ gridTemplateRows: `repeat(${filas}, 1.75rem)` }}
           >
             {Array.from({ length: filas }, (_, i) => {
@@ -180,11 +203,11 @@ export function GrillaCalendario({
                 <div
                   key={i}
                   className={`relative border-b ${
-                    i % 2 === 0 ? "border-xo-blanco/[0.06]" : "border-xo-blanco/15"
+                    i % 2 === 0 ? T.lineaTenue : T.borde
                   }`}
                 >
                   {enPunto ? (
-                    <span className="absolute top-1 right-2 text-xs text-xo-blanco/50">
+                    <span className={`absolute top-1 right-2 text-xs ${T.hora}`}>
                       {String(desde + i / 2).padStart(2, "0")}:00
                     </span>
                   ) : null}
@@ -198,7 +221,7 @@ export function GrillaCalendario({
             return (
               <div
                 key={dia}
-                className={`${dia === diaVisible ? "grid" : "hidden"} relative border-r border-xo-blanco/15 lg:grid`}
+                className={`${dia === diaVisible ? "grid" : "hidden"} relative border-r lg:grid ${T.borde}`}
                 style={{ gridTemplateRows: `repeat(${filas}, 1.75rem)` }}
               >
                 {/* Una línea al pie de cada tramo: la que cierra la hora en punto
@@ -209,7 +232,7 @@ export function GrillaCalendario({
                     key={i}
                     aria-hidden="true"
                     className={`border-b ${
-                      i % 2 === 0 ? "border-xo-blanco/[0.06]" : "border-xo-blanco/15"
+                      i % 2 === 0 ? T.lineaTenue : T.borde
                     }`}
                     style={{ gridRow: i + 1, gridColumn: 1 }}
                   />
@@ -217,7 +240,7 @@ export function GrillaCalendario({
 
                 {delDia.length === 0 ? (
                   <p
-                    className="self-start px-3 pt-3 text-sm text-xo-blanco/50 lg:hidden"
+                    className={`self-start px-3 pt-3 text-sm lg:hidden ${T.vacio}`}
                     style={{ gridRow: 1, gridColumn: 1 }}
                   >
                     El {nombreDelDia(dia)} no hay clases.
@@ -225,18 +248,35 @@ export function GrillaCalendario({
                 ) : null}
 
                 {delDia.map((clase) => {
-                  const libres = lugaresLibres(clase);
                   const inicio = tramoDe(clase.inicio, desde);
                   const alto = tramosQueOcupa(clase.inicio, clase.fin);
+                  const ubicacion: Ubicacion = {
+                    style: { gridRow: `${inicio + 1} / span ${alto}`, gridColumn: 1 },
+                    className: "z-10 mx-1 overflow-hidden rounded border px-2 py-1",
+                    tramos: alto,
+                  };
 
+                  if (bloque) return <Fragmento key={clase.id}>{bloque(clase, ubicacion)}</Fragmento>;
+
+                  const libres = lugaresLibres(clase);
+                  // Una especial se paga aparte y tiene su página: ahí está su
+                  // precio y su cupo real, que cuenta también las pendientes de
+                  // pago. Por eso acá no dice lugares (PRD-0018).
+                  const especial = clase.especial;
                   return (
                     <Link
                       key={clase.id}
-                      href={libres > 0 ? `/reservar/${clase.id}` : "/calendario"}
-                      aria-disabled={libres === 0}
-                      style={{ gridRow: `${inicio + 1} / span ${alto}`, gridColumn: 1 }}
-                      className={`z-10 mx-1 overflow-hidden rounded border px-2 py-1 transition-colors ${
-                        libres > 0
+                      href={
+                        especial
+                          ? `/clases-especiales/${especial.slug}`
+                          : libres > 0
+                            ? `/reservar/${clase.id}`
+                            : "/calendario"
+                      }
+                      aria-disabled={!especial && libres === 0}
+                      style={ubicacion.style}
+                      className={`${ubicacion.className} transition-colors ${
+                        especial || libres > 0
                           ? "border-xo-rosa/40 bg-xo-rosa/15 hover:border-xo-rosa hover:bg-xo-rosa/25"
                           : "pointer-events-none border-xo-blanco/15 bg-xo-negro-alt"
                       }`}
@@ -248,16 +288,20 @@ export function GrillaCalendario({
                           los lugares comparten línea y se parten solos donde la
                           columna es angosta. */}
                       <p className="text-xs leading-tight font-semibold text-xo-blanco">
-                        {clase.cursoNombre}
+                        {especial ? especial.titulo : clase.cursoNombre}
                       </p>
                       <p className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] leading-tight">
                         <span className="text-xo-blanco/70">
                           {rangoHorario(clase.inicio, clase.fin)}
                         </span>
                         <span
-                          className={libres === 0 ? "text-xo-blanco/50" : "text-xo-rosa-claro"}
+                          className={!especial && libres === 0 ? "text-xo-blanco/50" : "text-xo-rosa-claro"}
                         >
-                          {libres === 0 ? "Llena" : `${libres} ${libres === 1 ? "lugar" : "lugares"}`}
+                          {especial
+                            ? "Especial"
+                            : libres === 0
+                              ? "Llena"
+                              : `${libres} ${libres === 1 ? "lugar" : "lugares"}`}
                         </span>
                       </p>
                       <p className="mt-0.5 text-[11px] leading-tight text-xo-blanco/60">
@@ -277,11 +321,9 @@ export function GrillaCalendario({
         </div>
       </div>
 
-      <p className="mt-6 text-sm text-xo-blanco/50">
-        Cada línea es media hora. Toca una clase para reservarla.{" "}
-        <span className="text-xo-blanco/70">
-          Las horas están en horario de Santiago.
-        </span>
+      <p className={`mt-6 text-sm ${T.pie}`}>
+        {pie ?? "Cada línea es media hora. Toca una clase para reservarla."}{" "}
+        <span className={T.pieSub}>Las horas están en horario de Santiago.</span>
       </p>
     </div>
   );
@@ -307,3 +349,58 @@ function abreviado(dia: string): string {
   const n = nombreDelDia(dia);
   return n.charAt(0).toUpperCase() + n.charAt(1);
 }
+
+/** Dónde cae una clase, ya calculado por la grilla. El bloque lo aplica tal cual. */
+export type Ubicacion = {
+  style: CSSProperties;
+  className: string;
+  /** Cuántos tramos de media hora mide: dice cuánto texto cabe. */
+  tramos: number;
+};
+
+export type Tema = "oscuro" | "claro";
+
+/**
+ * Los colores del marco de la grilla, por tema. Clases completas y literales
+ * —no armadas con interpolación— porque Tailwind solo genera las que ve
+ * escritas.
+ *
+ * En `claro` ningún texto es rosa (1,7:1 sobre blanco, prohibido por
+ * `estilo.md`): lo secundario es `xo-gris`, que da 5,0:1. El rosa queda solo
+ * como fondo —el día elegido, con texto negro— y como el punto de "este día
+ * tiene clases", que no es texto.
+ */
+const TEMAS: Record<Tema, Record<string, string>> = {
+  oscuro: {
+    boton:
+      "xo-eyebrow rounded-full border border-xo-blanco/25 px-4 py-2 text-xo-blanco/80 transition-colors hover:border-xo-blanco/60 disabled:opacity-30",
+    diaActivo: "border-xo-rosa bg-xo-rosa text-xo-negro",
+    diaTiene: "border-xo-blanco/25 text-xo-blanco",
+    diaVacio: "border-xo-blanco/10 text-xo-blanco/40",
+    borde: "border-xo-blanco/15",
+    lineaTenue: "border-xo-blanco/[0.06]",
+    encabezado: "text-xo-rosa",
+    hora: "text-xo-blanco/50",
+    rango: "text-xo-blanco/80",
+    rangoSub: "text-xo-blanco/50",
+    vacio: "text-xo-blanco/50",
+    pie: "text-xo-blanco/50",
+    pieSub: "text-xo-blanco/70",
+  },
+  claro: {
+    boton:
+      "xo-eyebrow rounded-full border border-xo-negro/25 px-4 py-2 text-xo-negro transition-colors hover:border-xo-negro/60 disabled:opacity-30",
+    diaActivo: "border-xo-rosa bg-xo-rosa text-xo-negro",
+    diaTiene: "border-xo-negro/25 text-xo-negro",
+    diaVacio: "border-xo-negro/10 text-xo-gris",
+    borde: "border-xo-negro/15",
+    lineaTenue: "border-xo-negro/[0.06]",
+    encabezado: "text-xo-negro",
+    hora: "text-xo-gris",
+    rango: "text-xo-negro",
+    rangoSub: "text-xo-gris",
+    vacio: "text-xo-gris",
+    pie: "text-xo-gris",
+    pieSub: "text-xo-negro",
+  },
+};

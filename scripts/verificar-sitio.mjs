@@ -27,6 +27,8 @@ const BARRA_COMPLETA = 1280;
 // El círculo mínimo que contiene los píxeles de `logo-xo.png`, en fracciones
 // del ancho y alto del logo. Medido del PNG; si el logo cambia, se remide.
 const LOGO = { cx: 0.487, cy: 0.6, r: 0.52 };
+// Una clase de la grilla pública: el enlace que lleva su posición en línea.
+const BLOQUE = "main a[style*='grid-']";
 
 const PAGINAS = [
   "/", "/calendario", "/nuestras-profes", "/comprar",
@@ -181,6 +183,13 @@ try {
   // la hora que ese mismo bloque dice tener, contra el eje de la izquierda. Si
   // la grilla dibujara todo del mismo alto, o corriera media hora, esto lo caza.
   await esc.goto(`${SITIO}/calendario`, { waitUntil: "networkidle" });
+  // La grilla abre en la semana de hoy aunque ya no le queden clases —un
+  // domingo—, y entonces todo lo que sigue se mediría sobre cero bloques y
+  // pasaría sin medir nada. Se avanza a la primera semana con clases.
+  for (let i = 0; i < 9 && (await esc.locator(BLOQUE).count()) === 0; i++) {
+    await esc.getByRole("button", { name: /Después/ }).click();
+    await esc.waitForTimeout(150);
+  }
 
   const grilla = await esc.evaluate(() => {
     const fila = 28; // 1.75rem
@@ -200,8 +209,12 @@ try {
     );
 
     const bloques = [];
-    for (const a of document.querySelectorAll("a[style*='grid-row']")) {
-      const m = a.getAttribute("style")?.match(/grid-row:\s*(\d+)\s*\/\s*span\s*(\d+)/);
+    for (const a of document.querySelectorAll("main a[style*='grid-']")) {
+      // Del estilo **calculado**, no del atributo: el navegador lo escribe
+      // `grid-row: 15 / span 2` cuando la grilla llega del servidor y lo resume
+      // en `grid-area: 15 / 1 / span 2` cuando la dibuja el cliente.
+      const cs = getComputedStyle(a);
+      const m = [null, cs.gridRowStart, cs.gridRowEnd.replace("span ", "")];
       const hhmm = a.textContent?.match(/(\d{1,2}):(\d{2})/);
       if (!m || !hhmm) continue;
       const [, tramo, span] = m.map(Number);
@@ -300,11 +313,13 @@ try {
     await p.goto(`${SITIO}/calendario`, { waitUntil: "networkidle" });
     const cortados = await p.evaluate(() => {
       const malos = [];
-      for (const a of document.querySelectorAll("a[style*='grid-row']")) {
+      for (const a of document.querySelectorAll("main a[style*='grid-']")) {
         if (a.offsetParent === null) continue; // otro día, en el teléfono
         const caja = a.getBoundingClientRect();
         const lugares = [...a.querySelectorAll("span")].find((s) =>
-          /^(\d+ lugar(es)?|Llena)$/.test(s.textContent?.trim() ?? ""));
+          // "Especial" es el estado de una clase especial: su cupo vive en su
+          // página (PRD-0018), y es el mismo dato en el mismo lugar.
+          /^(\d+ lugar(es)?|Llena|Especial)$/.test(s.textContent?.trim() ?? ""));
         const r = lugares?.getBoundingClientRect();
         if (!r || r.bottom > caja.bottom - 1 || r.right > caja.right - 1) {
           malos.push(a.querySelector("p")?.textContent?.trim() ?? "?");

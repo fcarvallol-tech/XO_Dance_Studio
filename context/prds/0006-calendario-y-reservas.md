@@ -224,3 +224,17 @@ en vez de mandarse. Queda **bloqueante antes de publicar la primera clase especi
 
 > Sigue pendiente además el correo de **clase cancelada por XO** (§10): un trigger no puede
 > mandarlo. Son dos huecos distintos del mismo tema, y los dos esperan el mismo trabajo.
+
+## 12. El calendario de reservar es la grilla, y las especiales no se reservan con el pack (04/10/2026)
+
+Ajuste de Felipe, documentado en detalle en **PRD-0007 §8**. Lo que toca a este PRD:
+
+- **El calendario de la alumna es `GrillaCalendario`**, la misma del sitio público, en tema claro
+  y con cada clase accionable. Ya no hay un listado aparte que mantener.
+- **Cada clase dice su estado** —lugares, llena, reservada por ella, especial— y lo que se puede
+  hacer con ella sale de `estadoParaAlumna` (`lib/dominio/reservas.ts`, con tests). Sin créditos
+  no hay botón de reservar: lo dice.
+- **Las especiales se distinguen**: `getCalendario` y `getCalendarioPublico` traen `tipo`, `slug`,
+  `titulo` y `precio_clp` y filtran las sin publicar. Antes se ofrecían para reservar con el pack
+  y la base rechazaba la reserva; PRD-0018 lo había especificado y no se había hecho.
+

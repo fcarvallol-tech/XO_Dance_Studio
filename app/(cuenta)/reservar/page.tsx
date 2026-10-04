@@ -6,6 +6,7 @@ import { ErrorDeLectura } from "@/components/ErrorDeLectura";
 import { requiereSesion } from "@/lib/sesion";
 import { clienteServidor } from "@/lib/supabase/servidor";
 import { getCalendario, getSaldo } from "@/lib/compras-consultas";
+import { hoyEnSantiago } from "@/lib/semana";
 
 export const metadata: Metadata = {
   title: "Reservar — XO Dance Studio",
@@ -13,7 +14,8 @@ export const metadata: Metadata = {
 };
 
 /**
- * El calendario.
+ * El calendario. Desde PRD-0007 §8 es la misma grilla del sitio público, en
+ * tema claro y con cada clase accionable (`components/Calendario.tsx`).
  *
  * **60 días y no una semana**, porque es exactamente la vigencia del crédito:
  * cualquier clase que se ve acá se puede pagar con lo que ya se compró. Una
@@ -77,7 +79,7 @@ export default async function Reservar() {
           Todavía no hay clases publicadas para las próximas semanas.
         </p>
       ) : (
-        <Calendario clases={clases.datos} saldo={saldo.datos} />
+        <Calendario clases={clases.datos} saldo={saldo.datos} hoy={hoyEnSantiago()} />
       )}
     </>
   );
