@@ -265,7 +265,17 @@ type FilaClase = {
   cursos: { slug: string; nombre: string } | null;
   profesoras: { slug: string; nombre: string } | null;
   sedes: { nombre: string; comuna: string } | null;
+  tipo: string;
+  slug: string | null;
+  titulo: string | null;
+  precio_clp: number | null;
 };
+
+/** Lo de especial que necesita el calendario, o `null` en una de parrilla. */
+function especialDe(c: FilaClase): ClaseDelCalendario["especial"] {
+  if (c.tipo !== "especial" || !c.slug) return null;
+  return { slug: c.slug, titulo: c.titulo ?? c.cursos?.nombre ?? "Clase especial", precioClp: c.precio_clp };
+}
 
 /**
  * El calendario: las clases de los próximos N días con sus cupos tomados.
@@ -297,8 +307,11 @@ export async function getCalendarioPublico(
   const { data, error } = await publico
     .from("clases")
     .select(
-      "id, inicio, fin, cupo_maximo, cursos ( slug, nombre ), profesoras ( slug, nombre ), sedes ( nombre, comuna )",
+      "id, inicio, fin, cupo_maximo, tipo, slug, titulo, precio_clp, cursos ( slug, nombre ), profesoras ( slug, nombre ), sedes ( nombre, comuna )",
     )
+    // Una especial sin publicar no se muestra (PRD-0018). Explícito acá además
+    // de en RLS: la consulta filtra igual que la política, no confía en ella.
+    .or("tipo.eq.parrilla,publicada_at.not.is.null")
     .eq("estado", "programada")
     .gt("inicio", desde.toISOString())
     .lt("inicio", hasta.toISOString())
@@ -342,6 +355,7 @@ export async function getCalendarioPublico(
       tomados: tomados.get(c.id) ?? 0,
       // Sin sesión no hay reserva propia que marcar.
       reservaId: null,
+      especial: especialDe(c),
     })),
     error: null,
   };
@@ -358,8 +372,11 @@ export async function getCalendario(
   const { data, error } = await supabase
     .from("clases")
     .select(
-      "id, inicio, fin, cupo_maximo, cursos ( slug, nombre ), profesoras ( slug, nombre ), sedes ( nombre, comuna )",
+      "id, inicio, fin, cupo_maximo, tipo, slug, titulo, precio_clp, cursos ( slug, nombre ), profesoras ( slug, nombre ), sedes ( nombre, comuna )",
     )
+    // Una especial sin publicar no se muestra (PRD-0018). Explícito acá además
+    // de en RLS: la consulta filtra igual que la política, no confía en ella.
+    .or("tipo.eq.parrilla,publicada_at.not.is.null")
     // Explícito acá y no solo en RLS: desde que `clases` expone también las
     // canceladas, filtrar es responsabilidad de quien consulta. La alumna no
     // reserva una clase cancelada, así que no la ve en el calendario.
@@ -423,6 +440,7 @@ export async function getCalendario(
       cupoMaximo: c.cupo_maximo,
       tomados: tomados.get(c.id) ?? 0,
       reservaId: propias.get(c.id) ?? null,
+      especial: especialDe(c),
     })),
     error: null,
   };

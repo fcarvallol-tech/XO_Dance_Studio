@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { TituloPortal } from "@/components/Portal";
 import { ErrorDeLectura } from "@/components/ErrorDeLectura";
 import { ReservarClase } from "@/components/ReservarClase";
@@ -46,6 +46,9 @@ export default async function ReservarUna({ params }: Props) {
 
   const clase = clases.datos.find((c) => c.id === id);
   if (!clase) notFound();
+  // Una especial se paga aparte y se reserva desde su página: acá la base la
+  // rechazaría con el pack (PRD-0018).
+  if (clase.especial) redirect(`/clases-especiales/${clase.especial.slug}`);
 
   return (
     <>

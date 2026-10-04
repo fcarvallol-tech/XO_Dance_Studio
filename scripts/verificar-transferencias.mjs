@@ -240,8 +240,17 @@ try {
        (await enviosDe(compra.id)).some((e) => e.plantilla === "compraAprobada" && e.destinatario === EMAIL));
 
   // --- 8. Reserva ----------------------------------------------------------
+  // Desde PRD-0007 §8 es la grilla: se toca una clase reservable, se abre su
+  // detalle y ahí se reserva. Si la semana de hoy ya no tiene clases —un
+  // domingo—, se avanza a la siguiente.
   await alumna.goto(`${SITIO}/reservar`, { waitUntil: "networkidle" });
-  await alumna.getByRole("button", { name: "Reservar", exact: true }).first().click();
+  const reservable = alumna.locator("main [data-estado='reservable']").filter({ visible: true });
+  for (let i = 0; i < 9 && (await reservable.count()) === 0; i++) {
+    await alumna.getByRole("button", { name: /Después/ }).click();
+    await alumna.waitForTimeout(150);
+  }
+  await reservable.first().click();
+  await alumna.getByRole("dialog").getByRole("button", { name: "Reservar esta clase" }).click();
   await alumna.waitForTimeout(3000);
   const [reserva] = await sql(
     "select id, estado from reservas where perfil_id = $1 order by created_at desc limit 1",
