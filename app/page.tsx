@@ -19,7 +19,7 @@ import { getCatalogoPublico } from "@/lib/catalogo-consultas";
 export const revalidate = 3600;
 
 export default async function Home() {
-  const { profesoras } = await getCatalogoPublico();
+  const { profesoras, cursos, horarios } = await getCatalogoPublico();
 
   return (
     <MarcoSitio>
@@ -35,7 +35,7 @@ export default async function Home() {
           pie cierra en negro. Sobre el rosado todo el texto es negro: `xo-rosa`
           sobre claro da 1.7:1 y `BRAND.md` lo prohíbe para texto. */}
       <CaminosPortada />
-      <ProfesorasPortada profesoras={profesoras} />
+      <ProfesorasPortada profesoras={profesoras} cursos={cursos} horarios={horarios} />
     </MarcoSitio>
   );
 }

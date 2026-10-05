@@ -84,6 +84,51 @@ export function nombreDia(dia: number): string {
   return DIAS[dia] ?? "";
 }
 
+/** "Lunes 17:00": el mismo, con el día en mayúscula inicial, para una lista. */
+export function cuandoConMayuscula(horario: Horario): string {
+  const texto = cuando(horario);
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+/**
+ * Las comunas donde una profesora dicta **de verdad**, sacadas de sus horarios.
+ *
+ * Antes la ficha mostraba la ubicación general de la academia —"Providencia y
+ * Las Condes"— a todas, y eso podía mandar a una alumna a la comuna equivocada:
+ * Pau solo dicta en Las Condes. Sin repetir, en el orden en que aparecen.
+ */
+export function comunasDeProfesora(
+  horarios: Horario[],
+  sedes: Sede[],
+  slug: string,
+): string[] {
+  const comunas = horarios
+    .filter((h) => h.profesoraSlug === slug)
+    .map((h) => sedes.find((s) => s.slug === h.sedeSlug)?.comuna)
+    .filter((c): c is string => Boolean(c));
+  return [...new Set(comunas)];
+}
+
+/**
+ * Qué enseña una profesora: los cursos que dicta, sacados de sus horarios.
+ *
+ * Reemplaza a `profesoras.estilo`, un texto suelto que nadie mantenía —en
+ * staging decía "urbano teens" de profesoras que no dictan Teens— y que no se
+ * actualizaba cuando cambiaba la parrilla. Si no tiene horarios, se usa ese
+ * texto, que es lo único que hay.
+ */
+export function estiloDeProfesora(
+  horarios: Horario[],
+  cursos: { slug: string; nombre: string }[],
+  profesora: { slug: string; estilo: string },
+): string {
+  const nombres = horarios
+    .filter((h) => h.profesoraSlug === profesora.slug)
+    .map((h) => cursos.find((c) => c.slug === h.cursoSlug)?.nombre)
+    .filter((n): n is string => Boolean(n));
+  return nombres.length > 0 ? [...new Set(nombres)].join(" · ") : profesora.estilo;
+}
+
 /** "lunes 17:00". Lo que se muestra en una tarjeta. */
 export function cuando(horario: Horario): string {
   return `${nombreDia(horario.diaSemana)} ${horario.hora}`;

@@ -33,7 +33,7 @@ export const PREGUNTAS: BloqueDePreguntas[] = [
         respuesta:
           "Compras clases, no un mes. Un pack de 4 son cuatro clases que usas cuando quieras, " +
           "en cualquier horario de la parrilla, con cualquier profe y en cualquiera de las " +
-          "salas. Tienes 60 días para ocuparlas desde que te las acreditamos.",
+          "salas. {vigencia}",
       },
       {
         pregunta: "¿Tengo que venir siempre el mismo día?",
@@ -51,8 +51,7 @@ export const PREGUNTAS: BloqueDePreguntas[] = [
       {
         pregunta: "¿Desde qué edad se puede?",
         respuesta:
-          "Las clases de la parrilla son de 15 años en adelante. XO Teens es el curso para " +
-          "11 a 15, con su propio horario.",
+          "Desde los 15 años. Todos los cursos que dictamos hoy son para esa edad en adelante.",
       },
       {
         pregunta: "¿Cuánto dura una clase?",
@@ -124,4 +123,15 @@ export const PREGUNTAS: BloqueDePreguntas[] = [
 /** Cuántas están sin completar. La página lo dice arriba si hay alguna. */
 export function pendientes(): number {
   return PREGUNTAS.flatMap((b) => b.preguntas).filter((p) => p.porConfirmar).length;
+}
+
+/**
+ * La frase de la vigencia, con los días que dice la base (`planes.vigencia_dias`).
+ * Estaba escrita a mano —"60 días"— y se habría quedado mintiendo cuando la
+ * vigencia pasó a 45 (05/10/2026). Sin el dato, la frase se omite: nunca un
+ * número inventado.
+ */
+export function conVigencia(respuesta: string, dias: number | null): string {
+  const frase = dias ? `Tienes ${dias} días para ocuparlas desde que te las acreditamos.` : "";
+  return respuesta.replace("{vigencia}", frase).trim();
 }

@@ -19,7 +19,7 @@ export function Sedes({ sedes }: { sedes: Sede[] }) {
       <Reveal className="relative mx-auto max-w-5xl">
         <p className="xo-eyebrow text-xo-rosa">Dónde bailamos</p>
         <h2 className="mt-4 max-w-2xl font-display text-[clamp(2.25rem,6vw,3.5rem)] leading-[0.95] text-xo-blanco">
-          Dos salas, dos comunas
+          Dónde estamos ubicados
         </h2>
         <p className="mt-5 max-w-md text-xo-blanco/70">
           Elige la que te quede mejor: cada horario dice en cuál es.

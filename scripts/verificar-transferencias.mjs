@@ -233,12 +233,15 @@ try {
          .replace(/^TRANSFERENCIAS/, "Transferencias").replace(/^Transferencias$/, "Transferencias (0)"));
 
   // --- 7. Créditos ---------------------------------------------------------
+  // La vigencia sale del plan, no se supone: pasó de 60 a 45 días el 05/10/2026.
   const [lote] = await sql(
-    `select cantidad_disponible, (fecha_vencimiento - now()) > interval '59 days' as sesenta
-     from creditos where compra_id = $1`,
+    `select c.cantidad_disponible, p.vigencia_dias as dias,
+            abs(extract(epoch from (c.fecha_vencimiento - (now() + make_interval(days => p.vigencia_dias))))) < 86400 as vence_bien
+     from creditos c join compras co on co.id = c.compra_id join planes p on p.id = co.plan_id
+     where c.compra_id = $1`,
     [compra.id],
   );
-  caso("7. 4 créditos que vencen en 60 días", "4 · true", `${lote?.cantidad_disponible} · ${lote?.sesenta}`);
+  caso(`7. 4 créditos que vencen en ${lote?.dias} días`, "4 · true", `${lote?.cantidad_disponible} · ${lote?.vence_bien}`);
   caso("7. correo de aprobada para ella", true,
        (await enviosDe(compra.id)).some((e) => e.plantilla === "compraAprobada" && e.destinatario === EMAIL));
 

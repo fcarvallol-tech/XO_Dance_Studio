@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MarcoSitio } from "@/components/MarcoSitio";
-import { PREGUNTAS, pendientes } from "@/lib/ayuda";
+import { PREGUNTAS, conVigencia, pendientes } from "@/lib/ayuda";
+import { getPlanes } from "@/lib/planes-consultas";
 import {
   INSTAGRAM_HANDLE,
   INSTAGRAM_URL,
@@ -37,7 +38,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Ayuda() {
+export default async function Ayuda() {
+  // La vigencia de los packs sale de la base, no del texto (05/10/2026). Si los
+  // planes no la tuvieran igual, se usa la más corta: prometer de más es peor.
+  const planes = await getPlanes().catch(() => []);
+  const vigencia = planes.length > 0 ? Math.min(...planes.map((p) => p.vigenciaDias)) : null;
+
   const faltan = pendientes();
 
   return (
@@ -83,7 +89,7 @@ export default function Ayuda() {
                       {p.porConfirmar ? (
                         <span className="xo-eyebrow mr-2 text-xo-rosa">Falta</span>
                       ) : null}
-                      {p.respuesta}
+                      {conVigencia(p.respuesta, vigencia)}
                       {p.enlace ? (
                         <a
                           href={p.enlace.url}

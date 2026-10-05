@@ -231,7 +231,7 @@ export async function aprobarCompra(compraId: string): Promise<Resultado> {
         clases: compra.cantidad_clases,
         vence: lote?.fecha_vencimiento
           ? fechaLegible(lote.fecha_vencimiento.slice(0, 10))
-          : "60 días",
+          : "vencimiento que ves en Mis reservas",
         compraId,
         perfilId: compra.perfil_id,
       });
