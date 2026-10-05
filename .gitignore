@@ -47,6 +47,10 @@ Assets/Videos/originales/
 # El .gitkeep ya estaba versionado y sigue: la carpeta existe en los dos lados.
 Assets/Fotos/
 
+# Operaciones puntuales sobre producción: SQL con correos reales de personas.
+# El repo es público. No son migraciones y no se versionan.
+supabase/operaciones/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
