@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { MarcoSitio } from "@/components/MarcoSitio";
 import { Sedes } from "@/components/Sedes";
+import { sedesConHorarios } from "@/lib/catalogo";
 import { getCatalogoPublico } from "@/lib/catalogo-consultas";
 
 /**
@@ -19,7 +20,7 @@ export const revalidate = 3600;
 
 const TITULO = "Nosotros — XO Dance Studio";
 const DESCRIPCION =
-  "Qué es XO Dance Studio, qué nos motiva y dónde hacemos clases: tres salas en Providencia y Las Condes.";
+  "Qué es XO Dance Studio, qué nos motiva y dónde hacemos clases, en Providencia y Las Condes.";
 
 export const metadata: Metadata = {
   title: TITULO,
@@ -36,7 +37,10 @@ export const metadata: Metadata = {
 };
 
 export default async function Nosotros() {
-  const { sedes } = await getCatalogoPublico();
+  const { cursos, sedes, horarios } = await getCatalogoPublico();
+  // Los estilos que se nombran son los que se dictan hoy, desde la base: el
+  // texto decía K-Pop meses después de que salió del catálogo.
+  const estilos = cursos.filter((c) => c.activo).map((c) => c.nombre);
 
   return (
     <MarcoSitio>
@@ -52,8 +56,8 @@ export default async function Nosotros() {
 
           <div className="mt-12 space-y-6 text-lg leading-relaxed text-xo-blanco/85">
             <p>
-              Lo que nos diferencia no es el estilo. Reggaetón, Girly, Slow
-              Femme, K-Pop: eso lo enseña mucha gente y lo enseña bien.{" "}
+              Lo que nos diferencia no es el estilo. {estilos.join(", ")}: eso
+              lo enseña mucha gente y lo enseña bien.{" "}
               <strong className="font-semibold text-xo-blanco">
                 Lo que hace distinta a XO es el ambiente.
               </strong>{" "}
@@ -77,8 +81,8 @@ export default async function Nosotros() {
               conocen, y eso cambia cómo se aprende.
             </Valor>
             <Valor titulo="Sin vergüenza de empezar">
-              Los cursos de la parrilla son de nivel principiante a propósito. Se
-              puede llegar sin saber nada.
+              Todos los cursos que dictamos son de nivel principiante a
+              propósito. Se puede llegar sin saber nada.
             </Valor>
             <Valor titulo="Las profesoras al centro">
               Cada una tiene su estilo, su público y su manera. La academia está
@@ -89,7 +93,7 @@ export default async function Nosotros() {
       </section>
 
       {/* Las sedes: un dato dentro de la página, no su tema. */}
-      <Sedes sedes={sedes} />
+      <Sedes sedes={sedesConHorarios(sedes, horarios)} />
 
       <section className="px-6 pb-20 sm:px-10 sm:pb-28">
         <div className="mx-auto max-w-3xl">

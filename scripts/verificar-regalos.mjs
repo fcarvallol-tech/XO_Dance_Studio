@@ -187,13 +187,16 @@ try {
   caso("al regalar, dice cuántas tiene ahora", true,
     (await pAdmin.getByText(/^Regalaste/).innerText()).includes(`Ahora tiene ${saldoAntes + CANTIDAD}`));
 
+  // La vigencia se lee del parámetro, no se supone: pasó de 60 a 45 días el
+  // 05/10/2026, y un verificador con el número fijo da por malo lo correcto.
+  const [{ dias }] = await sql("select valor::int as dias from parametros where clave = 'regalo_vigencia_dias'");
   const [lote] = await sql(
     `select c.id, c.compra_id, c.cantidad_inicial, c.cantidad_disponible,
-            abs(extract(epoch from (c.fecha_vencimiento - (now() + interval '60 days')))) < 600 as vence_bien
-     from creditos c where c.perfil_id = $1 order by c.created_at desc limit 1`, [destino.id]);
+            abs(extract(epoch from (c.fecha_vencimiento - (now() + make_interval(days => $2))))) < 600 as vence_bien
+     from creditos c where c.perfil_id = $1 order by c.created_at desc limit 1`, [destino.id, dias]);
   caso("crea un lote sin compra, de la cantidad pedida", `null · ${CANTIDAD} · ${CANTIDAD}`,
     `${lote.compra_id} · ${lote.cantidad_inicial} · ${lote.cantidad_disponible}`);
-  caso("que vence a los 60 días, como un pack", true, lote.vence_bien);
+  caso(`que vence a los ${dias} días, como un pack`, true, lote.vence_bien);
   const [mov] = await sql(
     "select tipo, cantidad, saldo_resultante, motivo, creado_por from movimientos_credito where credito_id = $1", [lote.id]);
   caso("el movimiento es regalo, con su cantidad y el saldo resultante",

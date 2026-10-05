@@ -133,7 +133,13 @@ export async function getCatalogoPublico(): Promise<Catalogo> {
     supabase.from("cursos").select(CAMPOS_CURSO).order("orden"),
     supabase.from("profesoras").select(CAMPOS_PROFESORA).order("orden"),
     supabase.from("sedes").select(CAMPOS_SEDE).order("orden"),
-    supabase.from("horarios").select(CAMPOS_HORARIO).order("dia_semana"),
+    // RLS ya entrega solo los activos; la consulta filtra igual.
+    supabase
+      .from("horarios")
+      .select(CAMPOS_HORARIO)
+      .eq("activo", true)
+      .is("deleted_at", null)
+      .order("dia_semana"),
   ]);
 
   return armar({ cursos, profesoras, sedes, horarios }, true);

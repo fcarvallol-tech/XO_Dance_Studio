@@ -1,3 +1,5 @@
+import { enumerar, type Sede } from "./catalogo.ts";
+
 /**
  * Las preguntas frecuentes.
  *
@@ -32,8 +34,8 @@ export const PREGUNTAS: BloqueDePreguntas[] = [
         pregunta: "¿Cómo funcionan los packs?",
         respuesta:
           "Compras clases, no un mes. Un pack de 4 son cuatro clases que usas cuando quieras, " +
-          "en cualquier horario de la parrilla, con cualquier profe y en cualquiera de las " +
-          "salas. Tienes 60 días para ocuparlas desde que te las acreditamos.",
+          "en cualquier horario del calendario, con cualquier profe y en cualquiera de las " +
+          "salas. {vigencia}",
       },
       {
         pregunta: "¿Tengo que venir siempre el mismo día?",
@@ -45,19 +47,18 @@ export const PREGUNTAS: BloqueDePreguntas[] = [
       {
         pregunta: "¿Necesito experiencia para empezar?",
         respuesta:
-          "No. Los cursos de la parrilla son de nivel principiante, y están pensados para que " +
+          "No. Todos los cursos son de nivel principiante, y están pensados para que " +
           "alguien que nunca bailó pueda llegar y seguir la clase.",
       },
       {
         pregunta: "¿Desde qué edad se puede?",
         respuesta:
-          "Las clases de la parrilla son de 15 años en adelante. XO Teens es el curso para " +
-          "11 a 15, con su propio horario.",
+          "Desde los 15 años. Todos los cursos que dictamos hoy son para esa edad en adelante.",
       },
       {
         pregunta: "¿Cuánto dura una clase?",
         respuesta:
-          "Una hora las de la parrilla. Las clases especiales lo dicen en su página, porque " +
+          "Una hora las de todas las semanas. Las clases especiales lo dicen en su página, porque " +
           "algunas duran más.",
       },
     ],
@@ -93,9 +94,8 @@ export const PREGUNTAS: BloqueDePreguntas[] = [
       {
         pregunta: "¿Dónde son las clases?",
         respuesta:
-          "En tres salas: Seducción Latina Experience y EB Dance Studio en Providencia, y el " +
-          "Centro Comunitario Diaguitas en Las Condes. Las direcciones están en Nosotros, y " +
-          "cada clase del calendario dice en cuál es.",
+          "{sedes} Las direcciones están en Nosotros, y cada clase del calendario dice en " +
+          "cuál es.",
       },
       {
         pregunta: "¿Qué llevo a la clase?",
@@ -124,4 +124,27 @@ export const PREGUNTAS: BloqueDePreguntas[] = [
 /** Cuántas están sin completar. La página lo dice arriba si hay alguna. */
 export function pendientes(): number {
   return PREGUNTAS.flatMap((b) => b.preguntas).filter((p) => p.porConfirmar).length;
+}
+
+/**
+ * La frase de la vigencia, con los días que dice la base (`planes.vigencia_dias`).
+ * Estaba escrita a mano —"60 días"— y se habría quedado mintiendo cuando la
+ * vigencia pasó a 45 (05/10/2026). Sin el dato, la frase se omite: nunca un
+ * número inventado.
+ */
+/**
+ * Dónde son las clases, desde la tabla `sedes`. Antes estaban escritas a mano
+ * —"en tres salas"— y quedaron viejas el día que llegó Studio 98 (05/10/2026).
+ * Agrupadas por comuna, en el orden de la tabla.
+ */
+export function conSedes(respuesta: string, sedes: Pick<Sede, "nombre" | "comuna">[]): string {
+  const comunas = new Map<string, string[]>();
+  for (const s of sedes) comunas.set(s.comuna, [...(comunas.get(s.comuna) ?? []), s.nombre]);
+  const frase = [...comunas].map(([comuna, nombres]) => `En ${comuna}: ${enumerar(nombres)}.`).join(" ");
+  return respuesta.replace("{sedes}", frase).trim();
+}
+
+export function conVigencia(respuesta: string, dias: number | null): string {
+  const frase = dias ? `Tienes ${dias} días para ocuparlas desde que te las acreditamos.` : "";
+  return respuesta.replace("{vigencia}", frase).trim();
 }

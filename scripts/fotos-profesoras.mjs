@@ -19,8 +19,9 @@
  * tiene un 9,7 %. Las demás se recortan más cerca para igualarla.
  *
  * Cuando la cara está pegada a un costado, el recorte se corre lo justo para
- * no salir de la foto y los ojos quedan fuera del centro: hoy Carli (69 %) y
- * Drimy (33 %). Lo que no se corre nunca es la altura.
+ * no salir de la foto y los ojos quedan fuera del centro: hoy Carli (69 %),
+ * Drimy (33 %) e Isi (44 %, para dejar fuera a otra persona). Lo que no se
+ * corre nunca es la altura.
  *
  * Si se cambia una foto, **hay que volver a medirla**: las coordenadas son de
  * ese archivo y de ningún otro. El script se niega a correr si el tamaño no
@@ -38,6 +39,11 @@ const FOTOS = {
   drimy: { archivo: "drimy.jpg", tamano: [1080, 1620], ojos: [209, 638], entre: 62 },
   lina: { archivo: "lina.jpg", tamano: [1280, 1600], ojos: [672, 257], entre: 59 },
   pau: { archivo: "pau.jpg", tamano: [2773, 4160], ojos: [1462, 1215], entre: 160 },
+  // Llegó en HEIC (05/10/2026) y se convirtió con `sips` de macOS:
+  //   sips -s format jpeg -s formatOptions 95 isi.heic --out isi.jpg
+  // A la izquierda hay otra persona desenfocada hasta x ≈ 860: el recorte
+  // arranca desde 900 para que no entre ni un borde suyo.
+  isi: { archivo: "isi.jpg", tamano: [4284, 5712], ojos: [2242, 1405], entre: 295, desdeX: 900 },
 };
 
 mkdirSync("public/profesoras", { recursive: true });
@@ -58,7 +64,12 @@ for (const [slug, f] of Object.entries(FOTOS)) {
     throw new Error(`${slug}: la cara es demasiado grande para la escala ${ESCALA}.`);
   }
 
-  const izquierda = Math.min(Math.max(Math.round(f.ojos[0] - ancho / 2), 0), meta.width - ancho);
+  // `desdeX`: un borde que el recorte no puede cruzar, para dejar fuera algo
+  // que no es de la foto (otra persona). Corre los ojos, nunca la altura.
+  const izquierda = Math.min(
+    Math.max(Math.round(f.ojos[0] - ancho / 2), f.desdeX ?? 0),
+    meta.width - ancho,
+  );
   const arriba = Math.round(f.ojos[1] - ALTURA_OJOS * alto);
   if (arriba < 0 || arriba + alto > meta.height) {
     throw new Error(`${slug}: no hay aire suficiente arriba o abajo para los ojos al ${ALTURA_OJOS * 100} %.`);

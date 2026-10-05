@@ -6,7 +6,10 @@ import { MarcoSitio } from "@/components/MarcoSitio";
 import { Placeholder } from "@/components/Placeholder";
 import { UBICACION } from "@/lib/contacto";
 import {
-  cuando,
+  comunasDeProfesora,
+  enumerar,
+  cuandoConMayuscula,
+  estiloDeProfesora,
   horariosDeProfesora,
   nombreDe,
   porSlug,
@@ -35,14 +38,15 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const { profesoras } = await getCatalogoPublico();
+  const { profesoras, cursos, sedes, horarios } = await getCatalogoPublico();
   const profesora = porSlug(profesoras, slug);
   if (!profesora) return {};
 
   const titulo = `${profesora.nombre} — Profesora de XO Dance Studio`;
   // La bio real todavía no existe: la descripción se arma con lo que sí es
-  // dato, no con el texto de relleno.
-  const descripcion = `${profesora.nombre} hace clases de ${profesora.estilo} en XO Dance Studio, ${UBICACION}. Reserva tu clase con ella.`;
+  // dato, no con el texto de relleno. Y con **sus** comunas, no las de la
+  // academia: el buscador también puede mandar a alguien al lugar equivocado.
+  const descripcion = `${profesora.nombre} hace clases de ${estiloDeProfesora(horarios, cursos, profesora)} en XO Dance Studio, ${dondeDicta(comunasDeProfesora(horarios, sedes, profesora.slug))}. Reserva tu clase con ella.`;
 
   return {
     title: titulo,
@@ -94,7 +98,7 @@ export default async function PerfilProfesora({ params }: Props) {
           </Link>
 
           <p className="xo-eyebrow mt-12 text-xo-rosa-claro">
-            {profesora.estilo}
+            {estiloDeProfesora(horarios, todos, profesora)}
           </p>
           <h1 className="mt-3 font-display text-[clamp(3.5rem,14vw,9rem)] leading-[0.85] text-xo-rosa">
             {profesora.nombre}
@@ -154,7 +158,7 @@ export default async function PerfilProfesora({ params }: Props) {
                   {suyos.map((horario) => (
                     <li key={horario.id} className="leading-snug">
                       <span className="text-xo-blanco/85">
-                        {cuando(horario)} · {nombreDe(todos, horario.cursoSlug)}
+                        {cuandoConMayuscula(horario)} · {nombreDe(todos, horario.cursoSlug)}
                       </span>
                       <span className="block text-sm text-xo-blanco/55">
                         {nombreDe(sedes, horario.sedeSlug)}
@@ -164,8 +168,13 @@ export default async function PerfilProfesora({ params }: Props) {
                 </ul>
               )}
 
+              {/* Solo donde ella dicta, sacado de sus horarios. Antes era la
+                  ubicación de la academia para todas, y podía mandar a una
+                  alumna a la comuna equivocada (05/10/2026). */}
               <p className="xo-eyebrow mt-10 text-xo-rosa-claro">Dónde</p>
-              <p className="mt-3 text-xo-blanco/80">{UBICACION}</p>
+              <p className="mt-3 text-xo-blanco/80">
+                {dondeDicta(comunasDeProfesora(horarios, sedes, profesora.slug))}
+              </p>
 
               <div className="mt-12 flex flex-wrap items-center gap-x-6 gap-y-4">
                 <Link
@@ -175,14 +184,18 @@ export default async function PerfilProfesora({ params }: Props) {
                   Ver cuándo hace clases
                 </Link>
 
-                <a
-                  href={profesora.instagram ?? "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="xo-eyebrow text-xo-rosa underline-offset-4 hover:underline"
-                >
-                  Instagram de {profesora.nombre}
-                </a>
+                {/* Solo si hay un Instagram cargado: un enlace a `#` parece roto
+                    (una profesora nueva puede llegar sin él, 05/10/2026). */}
+                {profesora.instagram ? (
+                  <a
+                    href={profesora.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="xo-eyebrow text-xo-rosa underline-offset-4 hover:underline"
+                  >
+                    Instagram de {profesora.nombre}
+                  </a>
+                ) : null}
               </div>
             </div>
           </div>
@@ -190,4 +203,11 @@ export default async function PerfilProfesora({ params }: Props) {
       </section>
     </MarcoSitio>
   );
+}
+
+
+/** "Las Condes, Santiago" · "Providencia y Las Condes, Santiago". Sin horarios, la de la academia. */
+function dondeDicta(comunas: string[]): string {
+  if (comunas.length === 0) return UBICACION;
+  return `${enumerar(comunas)}, Santiago`;
 }

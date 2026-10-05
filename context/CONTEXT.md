@@ -39,18 +39,21 @@ de sus atletas.
 | **Felipe Carvalho** | Co-fundador · estrategia, finanzas, administración, marketing, diseño y producto. Ingeniero Comercial (UAI), Magíster en Innovación y Emprendimiento |
 | **Carla** | Co-fundadora y fundadora original · área académica y docente. 24 años, estudiante de medicina, pareja de Felipe. Cara visible de la marca |
 
-**Profesoras (5):**
+**Profesoras (6):**
 
 | Profesora | Cursos | Instagram |
 |---|---|---|
-| Carli | Girly · Teens | @carlataty.20 |
+| Carli | Girly · ~~Teens~~ | @carlataty.20 |
 | Pau | Reggaeton Femme · Girly | @pau_balbontinc |
 | Drimy | Reggaeton Femme | @ladrimy |
 | Lina | Slow Femme | @linaapop |
+| **Isi** | Reggaeton Antiguo | @isimonttrios |
 | ~~Maida~~ | — | @maidaquirozc |
 
 **Cuatro activas desde el 30/08/2026: Maida se desactiva junto con K-Pop.** No se borra: los
 leads que la nombran se siguen leyendo.
+
+**Cinco activas desde el 05/10/2026: entra Isi**, con Reggaeton Antiguo.
 
 Todas tienen Instagram propio con seguidores y son parte activa de la campaña de lanzamiento.
 
@@ -62,13 +65,13 @@ Todas tienen Instagram propio con seguidores y son parte activa de la campaña d
 |---|---|
 | **Etapa** | Fase 1 — Validación & Caja. Campaña de lanzamiento en curso |
 | **Modelo** | Academia de baile urbano B2C |
-| **Sedes** | **Tres, con dirección pública desde el 30/08/2026:** Seducción Latina Experience (Av. Nueva Providencia 2260, Providencia, sector Los Leones) · Centro Comunitario Diaguitas (Diaguitas 911, Las Condes) · **EB Dance Studio** (Chucre Manzur 7, Providencia, sector Bellavista), desde el 27/09/2026 |
+| **Sedes** | **Con dirección pública desde el 30/08/2026:** Seducción Latina Experience (Av. Nueva Providencia 2260, Providencia, sector Los Leones) · Centro Comunitario Diaguitas (Diaguitas 911, Las Condes) · **EB Dance Studio** (Chucre Manzur 7, Providencia, sector Bellavista), desde el 27/09/2026 · **Studio 98** (Barros Borgoño 71, oficina 101, Providencia, cerca del metro Manuel Montt), desde el 05/10/2026. Son cuatro |
 | **Razón social** | **XO Dance Studio SpA** (en constitución vía Tu Empresa en un Día) |
 | **Nombre de fantasía** | XO Dance Studio |
 | **Alumnas hoy** | 7–8 (⚠️ confirmar el número exacto). Migran de Kids a Teens. **No se migran al sistema**: septiembre se cierra por fuera y desde octubre entran registrándose por la web (ver §5.b, "Puesta en marcha") |
 | **Precio** | Tarifa de packs para todos los cursos. Teens deja los $45.000/mes |
-| **Costo de sala** | Los Leones: **$17.000/hora** · Diaguitas: **$0** · EB: **$27.000/hora** |
-| **Capacidad de sala** | Los Leones y Diaguitas: **22** · EB: **40**. Es un dato de cada sala, no una regla del sistema (PRD-0021) |
+| **Costo de sala** | Los Leones: **$17.000/hora** · Diaguitas: **$0** · EB: **$27.000/hora** · Studio 98: **$23.500/hora** |
+| **Capacidad de sala** | Los Leones y Diaguitas: **22** · EB: **40** · Studio 98: **35**. Es un dato de cada sala, no una regla del sistema (PRD-0021) |
 | **Sueldo base profesoras** | **$18.000/hora**. Clases de 1 hora. Variable por definir |
 | **Sitio** | **xodancestudio.cl** — dominio propio, apuntado a Vercel y con certificado |
 | **Instagram** | @xo.dance.co — se abre al público en agosto 2026 |
@@ -77,13 +80,14 @@ Todas tienen Instagram propio con seguidores y son parte activa de la campaña d
 
 ### Finanzas — modelo nuevo (21/08/2026)
 
-Tres sedes con costos radicalmente distintos:
+Cuatro sedes con costos radicalmente distintos:
 
 | Sede | Costo de sala | Capacidad | Nota |
 |---|---|---|---|
 | **Los Leones** | $17.000/hora | 22 | ⚠️ confirmar si es por hora o por clase |
 | **Diaguitas** | $0 | 22 | ⚠️ confirmar por qué es gratis y si es estable en el tiempo |
 | **EB Dance Studio** | **$27.000/hora** | **40** | La más grande y la más cara. Desde el 27/09/2026 |
+| **Studio 98** | **$23.500/hora** | **35** | Desde el 05/10/2026. Las cuentas de equilibrio de abajo todavía no la incluyen |
 
 **Punto de equilibrio por clase, con el pricing de packs** (pack de 4 = $7.500 por clase):
 
@@ -161,7 +165,8 @@ cupos están en `null` y se muestran como **"Por confirmar"**. No inventarlos.
 | **Reggaeton Femme** | Desde los 15 años | Reggaeton Femme | Principiante | Drimy · Pau |
 | **Girly** | Desde los 15 años | Girly | Principiante | Pau · Carli |
 | **Slow Femme** | Desde los 15 años | Slow Femme | Principiante | Lina |
-| **Teens** | Niñas de 11 a 14 años · **curso de entrada** | Variado | Principiante | Carli |
+| ~~**Teens**~~ | Niñas de 11 a 14 años · **inactivo desde el 05/10/2026** | Variado | Principiante | ~~Carli~~ |
+| **Reggaeton Antiguo** | Desde los 15 años | Reggaeton Antiguo | Principiante | Isi |
 
 > **Cambio del 30/08/2026 (PRD-0016).** El catálogo se rehízo casi entero: Girly Básico e
 > Intermedio se **funden en un solo Girly**, aparecen **Reggaeton Femme** y **Slow Femme**, y
@@ -175,16 +180,22 @@ cupos están en `null` y se muestran como **"Por confirmar"**. No inventarlos.
 > ⚠️ `girly` es un **slug nuevo**, no un `girly-basico` renombrado: los slugs son inmutables por
 > trigger desde PRD-0015.
 
-### Horarios (vigentes desde el 07/09/2026)
+> **Cambio del 05/10/2026: Teens se deja de dictar por ahora y entra Reggaeton Antiguo.** Teens
+> queda **inactivo, no borrado** —curso y horario—, para poder volver; sus clases futuras salieron
+> del calendario. Reggaeton Antiguo lo dicta Isi en Studio 98. Migración
+> `20261005120000_catalogo_octubre.sql`. Con esto **todos los cursos activos son desde los 15
+> años**.
+
+### Horarios (vigentes desde el 05/10/2026)
 
 Siete clases a la semana. Viven en la tabla `horarios` y se muestran en el sitio.
 
 | Curso | Profesora | Día | Hora | Sede |
 |---|---|---|---|---|
 | Reggaeton Femme | Drimy | lunes | 17:00 | Seducción Latina Experience |
-| Teens | Carli | lunes | 18:00 | Centro Comunitario Diaguitas |
 | Girly | Pau | **martes** | 20:00 | Centro Comunitario Diaguitas |
 | Reggaeton Femme | Pau | **jueves** | **19:30** | Centro Comunitario Diaguitas |
+| **Reggaeton Antiguo** | **Isi** | **viernes** | **17:00** | **Studio 98** |
 | Girly | Carli | viernes | 20:00 | Seducción Latina Experience |
 | Slow Femme | Lina | sábado | 17:00 | Seducción Latina Experience |
 | Girly | Carli | sábado | 18:00 | Seducción Latina Experience |
@@ -213,6 +224,8 @@ La pregunta que esta sección dejaba abierta —si el formato sobrevivía, se ad
 desaparecía— queda cerrada: **desaparece**. La columna `cursos.formato` se eliminó del esquema.
 
 **XO Teens** sigue siendo la excepción: inscripción continua, horario fijo y suscripción mensual.
+⏸ **Desde el 05/10/2026 Teens no se dicta** (inactivo). Lo que se dice de Teens en este archivo
+queda para cuando vuelva.
 
 ⚠️ **El ERP sigue necesitando dos modelos de cobro**, pero por Teens, no por el formato Girly:
 suscripción para Teens y créditos universales para todo lo demás.
@@ -310,7 +323,9 @@ dos segmentos de precio, ni verificación, ni un documento personal que guardar.
 universitarias se hará con un **código de descuento** (PRD-0013), que llega por el canal que
 corresponda y no obliga a construir un flujo de aprobación ni a custodiar certificados.
 
-**Vigencia de los créditos: 2 meses** desde la compra.
+**Vigencia de los créditos: 45 días** desde que se acreditan (desde el 05/10/2026; antes eran 60).
+Aplica a lo que se emite desde ese día —packs y regalos—: **los créditos ya emitidos conservan su
+fecha**, porque se guarda al emitir. Una transferencia pagada antes y aprobada después recibe 45.
 **Ventana de cancelación: hasta 30 minutos antes** de la clase, devolviendo el crédito.
 
 ### Economía unitaria por clase (definitiva)

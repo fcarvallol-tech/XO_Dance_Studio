@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Placeholder } from "./Placeholder";
-import type { Profesora } from "@/lib/catalogo";
+import { estiloDeProfesora, type Curso, type Horario, type Profesora } from "@/lib/catalogo";
 
 /**
  * Las profesoras en la portada: foto, nombre y a su perfil.
@@ -14,7 +14,15 @@ import type { Profesora } from "@/lib/catalogo";
  * **Sobre fondo negro**, después del bloque rosado: la alternancia marca que
  * cambia el tema.
  */
-export function ProfesorasPortada({ profesoras }: { profesoras: Profesora[] }) {
+export function ProfesorasPortada({
+  profesoras,
+  cursos,
+  horarios,
+}: {
+  profesoras: Profesora[];
+  cursos: Curso[];
+  horarios: Horario[];
+}) {
   return (
     <section className="xo-grain relative bg-xo-negro px-6 py-24 sm:px-10 sm:py-32">
       <div className="relative mx-auto max-w-6xl">
@@ -45,7 +53,11 @@ export function ProfesorasPortada({ profesoras }: { profesoras: Profesora[] }) {
                 <p className="mt-4 font-display text-[clamp(1.5rem,4vw,2rem)] leading-none text-xo-blanco transition-colors group-hover:text-xo-rosa">
                   {profesora.nombre}
                 </p>
-                <p className="mt-1 text-sm text-xo-blanco/60">{profesora.estilo}</p>
+                {/* Lo que dicta, sacado de sus horarios: `profesoras.estilo` era un
+                    texto suelto que nadie mantenía (05/10/2026). */}
+                <p className="mt-1 text-sm text-xo-blanco/60">
+                  {estiloDeProfesora(horarios, cursos, profesora)}
+                </p>
               </Link>
             </li>
           ))}

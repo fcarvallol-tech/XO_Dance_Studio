@@ -84,6 +84,71 @@ export function nombreDia(dia: number): string {
   return DIAS[dia] ?? "";
 }
 
+/** "Lunes 17:00": el mismo, con el día en mayúscula inicial, para una lista. */
+export function cuandoConMayuscula(horario: Horario): string {
+  const texto = cuando(horario);
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+/**
+ * Las sedes donde hoy se dicta algo: las que tienen al menos un horario activo,
+ * en el orden de la tabla. Una fila de `sedes` no es una sede para la alumna:
+ * EB Dance Studio sigue en la tabla por el intensivo de septiembre, y ahí no hay
+ * ninguna clase semanal (05/10/2026). Mismo criterio que `comunasDeProfesora`.
+ */
+export function sedesConHorarios<S extends Pick<Sede, "slug" | "activa">>(
+  sedes: S[],
+  horarios: Pick<Horario, "sedeSlug">[],
+): S[] {
+  const usadas = new Set(horarios.map((h) => h.sedeSlug));
+  return sedes.filter((s) => s.activa && usadas.has(s.slug));
+}
+
+/** "a", "a y b", "a, b y c": una lista dicha como se dice en castellano. */
+export function enumerar(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? "";
+  return `${items.slice(0, -1).join(", ")} y ${items[items.length - 1]}`;
+}
+
+/**
+ * Las comunas donde una profesora dicta **de verdad**, sacadas de sus horarios.
+ *
+ * Antes la ficha mostraba la ubicación general de la academia —"Providencia y
+ * Las Condes"— a todas, y eso podía mandar a una alumna a la comuna equivocada:
+ * Pau solo dicta en Las Condes. Sin repetir, en el orden en que aparecen.
+ */
+export function comunasDeProfesora(
+  horarios: Horario[],
+  sedes: Sede[],
+  slug: string,
+): string[] {
+  const comunas = horarios
+    .filter((h) => h.profesoraSlug === slug)
+    .map((h) => sedes.find((s) => s.slug === h.sedeSlug)?.comuna)
+    .filter((c): c is string => Boolean(c));
+  return [...new Set(comunas)];
+}
+
+/**
+ * Qué enseña una profesora: los cursos que dicta, sacados de sus horarios.
+ *
+ * Reemplaza a `profesoras.estilo`, un texto suelto que nadie mantenía —en
+ * staging decía "urbano teens" de profesoras que no dictan Teens— y que no se
+ * actualizaba cuando cambiaba la parrilla. Si no tiene horarios, se usa ese
+ * texto, que es lo único que hay.
+ */
+export function estiloDeProfesora(
+  horarios: Horario[],
+  cursos: { slug: string; nombre: string }[],
+  profesora: { slug: string; estilo: string },
+): string {
+  const nombres = horarios
+    .filter((h) => h.profesoraSlug === profesora.slug)
+    .map((h) => cursos.find((c) => c.slug === h.cursoSlug)?.nombre)
+    .filter((n): n is string => Boolean(n));
+  return nombres.length > 0 ? [...new Set(nombres)].join(" · ") : profesora.estilo;
+}
+
 /** "lunes 17:00". Lo que se muestra en una tarjeta. */
 export function cuando(horario: Horario): string {
   return `${nombreDia(horario.diaSemana)} ${horario.hora}`;
