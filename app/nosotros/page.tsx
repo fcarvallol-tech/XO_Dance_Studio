@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { MarcoSitio } from "@/components/MarcoSitio";
 import { Sedes } from "@/components/Sedes";
+import { sedesConHorarios } from "@/lib/catalogo";
 import { getCatalogoPublico } from "@/lib/catalogo-consultas";
 
 /**
@@ -36,7 +37,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Nosotros() {
-  const { cursos, sedes } = await getCatalogoPublico();
+  const { cursos, sedes, horarios } = await getCatalogoPublico();
   // Los estilos que se nombran son los que se dictan hoy, desde la base: el
   // texto decía K-Pop meses después de que salió del catálogo.
   const estilos = cursos.filter((c) => c.activo).map((c) => c.nombre);
@@ -92,7 +93,7 @@ export default async function Nosotros() {
       </section>
 
       {/* Las sedes: un dato dentro de la página, no su tema. */}
-      <Sedes sedes={sedes} />
+      <Sedes sedes={sedesConHorarios(sedes, horarios)} />
 
       <section className="px-6 pb-20 sm:px-10 sm:pb-28">
         <div className="mx-auto max-w-3xl">

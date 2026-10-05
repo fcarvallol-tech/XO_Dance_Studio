@@ -34,7 +34,7 @@ export const PREGUNTAS: BloqueDePreguntas[] = [
         pregunta: "¿Cómo funcionan los packs?",
         respuesta:
           "Compras clases, no un mes. Un pack de 4 son cuatro clases que usas cuando quieras, " +
-          "en cualquier horario de la parrilla, con cualquier profe y en cualquiera de las " +
+          "en cualquier horario del calendario, con cualquier profe y en cualquiera de las " +
           "salas. {vigencia}",
       },
       {
@@ -47,7 +47,7 @@ export const PREGUNTAS: BloqueDePreguntas[] = [
       {
         pregunta: "¿Necesito experiencia para empezar?",
         respuesta:
-          "No. Los cursos de la parrilla son de nivel principiante, y están pensados para que " +
+          "No. Todos los cursos son de nivel principiante, y están pensados para que " +
           "alguien que nunca bailó pueda llegar y seguir la clase.",
       },
       {
@@ -58,7 +58,7 @@ export const PREGUNTAS: BloqueDePreguntas[] = [
       {
         pregunta: "¿Cuánto dura una clase?",
         respuesta:
-          "Una hora las de la parrilla. Las clases especiales lo dicen en su página, porque " +
+          "Una hora las de todas las semanas. Las clases especiales lo dicen en su página, porque " +
           "algunas duran más.",
       },
     ],

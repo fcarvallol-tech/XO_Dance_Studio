@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const titulo = `${oferta.titulo} · ${clp(oferta.precioClp)} — XO Dance Studio`;
   const descripcion =
     `${oferta.clases} ${oferta.clases === 1 ? "clase" : "clases"} a ` +
-    `${clp(porClaseDeOferta(oferta))} cada una, para cualquier horario de la parrilla. ` +
+    `${clp(porClaseDeOferta(oferta))} cada una, para cualquier horario del calendario. ` +
     `Tienes ${oferta.vigenciaDias} días para usarlas.`;
 
   return {
@@ -109,7 +109,7 @@ export default async function PaginaDeOferta({ params }: Props) {
           <dl className="mt-12 space-y-5 border-t border-xo-blanco/15 pt-8">
             <Dato rotulo="Qué incluye">
               {oferta.clases} {oferta.clases === 1 ? "clase" : "clases"} para
-              cualquier horario de la parrilla, con cualquier profe y en
+              cualquier horario del calendario, con cualquier profe y en
               cualquiera de nuestras salas
             </Dato>
             <Dato rotulo="Hasta cuándo las puedes usar">

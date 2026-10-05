@@ -73,7 +73,7 @@ export default async function ClasesEspeciales() {
                 >
                   @xo.dance.co
                 </a>{" "}
-                apenas quedan cerradas. Mientras tanto, las clases de la parrilla
+                apenas quedan cerradas. Mientras tanto, las clases del calendario
                 van todas las semanas.
               </p>
               <Link

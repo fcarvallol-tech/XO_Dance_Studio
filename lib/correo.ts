@@ -284,7 +284,7 @@ const CUERPOS: Cuerpos = {
       html: plantilla(
         `Quedaste con ${clases} ${palabra}`,
         `<p ${P}>${d.nombre ? `${d.nombre}, confirmamos` : "Confirmamos"} tu transferencia. Ya puedes reservar.</p>
-       <p ${P}>Sirven para <strong>cualquier clase de la parrilla</strong>, con cualquier profe y en cualquiera de nuestras salas.</p>
+       <p ${P}>Sirven para <strong>cualquier clase del calendario</strong>, con cualquier profe y en cualquiera de nuestras salas.</p>
        <p ${P}>Tienes hasta el <strong>${d.vence}</strong> para usarlas.</p>
        <p style="margin:24px 0 0;"><a href="${sitio()}/reservar" style="display:inline-block;background:#f7adbf;color:#1a1a1a;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;">Reservar mis clases</a></p>`,
       ),
@@ -300,7 +300,7 @@ const CUERPOS: Cuerpos = {
       html: plantilla(
         `${clases} ${palabra} de regalo`,
         `<p ${P}>${d.nombre ? `${d.nombre}, te` : "Te"} dejamos <strong>${clases} ${palabra} de regalo</strong> en tu cuenta. Ya puedes reservarlas.</p>
-       <p ${P}>Sirven para <strong>cualquier clase de la parrilla</strong>, con cualquier profe y en cualquiera de nuestras salas.</p>
+       <p ${P}>Sirven para <strong>cualquier clase del calendario</strong>, con cualquier profe y en cualquiera de nuestras salas.</p>
        <p ${P}>Valen hasta el <strong>${d.vence}</strong>.</p>
        <p style="margin:24px 0 0;"><a href="${sitio()}/reservar" style="display:inline-block;background:#f7adbf;color:#1a1a1a;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;">Reservar mis clases</a></p>`,
       ),

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { MarcoSitio } from "@/components/MarcoSitio";
 import { PREGUNTAS, conSedes, conVigencia, pendientes } from "@/lib/ayuda";
+import { sedesConHorarios } from "@/lib/catalogo";
 import { getCatalogoPublico } from "@/lib/catalogo-consultas";
 import { getPlanes } from "@/lib/planes-consultas";
 import {
@@ -42,10 +43,12 @@ export const metadata: Metadata = {
 export default async function Ayuda() {
   // La vigencia de los packs sale de la base, no del texto (05/10/2026). Si los
   // planes no la tuvieran igual, se usa la más corta: prometer de más es peor.
-  // Lo mismo las sedes: se nombran las que están en la tabla.
+  // Lo mismo las sedes: solo donde hoy hay clases, no cada fila de la tabla.
   const [planes, sedes] = await Promise.all([
     getPlanes().catch(() => []),
-    getCatalogoPublico().then((c) => c.sedes.filter((s) => s.activa)).catch(() => []),
+    getCatalogoPublico()
+      .then((c) => sedesConHorarios(c.sedes, c.horarios))
+      .catch(() => []),
   ]);
   const vigencia = planes.length > 0 ? Math.min(...planes.map((p) => p.vigenciaDias)) : null;
 

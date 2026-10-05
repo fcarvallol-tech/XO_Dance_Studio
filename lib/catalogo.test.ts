@@ -9,7 +9,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { comunasDeProfesora, cuandoConMayuscula, enumerar, estiloDeProfesora } from "./catalogo.ts";
+import { comunasDeProfesora, cuandoConMayuscula, enumerar, estiloDeProfesora, sedesConHorarios } from "./catalogo.ts";
 
 const sedes = [
   { slug: "seduccion-latina", nombre: "Seducción Latina", direccion: "", comuna: "Providencia", referencia: null, activa: true },
@@ -63,4 +63,15 @@ test("enumerar: como se dice en castellano", () => {
   assert.equal(enumerar([]), "");
   assert.equal(enumerar(["Providencia"]), "Providencia");
   assert.equal(enumerar(["a", "b", "c"]), "a, b y c");
+});
+
+test("sedesConHorarios: una sede sin horarios no se muestra", () => {
+  const filas = [
+    { slug: "seduccion-latina", activa: true },
+    { slug: "eb-dance-studio", activa: true },
+    { slug: "diaguitas", activa: true },
+    { slug: "cerrada", activa: false },
+  ];
+  const usados = [{ sedeSlug: "diaguitas" }, { sedeSlug: "seduccion-latina" }, { sedeSlug: "cerrada" }];
+  assert.deepEqual(sedesConHorarios(filas, usados).map((s) => s.slug), ["seduccion-latina", "diaguitas"]);
 });

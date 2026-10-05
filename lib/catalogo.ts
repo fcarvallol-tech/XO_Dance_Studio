@@ -90,6 +90,20 @@ export function cuandoConMayuscula(horario: Horario): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
+/**
+ * Las sedes donde hoy se dicta algo: las que tienen al menos un horario activo,
+ * en el orden de la tabla. Una fila de `sedes` no es una sede para la alumna:
+ * EB Dance Studio sigue en la tabla por el intensivo de septiembre, y ahí no hay
+ * ninguna clase semanal (05/10/2026). Mismo criterio que `comunasDeProfesora`.
+ */
+export function sedesConHorarios<S extends Pick<Sede, "slug" | "activa">>(
+  sedes: S[],
+  horarios: Pick<Horario, "sedeSlug">[],
+): S[] {
+  const usadas = new Set(horarios.map((h) => h.sedeSlug));
+  return sedes.filter((s) => s.activa && usadas.has(s.slug));
+}
+
 /** "a", "a y b", "a, b y c": una lista dicha como se dice en castellano. */
 export function enumerar(items: string[]): string {
   if (items.length <= 1) return items[0] ?? "";
