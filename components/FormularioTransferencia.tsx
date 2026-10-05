@@ -84,7 +84,7 @@ export function FormularioTransferencia({
 
         <p className="mt-5 max-w-prose text-sm leading-relaxed text-xo-gris">
           Sirven para cualquier horario de la parrilla, con cualquier profe y en
-          cualquiera de las dos salas.
+          cualquiera de nuestras salas.
         </p>
       </div>
 

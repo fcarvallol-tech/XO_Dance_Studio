@@ -110,7 +110,7 @@ export default async function PaginaDeOferta({ params }: Props) {
             <Dato rotulo="Qué incluye">
               {oferta.clases} {oferta.clases === 1 ? "clase" : "clases"} para
               cualquier horario de la parrilla, con cualquier profe y en
-              cualquiera de las dos salas
+              cualquiera de nuestras salas
             </Dato>
             <Dato rotulo="Hasta cuándo las puedes usar">
               {oferta.vigenciaDias} días desde que te las acreditamos

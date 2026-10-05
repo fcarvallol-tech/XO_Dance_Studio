@@ -1,3 +1,5 @@
+import { enumerar, type Sede } from "./catalogo.ts";
+
 /**
  * Las preguntas frecuentes.
  *
@@ -92,9 +94,8 @@ export const PREGUNTAS: BloqueDePreguntas[] = [
       {
         pregunta: "¿Dónde son las clases?",
         respuesta:
-          "En tres salas: Seducción Latina Experience y EB Dance Studio en Providencia, y el " +
-          "Centro Comunitario Diaguitas en Las Condes. Las direcciones están en Nosotros, y " +
-          "cada clase del calendario dice en cuál es.",
+          "{sedes} Las direcciones están en Nosotros, y cada clase del calendario dice en " +
+          "cuál es.",
       },
       {
         pregunta: "¿Qué llevo a la clase?",
@@ -131,6 +132,18 @@ export function pendientes(): number {
  * vigencia pasó a 45 (05/10/2026). Sin el dato, la frase se omite: nunca un
  * número inventado.
  */
+/**
+ * Dónde son las clases, desde la tabla `sedes`. Antes estaban escritas a mano
+ * —"en tres salas"— y quedaron viejas el día que llegó Studio 98 (05/10/2026).
+ * Agrupadas por comuna, en el orden de la tabla.
+ */
+export function conSedes(respuesta: string, sedes: Pick<Sede, "nombre" | "comuna">[]): string {
+  const comunas = new Map<string, string[]>();
+  for (const s of sedes) comunas.set(s.comuna, [...(comunas.get(s.comuna) ?? []), s.nombre]);
+  const frase = [...comunas].map(([comuna, nombres]) => `En ${comuna}: ${enumerar(nombres)}.`).join(" ");
+  return respuesta.replace("{sedes}", frase).trim();
+}
+
 export function conVigencia(respuesta: string, dias: number | null): string {
   const frase = dias ? `Tienes ${dias} días para ocuparlas desde que te las acreditamos.` : "";
   return respuesta.replace("{vigencia}", frase).trim();

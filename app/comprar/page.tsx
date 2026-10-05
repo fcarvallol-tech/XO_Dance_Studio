@@ -19,7 +19,7 @@ export const revalidate = 3600;
 
 const TITULO = "Comprar clases — XO Dance Studio";
 const DESCRIPCION =
-  "Packs de clases para cualquier horario de la parrilla, con cualquier profe y en las dos salas. Mientras más clases, menos sale cada una.";
+  "Packs de clases para cualquier horario de la parrilla, con cualquier profe y en cualquiera de nuestras salas. Mientras más clases, menos sale cada una.";
 
 export const metadata: Metadata = {
   title: TITULO,
@@ -55,7 +55,7 @@ export default async function Comprar() {
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-xo-blanco/75">
             Sirven para cualquier clase de la parrilla, con cualquier profe y en
-            cualquiera de las dos salas. Se pagan por transferencia y te las
+            cualquiera de nuestras salas. Se pagan por transferencia y te las
             acreditamos en cuanto veamos el abono.
           </p>
 

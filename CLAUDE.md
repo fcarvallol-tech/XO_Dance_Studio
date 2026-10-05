@@ -130,9 +130,9 @@ ya no existen: tener el dato en los dos lados fue la incoherencia de agosto de 2
   solo con los tipos y el formato, para que lo puedan importar componentes cliente.
 - **Cupo de cada clase** — sale de `sedes.capacidad`, no de un número escrito en el código
   (PRD-0021). `sedes.costo_hora_clp` **no es público**: está fuera de lo que expone la API.
-- Hoy el catálogo tiene **cuatro profesoras activas** (Carli, Pau, Drimy y Lina). Maida está
-  inactiva a propósito desde que K-Pop salió del catálogo —Felipe, 29/09/2026—, así que "cinco
-  profesoras" en cualquier texto es un dato viejo.
+- Hoy el catálogo tiene **cinco profesoras activas** (Carli, Pau, Drimy, Lina e Isi, que entró el
+  05/10/2026). Maida está inactiva a propósito desde que K-Pop salió del catálogo —Felipe,
+  29/09/2026—. Teens también está inactivo desde el 05/10/2026: no se borra, para poder volver.
 - ~~`lib/lead.ts` y `app/api/lead/route.ts`~~ — **retirados el 28/09/2026** con el formulario de
   captación (PRD-0022). La tabla `leads` **se conserva** con sus registros, su RLS y
   `/admin/leads` para poder mirarlos; lo que ya no existe es el camino que escribía en ella.

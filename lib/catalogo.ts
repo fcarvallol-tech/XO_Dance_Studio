@@ -90,6 +90,12 @@ export function cuandoConMayuscula(horario: Horario): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
+/** "a", "a y b", "a, b y c": una lista dicha como se dice en castellano. */
+export function enumerar(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? "";
+  return `${items.slice(0, -1).join(", ")} y ${items[items.length - 1]}`;
+}
+
 /**
  * Las comunas donde una profesora dicta **de verdad**, sacadas de sus horarios.
  *

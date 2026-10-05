@@ -4,21 +4,18 @@
 --   1. XO Teens se deja de dictar por ahora: el curso y su horario quedan
 --      INACTIVOS —no se borran, para poder volver— y sus clases ya
 --      materializadas salen del calendario.
---   2. Profesora nueva: Isi, con su foto. La bio no llegó: queda el marcador que
---      ya usa Carli, y se reemplaza cuando llegue.
+--   2. Profesora nueva: Isi, con su foto, su bio y su Instagram. La bio de Lina
+--      se reemplaza por la nueva que mandó.
 --   3. Curso nuevo: Reggaeton Antiguo, dictado por Isi.
---   4. Sede nueva: Studio 98, en Providencia, para 35.
+--   4. Sede nueva: Studio 98, en Providencia, para 35, a $23.500 la hora.
 --   5. Horario nuevo: Reggaeton Antiguo con Isi, viernes 17:00, en Studio 98.
 --   6. La vigencia de los créditos pasa de 60 a 45 días, **solo para los que se
 --      emitan desde ahora**: los ya emitidos conservan su fecha de vencimiento.
 --      La migración lo comprueba y aborta si no.
 --
--- Datos que NO están y se dejan a la vista para completar (no se inventan):
---   · la bio de Isi y la descripción de Reggaeton Antiguo (marcadores);
---   · la dificultad del curso: `principiante`, como los cuatro actuales —A
---     CONFIRMAR—;
---   · el costo por hora de Studio 98: NULL. Hasta que se cargue, finanzas
---     muestra sus clases como "sin costo cargado", que es lo honesto.
+-- Bios, descripción, dificultad (`principiante`), Instagram y costo por hora
+-- los mandó Felipe el 05/10/2026. Las bios van tal cual las escribió cada una,
+-- en un solo párrafo como las demás.
 --
 -- Por slug, nunca por uuid: se aplica igual en staging y en producción.
 -- Idempotente: se puede volver a correr sin daño.
@@ -94,11 +91,21 @@ begin
   -- 2. Isi
   -- -------------------------------------------------------------------------
   insert into public.profesoras (slug, nombre, estilo, bio, instagram, foto_url, orden, activa)
-  values ('isi', 'Isi', 'Reggaeton Antiguo', 'Acá la bio de "Isi"', null,
+  values ('isi', 'Isi', 'Reggaeton Antiguo',
+          'Holi🌸 Soy la Isi, bailarina e historiadora. Desde el 2017 me he dedicado al aprendizaje de distintos estilos urbanos como: Hip Hop, Dancehall, Afro Dance y Reggaetón. Entre el 2021 y 2024 me dediqué a realizar clases de danzas urbanas para niñas y adolescentes, y ahí descubrí mi pasión por la enseñanza y el acompañamiento de procesos nuevos para aquellos que comparten ese mismo entusiasmo. Mi interés siempre estará en que aprendas algo nuevo en cada clase, sin dejar de lado el pasarlo bien y el disfrute. Las y los espero💫',
+          'https://www.instagram.com/isimonttrios/',
           '/profesoras/isi.webp',
           (select coalesce(max(orden), 0) + 1 from public.profesoras), true)
-  on conflict (slug) do nothing;
+  on conflict (slug) do update set bio = excluded.bio, instagram = excluded.instagram;
   select id into v_isi from public.profesoras where slug = 'isi';
+
+  -- La bio nueva de Lina.
+  update public.profesoras
+  set bio = 'Hola! Soy Lina🩷🌟 bailarina, intérprete y profesora. A lo largo de los años he explorado distintos estilos como jazz, urbano y ballet, desarrollando mi propia metodología y forma de enseñar. El objetivo en mis clases es crear un espacio seguro, cómodo y respetuoso donde cada alumna pueda expresarse, conectar con su cuerpo y desarrollar mayor confianza a través del baile, para que cada clase sea una instancia para disfrutar, explorar la sensualidad, potenciar la expresión y sentirse segura siendo una misma, independiente de su nivel o experiencia previa. Nos vemos en clase!✨🌸🩰'
+  where slug = 'lina' and bio is distinct from 'Hola! Soy Lina🩷🌟 bailarina, intérprete y profesora. A lo largo de los años he explorado distintos estilos como jazz, urbano y ballet, desarrollando mi propia metodología y forma de enseñar. El objetivo en mis clases es crear un espacio seguro, cómodo y respetuoso donde cada alumna pueda expresarse, conectar con su cuerpo y desarrollar mayor confianza a través del baile, para que cada clase sea una instancia para disfrutar, explorar la sensualidad, potenciar la expresión y sentirse segura siendo una misma, independiente de su nivel o experiencia previa. Nos vemos en clase!✨🌸🩰';
+  if not found and not exists (select 1 from public.profesoras where slug = 'lina') then
+    raise exception 'No existe la profesora lina.';
+  end if;
 
   -- Su costo: la regla general de CONTEXT.md §5.b, la misma de las demás.
   insert into public.costos_profesoras (profesora_id, base_hora_clp, variable_credito_clp)
@@ -110,8 +117,8 @@ begin
   -- -------------------------------------------------------------------------
   insert into public.cursos (slug, nombre, publico, estilo, descripcion, dificultad, orden, activo)
   values ('reggaeton-antiguo', 'Reggaeton Antiguo', 'Desde los 15 años', 'Reggaeton Antiguo',
-          'Acá la descripción de "Reggaeton Antiguo"', 'principiante', 4, true)
-  on conflict (slug) do nothing;
+          'El reggaetón de los 2000, el que sonaba en todas las fiestas. Perreo clásico, con la actitud y el flow de esa época.', 'principiante', 4, true)
+  on conflict (slug) do update set descripcion = excluded.descripcion;
   select id into v_curso from public.cursos where slug = 'reggaeton-antiguo';
 
   -- -------------------------------------------------------------------------
@@ -119,9 +126,9 @@ begin
   -- -------------------------------------------------------------------------
   insert into public.sedes (slug, nombre, direccion, comuna, referencia, capacidad, costo_hora_clp, orden, activa)
   values ('studio-98', 'Studio 98', 'Barros Borgoño 71, oficina 101', 'Providencia',
-          'cerca del metro Manuel Montt', 35, null,
+          'cerca del metro Manuel Montt', 35, 23500,
           (select coalesce(max(orden), 0) + 1 from public.sedes), true)
-  on conflict (slug) do nothing;
+  on conflict (slug) do update set costo_hora_clp = excluded.costo_hora_clp;
   select id into v_studio from public.sedes where slug = 'studio-98';
 
   -- -------------------------------------------------------------------------

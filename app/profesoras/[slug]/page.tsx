@@ -7,6 +7,7 @@ import { Placeholder } from "@/components/Placeholder";
 import { UBICACION } from "@/lib/contacto";
 import {
   comunasDeProfesora,
+  enumerar,
   cuandoConMayuscula,
   estiloDeProfesora,
   horariosDeProfesora,
@@ -208,9 +209,5 @@ export default async function PerfilProfesora({ params }: Props) {
 /** "Las Condes, Santiago" · "Providencia y Las Condes, Santiago". Sin horarios, la de la academia. */
 function dondeDicta(comunas: string[]): string {
   if (comunas.length === 0) return UBICACION;
-  const lista =
-    comunas.length === 1
-      ? comunas[0]
-      : `${comunas.slice(0, -1).join(", ")} y ${comunas[comunas.length - 1]}`;
-  return `${lista}, Santiago`;
+  return `${enumerar(comunas)}, Santiago`;
 }

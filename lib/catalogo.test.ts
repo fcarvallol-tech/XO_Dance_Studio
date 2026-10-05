@@ -9,7 +9,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { comunasDeProfesora, cuandoConMayuscula, estiloDeProfesora } from "./catalogo.ts";
+import { comunasDeProfesora, cuandoConMayuscula, enumerar, estiloDeProfesora } from "./catalogo.ts";
 
 const sedes = [
   { slug: "seduccion-latina", nombre: "Seducción Latina", direccion: "", comuna: "Providencia", referencia: null, activa: true },
@@ -57,4 +57,10 @@ test("estiloDeProfesora: sin horarios, el texto que tenga guardado", () => {
 test("cuandoConMayuscula: el día va con mayúscula inicial", () => {
   assert.equal(cuandoConMayuscula(h("x", "diaguitas", "girly", 1, "18:00")), "Lunes 18:00");
   assert.equal(cuandoConMayuscula(h("x", "diaguitas", "girly", 3, "20:00")), "Miércoles 20:00");
+});
+
+test("enumerar: como se dice en castellano", () => {
+  assert.equal(enumerar([]), "");
+  assert.equal(enumerar(["Providencia"]), "Providencia");
+  assert.equal(enumerar(["a", "b", "c"]), "a, b y c");
 });
