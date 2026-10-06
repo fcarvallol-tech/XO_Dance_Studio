@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
-import { INICIO_CLASES, UBICACION } from "@/lib/contacto";
+import { UBICACION } from "@/lib/contacto";
 
 // El link se comparte por WhatsApp e Instagram: la preview es la primera
 // impresión de la marca. Se genera en build, no en cada request.
@@ -59,7 +59,7 @@ export default async function OpenGraphImage() {
           </div>
         </div>
 
-        {/* El separador va como rombo dibujado: Bebas no trae el glifo ✦. */}
+        {/* Sin fecha de inicio: era del lanzamiento y ya pasó. */}
         <div
           style={{
             display: "flex",
@@ -69,16 +69,6 @@ export default async function OpenGraphImage() {
             letterSpacing: "0.14em",
           }}
         >
-          {INICIO_CLASES.toUpperCase()}
-          <div
-            style={{
-              width: 10,
-              height: 10,
-              margin: "0 22px",
-              backgroundColor: "#F7ADBF",
-              transform: "rotate(45deg)",
-            }}
-          />
           {UBICACION.toUpperCase()}
         </div>
       </div>

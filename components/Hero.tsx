@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { INICIO_CLASES, UBICACION } from "@/lib/contacto";
+import { UBICACION } from "@/lib/contacto";
 
 export function Hero() {
   return (
@@ -44,13 +44,9 @@ export function Hero() {
         </div>
       </div>
 
-      <p className="xo-eyebrow relative text-xo-blanco/60">
-        {INICIO_CLASES}
-        <span aria-hidden="true" className="px-2 text-xo-rosa">
-          ✦
-        </span>
-        {UBICACION}
-      </p>
+      {/* Sin fecha de inicio: "Las clases parten en septiembre" era del
+          lanzamiento, y leída en octubre hacía ver el sitio abandonado. */}
+      <p className="xo-eyebrow relative text-xo-blanco/60">{UBICACION}</p>
     </section>
   );
 }

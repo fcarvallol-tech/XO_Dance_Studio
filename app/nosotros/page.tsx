@@ -49,9 +49,9 @@ export default async function Nosotros() {
           <p className="xo-eyebrow text-xo-rosa">Nosotros</p>
 
           <h1 className="mt-4 font-display text-[clamp(2.5rem,9vw,5rem)] leading-[0.9] text-xo-blanco">
-            Descúbrete
+            Acá nadie
             <br />
-            y crece bailando
+            baila sola
           </h1>
 
           <div className="mt-12 space-y-6 text-lg leading-relaxed text-xo-blanco/85">

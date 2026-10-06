@@ -12,8 +12,6 @@ export const INSTAGRAM_URL = "https://www.instagram.com/xo.dance.co/";
  */
 export const UBICACION = "Providencia y Las Condes, Santiago";
 
-export const INICIO_CLASES = "Las clases parten en septiembre";
-
 export function linkWhatsApp(mensaje: string): string {
   return `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
 }
