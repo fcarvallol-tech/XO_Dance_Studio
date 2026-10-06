@@ -45,7 +45,7 @@ export default async function OpenGraphImage() {
               letterSpacing: "0.02em",
             }}
           >
-            ACÁ NADIE
+            DESCÚBRETE
           </div>
           <div
             style={{
@@ -55,7 +55,7 @@ export default async function OpenGraphImage() {
               letterSpacing: "0.02em",
             }}
           >
-            BAILA SOLA
+            Y CRECE BAILANDO
           </div>
         </div>
 

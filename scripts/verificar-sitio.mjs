@@ -145,7 +145,7 @@ try {
   // --- la portada quedó mínima --------------------------------------------
   await esc.goto(`${SITIO}/`, { waitUntil: "networkidle" });
   const portada = await esc.content();
-  caso("la portada tiene el eslogan", true, portada.includes("baila sola"));
+  caso("la portada tiene el eslogan", true, portada.includes("crece bailando"));
   // Los ajustes 2 y 3 devolvieron dos bloques a la portada: los caminos en rosa
   // y las profesoras. La portada mínima de la fase 5 ya no es la que va.
   caso("y el bloque rosa de packs", true,

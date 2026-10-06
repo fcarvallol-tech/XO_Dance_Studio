@@ -213,7 +213,13 @@ try {
   caso("a 375 px se ve una sola columna", 1, (await columnasVisibles()).length);
   caso("a 375 px nada desborda a lo ancho", false,
     await tel.evaluate(() => document.documentElement.scrollWidth > window.innerWidth));
-  const anchoBloque = await tel.locator("main [data-estado]").first().evaluate((b) => b.getBoundingClientRect().width);
+  // El primer bloque **visible**: los de los otros días están en columnas
+  // ocultas y miden 0. Medir el primero del documento fallaba cualquier día en
+  // que la semana tuviera una clase antes de hoy (pasó un martes, 06/10/2026).
+  const anchoBloque = await tel.evaluate(() =>
+    [...document.querySelectorAll("main [data-estado]")]
+      .filter((b) => b.offsetParent !== null)
+      .map((b) => b.getBoundingClientRect().width)[0] ?? 0);
   caso("a 375 px un bloque es ancho y tocable (≥ 200 px)", true, anchoBloque >= 200);
   const actual = (await columnasVisibles())[0];
   const otro = actual === "domingo" ? "lunes" : "domingo";
