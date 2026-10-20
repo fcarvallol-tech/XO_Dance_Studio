@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | Borrador |
+| **Estado** | ⏸ **Borrador, en pausa por decisión de Felipe** —06/10/2026, reafirmado el 20/10: "lo del 13 no lo vamos a usar todavía"—. No se implementa hasta que él lo reactive. Lo valioso de este PRD no es el 10% de descuento: es la **atribución por profesora**, saber qué alumna llegó por quién |
 | **Fecha** | 22 de agosto de 2026 |
 | **Hito** | Hito 2 (posterior a PRD-0005 y 0012) |
 | **Relacionados** | PRD-0012 (promociones) · PRD-0005 (compras) |

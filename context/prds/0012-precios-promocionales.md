@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | Borrador |
+| **Estado** | 🟡 **Borrador, retomado por Felipe el 20/10/2026** tras estar en pausa desde el 06/10. Antes de implementarlo hay que actualizarlo: el caso concreto del §1 es la promoción de lanzamiento de agosto, que ya venció y no sirve de ejemplo; el §1 dice que los créditos vigen 60 días y **desde el 05/10/2026 vigen 45**; y sigue sin resolver si el plazo aplica a la fecha de compra o a la de uso. El caso real que lo motiva hoy es el de **precios rebajados a fin de mes** que Felipe planteó el 06/10 |
 | **Fecha** | 22 de agosto de 2026 |
 | **Hito** | Hito 2 |
 | **Relacionados** | PRD-0005 (planes y compras) · PRD-0013 (códigos) |

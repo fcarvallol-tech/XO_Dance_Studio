@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | ✅ **Aprobado por Felipe el 22/09/2026**, con la cadencia del reintento decidida (§8.4). Fase 1 hecha: `lib/dominio/envios.ts` con 26 tests |
+| **Estado** | ✅ **Cerrado el 26/09/2026, en producción.** Las ocho fases hechas: `lib/dominio/envios.ts` con 26 tests, migraciones aplicadas (20/20), las seis plantillas encolan antes de enviar, `/api/correos` con su reintento diario en `vercel.json`, y `/admin/correos` con el contador y el botón de reintentar. Los correos llegaron a bandeja de entrada desde `hola@xodancestudio.cl` y Felipe cargó `CRON_SECRETO`, `CRON_SECRET` y `REVALIDAR_SECRETO`, así que los tres crons pasaron de 503 a 401. 🔴 **Deuda que dejó abierta:** el **Database Webhook que llama a `/api/revalidar` nunca se creó** —la ruta existe y pide su secreto, pero nadie la llama—, así que un cambio hecho en el Table Editor tarda hasta una hora en verse; lo que se cambia desde los portales sí se ve al instante. Cómo crearlo está en `ARCHITECTURE.md` §10. ⚪ Y queda sin PRD lo que este PRD hizo por el correo pero nadie hizo por los crons: **que un programador automático que falla en silencio se vea en pantalla** |
 | **Autor** | Claude, a pedido de Felipe Carvallo |
 | **Fecha** | 11 de septiembre de 2026 |
 | **Hito** | Hito 3 — Reservas. **Bloquea la publicación de la primera clase especial** (PRD-0018) |

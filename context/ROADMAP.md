@@ -1,8 +1,80 @@
 # ROADMAP.md — XO Dance Studio
 
 > Qué se construye, en qué orden y por qué.
-> Última actualización: 21 de agosto de 2026.
+> Última actualización: **20 de octubre de 2026**.
 > ⚠️ Replanificado tras el cambio a modelo de paquetes y reservas.
+
+---
+
+## Estado al 20 de octubre de 2026
+
+> **Esta sección es el resumen de una página.** Si vuelves después de varios días, lee esto y
+> nada más. Las tablas de hitos que siguen son el detalle; el changelog es la historia.
+> Se actualiza cada vez que algo entra a producción o cambia de bloqueo.
+
+**Último commit:** `5f26ed2`, 6 de octubre. Catorce días sin código.
+
+### Lo que está vivo y funcionando
+
+El sitio completo en `xodancestudio.cl` con sus siete páginas propias, cuentas con Google y
+magic link, catálogo en base de datos, venta de packs **por transferencia** con aprobación manual,
+créditos por lotes con vencimiento, calendario y reservas, los cuatro portales —alumna, profesora,
+administración y owner—, métricas, egresos y caja neta, regalo de créditos, y el registro de
+correos con reintento diario.
+
+### En curso, con fecha
+
+| Qué | PRD | Para cuándo | Estado |
+|---|---|---|---|
+| **Liquidación de profesoras** | 0010 parte 3 | **1 de noviembre** | PRD sin escribir |
+| Bio de Carli | — | Llegó el 20/10 | Migración por escribir |
+
+La liquidación es lo único con fecha dura: a las profesoras se les paga **el 1 de cada mes, por
+el mes anterior** (Felipe, 06/10/2026). Son cinco profesoras activas.
+
+### Construido y apagado
+
+**Las clases especiales están en producción desde el 21/09 y nunca se ha creado la primera.**
+PRD-0019 era el bloqueo y se cerró el 26/09. Es un canal de venta a precio propio, fuera de los
+créditos, esperando contenido. Falta la primera con Carla.
+
+El **video del hero** sigue pendiente de Carla: la portada es mínima por diseño y hoy el hero es
+negro plano.
+
+### Bloqueado por algo que no es programar
+
+| Qué | Espera a |
+|---|---|
+| Pasarela de pago (PRD-0005 §2.2) | Inicio de Actividades en el SII — falta la firma de Carla |
+| Suscripción Teens (PRD-0011) | Teens está inactivo desde el 05/10. Aparcado, no muerto |
+
+Mientras no haya pasarela, **se opera por transferencia**, que es lo que está construido y
+verificado (PRD-0017).
+
+### Retomado el 20/10/2026
+
+**PRD-0012, precios promocionales.** Felipe lo reactivó. PRD-0013 (códigos de descuento) sigue
+en pausa por decisión suya.
+
+### Deuda técnica con consecuencia visible
+
+| Qué | Consecuencia |
+|---|---|
+| El Database Webhook que llama a `/api/revalidar` nunca se creó | Un cambio en el Table Editor tarda hasta una hora en verse. Lo que se cambia desde los portales sí se ve al instante |
+| "Créditos vendidos" no se corrige al anular una compra | La contabilidad queda mal. Se arregla filtrando por `compra.deleted_at`, sin tocar el libro de movimientos |
+| La bandeja de transferencias no filtra `deleted_at` | Muestra compras anuladas |
+| La clase de 14:50 se dibuja a las 15:00 | Confunde a la alumna |
+| `verificar-metricas` en rojo | Está sembrado para septiembre |
+| `next@16.3.4` sin aplicar | Cuatro avisos de severidad alta |
+| "Providencia y Las Condes, Santiago" escrito a mano | Hoy es cierto, pero el catálogo vive en la base y esto no lo lee |
+| El borde del logo no sigue su contorno | Estético |
+
+### Sin PRD todavía
+
+- Que las profesoras editen su propia foto y bio.
+- El pago de las clases especiales: 50% de lo recaudado después de descontar la sala.
+- Que un cron que falla en silencio se vea en pantalla, igual que se hizo con los correos. El de
+  generación de clases ya se cayó dos veces por una variable de entorno.
 
 ---
 
@@ -22,23 +94,24 @@ Nada se implementa sin PRD aprobado.
 
 ---
 
-## Hito 0 — Lanzamiento (septiembre 2026) 🔴 EN CURSO
+## Hito 0 — Lanzamiento (septiembre 2026) ✅ CERRADO
 
 | # | Entregable | Estado |
 |---|---|---|
-| 0.1 | Landing pública one-page | ✅ Hecho |
-| 0.2 | Captación de leads → Supabase + WhatsApp | ✅ Hecho |
+| 0.1 | ~~Landing pública one-page~~ | ✅ Hecho — **reemplazada** por el sitio con páginas propias (PRD-0022, 28/09) |
+| 0.2 | ~~Captación de leads → Supabase + WhatsApp~~ | ✅ Hecho — **retirada el 28/09** con el formulario. La tabla `leads` se conserva |
 | 0.3 | Deploy en Vercel | ✅ Hecho |
 | 0.4 | Variables de entorno en Production | ✅ Hecho 21/08 |
-| 0.5 | Verificación de punta a punta del formulario | ✅ Hecho 21/08 |
-| 0.6 | Confirmar vista previa Open Graph al compartir | ⚪ Pendiente |
-| 0.7 | Ajustes de copy y captación por profesora (PRD-0003) | ✅ Código hecho 21/08 — 🔴 falta aplicar la migración |
-| 0.8 | Precios, horarios y cupos reales | 🔴 Bloqueado — falta decisión |
-| 0.9 | Bios, fotos y videos reales | 🟡 Fotos de las cuatro profesoras ✅ 02/10, migración aplicada a producción. Faltan la bio de Carli y los videos |
-| 0.10 | Confirmar las sedes y su capacidad | ✅ Dos sedes con dirección pública y 22 cupos cada una |
-| 0.11 | Dominio propio | ⚪ Pendiente |
+| 0.5 | Verificación de punta a punta del formulario | ✅ Hecho 21/08 — el formulario ya no existe |
+| 0.6 | Confirmar vista previa Open Graph al compartir | ✅ `opengraph-image.tsx` genera la imagen con el eslogan vigente |
+| 0.7 | Ajustes de copy y captación por profesora (PRD-0003) | ✅ Migración aplicada |
+| 0.8 | Precios, horarios y cupos reales | ✅ Resuelto: el catálogo vive en la base (PRD-0015) y el cupo sale de `sedes.capacidad` (PRD-0021) |
+| 0.9 | Bios, fotos y videos reales | 🟡 Fotos de las cinco activas ✅. Bio de Carli **llegó el 20/10**, por cargar. Faltan los videos |
+| 0.10 | Confirmar las sedes y su capacidad | ✅ Tres sedes con dirección pública: Diaguitas, Los Leones y Studio 98 (35 lugares, 05/10) |
+| 0.11 | Dominio propio | ✅ `xodancestudio.cl` sirviendo el sitio y el correo `hola@` verificado en Resend |
 
-**Criterio de salida:** el Open Day ocurre y hay alumnas inscritas, con o sin plataforma.
+**Criterio de salida:** el Open Day ocurre y hay alumnas inscritas, con o sin plataforma. ✅
+Ocurrió. Desde octubre todas las alumnas entran por la web.
 
 ---
 
@@ -59,12 +132,16 @@ Sin esto no existe nada más: no hay a quién cobrarle ni quién reserve.
 
 | # | Entregable | PRD |
 |---|---|---|
-| 2.1 | Planes y página de compra | PRD-0005 |
-| 2.2 | Integración con pasarela de pago | PRD-0005 · ADR-0003 |
-| 2.3 | Créditos: lotes, saldo, movimientos, vencimiento | PRD-0005 |
-| 2.4 | Comprobante por email | PRD-0005 |
-| 2.5 | Suscripción mensual de Teens (rama híbrida) | PRD-0011 |
+| 2.1 | ✅ Planes y página de compra | PRD-0005 |
+| 2.2 | 🔴 Integración con pasarela de pago — **bloqueada por el SII, no por código.** Se opera por transferencia (PRD-0017) | PRD-0005 · ADR-0003 |
+| 2.3 | ✅ Créditos: lotes, saldo, movimientos, vencimiento. **45 días desde el 05/10**, solo para lo que se emita desde entonces | PRD-0005 |
+| 2.4 | ✅ Comprobante por email, con registro y reintento | PRD-0005 · PRD-0019 |
+| 2.5 | ⏸ Suscripción mensual de Teens (rama híbrida) — **aparcada**: Teens está inactivo desde el 05/10 | PRD-0011 |
 | 2.6 | ✅ Link de compra compartible: `/comprar/<oferta>` público, que sirve igual para un plan o una promoción | PRD-0020 |
+| 2.7 | ✅ Compra por transferencia con aprobación manual y bandeja de admin | PRD-0017 |
+| 2.8 | ✅ Regalar créditos sin que cuenten como ingreso | PRD-0023 |
+| 2.9 | 🟡 Precios promocionales por período, que se apagan solos — **retomado el 20/10** | PRD-0012 |
+| 2.10 | ⏸ Códigos de descuento, con atribución por profesora — **en pausa por decisión de Felipe** | PRD-0013 |
 
 ⚠️ **Requisito no técnico:** Inicio de Actividades en el SII (en curso, falta la firma de Carla)
 y cuenta de comercio con la pasarela. Puede tomar semanas y no depende de programar.
@@ -79,12 +156,12 @@ se descartó el 09/09/2026: septiembre se cierra por fuera y desde octubre todas
 
 | # | Entregable | PRD |
 |---|---|---|
-| 3.1 | Calendario de clases con filtro por profesora | PRD-0006 |
-| 3.2 | Detalle de clase y reserva con descuento de crédito | PRD-0006 |
-| 3.3 | Comprobante de reserva por email | PRD-0006 |
-| 3.3.b | 🔴 Que ese comprobante no se pierda: registro de envíos, reintento y visibilidad de los fallidos. **Bloquea publicar la primera clase especial** | PRD-0019 (borrador) |
-| 3.4 | Gestión y cancelación de reservas | PRD-0007 |
-| 3.5 | Clases especiales: coreografías puntuales fuera de la parrilla, con video y precio propio | PRD-0018 (borrador) |
+| 3.1 | ✅ Calendario de clases con filtro por profesora. En el portal es un **calendario**, con la profesora elegida en rosa, los días pasados marcados y no seleccionables | PRD-0006 · PRD-0007 |
+| 3.2 | ✅ Detalle de clase y reserva con descuento de crédito, en una transacción | PRD-0006 |
+| 3.3 | ✅ Comprobante de reserva por email | PRD-0006 |
+| 3.3.b | ✅ **Cerrado el 26/09.** Registro de envíos, reintento diario y visibilidad de los fallidos en `/admin/correos` | PRD-0019 |
+| 3.4 | ✅ Gestión y cancelación de reservas | PRD-0007 |
+| 3.5 | 🟡 Clases especiales: **en producción desde el 21/09.** Falta crear la primera con Carla | PRD-0018 |
 
 Es el corazón del producto. También lo más delicado: concurrencia por el cupo 22 y
 transaccionalidad del crédito.
@@ -95,9 +172,10 @@ transaccionalidad del crédito.
 
 | # | Entregable | PRD |
 |---|---|---|
-| 4.1 | Portal de la alumna: perfil, créditos, calendario, reservas | PRD-0007 |
-| 4.2 | Portal de la profesora: clases, inscritas, solicitar horario | PRD-0008 |
-| 4.3 | Portal de administración: profesoras, cursos, calendario general, alumnas, reservas, solicitudes | PRD-0009 |
+| 4.1 | ✅ Portal de la alumna: perfil, créditos, calendario, reservas | PRD-0007 |
+| 4.2 | ✅ Portal de la profesora: clases, inscritas, solicitar horario. **Nunca datos de contacto de la alumna** | PRD-0008 |
+| 4.3 | ✅ Portal de administración: profesoras, cursos, calendario general, alumnas, reservas, solicitudes, transferencias, correos | PRD-0009 |
+| 4.4 | ⚪ Que cada profesora edite su propia foto y bio — **sin PRD** | — |
 
 ---
 
@@ -105,9 +183,51 @@ transaccionalidad del crédito.
 
 | # | Entregable | PRD |
 |---|---|---|
-| 5.1 | Dashboard de métricas | PRD-0010 |
-| 5.2 | ✅ Egresos y caja neta: `/owner/finanzas`, con el margen por clase dictada | PRD-0010 §17 |
-| 5.3 | Liquidación de profesoras | PRD-0010 |
+| 5.1 | ✅ Dashboard de métricas | PRD-0010 parte 1 |
+| 5.2 | ✅ Egresos y caja neta: `/owner/finanzas`, con el margen por clase dictada | PRD-0010 parte 2 · §17 |
+| 5.3 | 🔴 **Liquidación de profesoras — para el 1 de noviembre.** PRD sin escribir | PRD-0010 parte 3 |
+| 5.4 | ⚪ Pago de las clases especiales: 50% de lo recaudado después de la sala — **sin PRD** | — |
+| 5.5 | ⚪ Que un cron que falla en silencio se vea en pantalla — **sin PRD** | — |
+
+**5.3 arrastra un cambio de modelo que no es cosmético.** Hoy `clases.estado` solo admite
+`programada` y `cancelada`, con `motivo_cancelacion` de texto libre. La liquidación necesita
+saber **por qué** no se dictó, porque esa causa decide si la clase se paga, y un texto libre no
+se puede sumar. Ver la sección de abajo.
+
+---
+
+## Decisión abierta — el reemplazo no es una cancelación
+
+> Felipe pidió el 20/10/2026 que exista **"Reemplazo"**: cuando una profesora no puede hacer una
+> clase pero manda a otra en su lugar.
+
+Eso **no** es una causa de "no dictada", y confundirlo rompería el cálculo: si una profesora manda
+reemplazo, **la clase sí se dictó**. Las alumnas fueron, consumieron su crédito y no corresponde
+devolverlo. Lo que cambia no es el estado de la clase, es **quién la dictó**.
+
+Y hoy eso no se puede representar. `clases.profesora_id` es `not null`, se **copia del horario**
+al generar la clase, y hay un solo campo: no existe forma de decir "el horario es de Carli, pero
+el 3 de octubre la hizo Lina".
+
+Las dos salidas posibles:
+
+| | Qué hace | Costo |
+|---|---|---|
+| Sobrescribir `profesora_id` | Se pone la reemplazante y listo | Borra el registro de quién tenía el horario. La titular desaparece de esa clase como si nunca hubiera sido suya, y su portal pierde el historial |
+| Agregar `profesora_dicto_id`, nulo por defecto | Nulo significa "la dictó la titular". La liquidación paga a `coalesce(profesora_dicto_id, profesora_id)` | Una columna y un join más |
+
+**La segunda es la correcta** y es la que debe proponer el PRD: deja ver "Lina cubrió a Carli el
+3 de octubre", que es exactamente el dato que hace falta para pagar bien y para saber quién está
+faltando.
+
+🔴 **Lo que falta decidir, y lo decide Felipe:** cuando hay reemplazo, **¿a quién se le paga?**
+
+1. **A quien dictó.** El dinero sigue al trabajo. Es lo más defendible y lo que asume el diseño
+   de arriba.
+2. **A la titular**, y ella arregla con la reemplazante por fuera. Más simple de operar, pero la
+   academia queda pagándole a alguien que no trabajó ese día.
+
+No se escribe el cálculo hasta que esto esté resuelto.
 
 ---
 
@@ -128,6 +248,7 @@ Modelo profesor-cliente: comisiones, rentabilidad por profesora, marca personal.
 
 | Fecha | Cambio |
 |---|---|
+| 20 oct 2026 | **El ROADMAP se realinea con la realidad, que llevaba dos meses sin coincidir.** La cabecera decía "última actualización 21 de agosto" y las tablas de hitos daban por pendiente lo que estaba en producción y por vivo lo que se había retirado: Hito 0 seguía "EN CURSO" con el dominio, el Open Graph y las migraciones de PRD-0003 como pendientes —las tres hechas—, con el formulario de captación y la landing one-page listados como entregables cuando se retiraron el 28/09, y con "precios, horarios y cupos" bloqueados por una decisión que se tomó en PRD-0015. PRD-0018 y PRD-0019 figuraban como "borrador" estando los dos en producción. **La causa no es descuido: el estado real vivía repartido en las tablas de fases dentro de cada plan de implementación, y no existía ninguna página que dijera dónde está el proyecto.** Felipe se perdió dos veces en una semana —el 15 y el 20 de octubre— y las dos veces hubo que reconstruir el estado leyendo 23 PRDs y un changelog de 60 KB. Se agrega **"Estado al…"** como primera sección: lo que está vivo, lo que está en curso con fecha, lo construido y apagado, lo bloqueado por algo que no es programar, y la deuda con su consecuencia. Es la sección que se lee al volver, y se actualiza cada vez que algo entra a producción o cambia de bloqueo. Además: **PRD-0012 se retoma** y PRD-0013 queda en pausa (Felipe); se anotan como sin PRD el pago de las especiales, la edición de foto y bio por la profesora, y la visibilidad de los crons; y se registra la **decisión abierta del reemplazo**, que no es una causa de cancelación sino un segundo campo de profesora, con la pregunta de a quién se le paga todavía sin responder |
 | 6 oct 2026 | **Sale "Las clases parten en septiembre"** del hero y de la imagen para redes: era del lanzamiento y en octubre hacía ver el sitio abandonado. La constante `INICIO_CLASES` se elimina; esa línea queda solo con la ubicación. Nosotros pasa a titularse **"Más que una clase"**, elegido por Felipe, para no repetir el eslogan del hero. |
 | 6 oct 2026 | **Eslogan nuevo: "Descúbrete y crece bailando"**, reemplaza a "Acá nadie baila sola" en el hero de la portada, el título de Nosotros y la imagen para redes (`opengraph-image.tsx`). No estaba en los metadatos, los correos, BRAND.md ni CONTEXT.md; PRD-0022 lo cita como registro histórico y se deja. `verificar-reservar` medía el ancho del primer bloque del documento, que a 375 px puede estar en una columna oculta y medir 0: fallaba cualquier día con una clase antes de hoy en la semana. Ahora mide el primero visible. |
 | 5 oct 2026 | **Catálogo de octubre, en staging (rama `catalogo-octubre`, sin mergear).** Migración `20261005120000_catalogo_octubre.sql`: **XO Teens queda inactivo** —curso y horario, sin borrar; sus 7 clases futuras sin reservas salen del calendario y las con reservas se cancelarían devolviendo el crédito—; **Isi** como profesora nueva, con su foto convertida desde HEIC; **Reggaeton Antiguo**; la sede **Studio 98** (Barros Borgoño 71, of. 101, Providencia, 35 lugares, costo por hora sin cargar); el horario **viernes 17:00**; y la **vigencia de los créditos baja de 60 a 45 días solo para lo que se emita desde ahora** —la migración suma los vencimientos antes y después y aborta si cambian—. En el sitio: el "Dónde" del perfil de cada profesora sale **de sus horarios** y no lista todas las comunas; el estilo de cada una también se deriva de lo que dicta; "Dónde estamos ubicados"; la pregunta de la edad sin "parrilla" ni Teens; la vigencia de Ayuda se lee de `planes`; los días de "Sus horarios" con mayúscula. Los verificadores de regalos y transferencias dejan de tener los 60 días escritos a mano. Con lo que mandó Felipe ese mismo día: **bios de Isi y Lina**, Instagram de Isi, descripción de Reggaeton Antiguo y **$23.500/hora** para Studio 98. Nosotros nombra los cursos que se dictan **desde la base** —decía K-Pop— y Ayuda dice dónde son las clases desde la tabla `sedes` —decía "tres salas"—; los "dos salas" de Comprar, la transferencia y los correos pasan a "nuestras salas". CONTEXT.md actualizado con autorización. Después, a pedido de Felipe: **el sitio público muestra solo las sedes con horarios activos** (`sedesConHorarios`, mismo criterio que las comunas de cada profesora) —EB Dance Studio sigue en la tabla por el intensivo de septiembre y no tiene clases semanales—, y **"parrilla" sale de todo lo que lee la alumna** (Ayuda, Comprar, transferencia, clases especiales y correos); en lo interno se queda. Pendiente: aplicar a producción con aprobación aparte. |

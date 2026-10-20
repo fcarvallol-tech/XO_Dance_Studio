@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | Parte 1 ✅ implementada el 08/09/2026 · **Parte 2 en desarrollo desde el 30/09/2026** (§17) · Parte 3 enunciada |
+| **Estado** | Parte 1 ✅ implementada el 08/09/2026 · Parte 2 ✅ **en producción**: `/owner/finanzas` con egresos, caja neta y el margen por clase dictada (§17) · 🔴 **Parte 3 — liquidación de profesoras: PRD sin escribir, y se paga el 1 de noviembre.** A las profesoras se les paga el 1 de cada mes por el mes anterior (Felipe, 06/10/2026); son cinco activas. Arrastra dos cambios de modelo: el estado **"no dictada" con causa cerrada** —hoy `clases.estado` solo admite `programada` y `cancelada` con motivo de texto libre, y la causa decide si la clase se paga— y el **reemplazo**, que no es una causa de cancelación sino un segundo campo de profesora (ver `ROADMAP.md` §"Decisión abierta"). El pago de las clases especiales queda fuera de alcance a propósito |
 | **Fecha** | 21 de agosto de 2026 · reescrito el 6 de septiembre de 2026 |
 | **Hito** | Hito 5 |
 | **Relacionados** | PRD-0009 · PRD-0017 · `ARCHITECTURE.md` §8 · ADR-0002 |

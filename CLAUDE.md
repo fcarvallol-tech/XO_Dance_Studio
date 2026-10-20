@@ -17,7 +17,7 @@ para alumna, profesora, administración y owner.
 | `@context/CONTEXT.md` | Siempre. Es el negocio, el estado real y lo que está sin definir |
 | `@context/ARCHITECTURE.md` | Siempre que toques datos, esquema o estructura |
 | `@context/BRAND.md` | Siempre que toques UI o copy |
-| `@context/ROADMAP.md` | Cuando haya duda de prioridad o alcance |
+| `@context/ROADMAP.md` | **Su sección "Estado al…" se lee siempre, al empezar.** El resto, cuando haya duda de prioridad o alcance |
 | `context/prds/` | El PRD de la feature en curso. Obligatorio |
 | `context/decisions/` | Antes de proponer cambiar algo ya decidido |
 
@@ -93,8 +93,20 @@ Si te piden construir algo que no tiene PRD en `context/prds/`, tu primera respu
 **proponer el PRD** usando `context/prds/0000-TEMPLATE.md`, numerado en orden. No escribas
 código hasta que esté aprobado.
 
-Al terminar: actualiza el estado del PRD y agrega una línea al changelog de `ROADMAP.md`.
-No edites `CONTEXT.md` sin confirmarlo con Felipe.
+Al terminar, **tres cosas, no una**:
+
+1. Actualiza el estado del PRD y la tabla de fases de su plan de implementación.
+2. Agrega una línea al changelog de `ROADMAP.md`.
+3. **Actualiza la sección "Estado al…" del `ROADMAP.md`**: la fecha, lo que pasó a estar vivo, lo
+   que se desbloqueó y lo que quedó pendiente. Y la fila del hito que corresponda.
+
+El punto 3 es el que se olvida y es el que importa. Durante dos meses el estado real vivió
+repartido en las tablas de fases de cada plan, y la cabecera del ROADMAP siguió diciendo
+"21 de agosto": el 15 y el 20 de octubre hubo que reconstruir dónde estaba el proyecto leyendo
+23 PRDs. **Un entregable no está terminado hasta que el ROADMAP lo diga.**
+
+No edites `CONTEXT.md` sin confirmarlo con Felipe: ahí viven los datos del negocio, y esos son
+suyos.
 
 Si crees que una decisión de `context/decisions/` está mal, escribe un ADR nuevo que la
 reemplace. No la cambies en silencio.
@@ -271,11 +283,12 @@ npx supabase db push             # ⚠️ solo con aprobación explícita de Fel
 
 - **Video del hero.** Es lo que más falta: la portada de PRD-0022 es mínima y hoy el hero es negro
   plano. Bloquea el despliegue.
-- **Videos de las profesoras.** ~~Las fotos~~ llegaron el 02/10/2026: las cuatro activas están en
-  `public/profesoras/`, con el mismo encuadre, generadas por `scripts/fotos-profesoras.mjs`. La de
-  **Lina** se agrandó 1,58x desde un JPG chico: si hay una versión más grande, se reemplaza el
-  archivo de `Assets/`, se vuelven a medir los ojos y se corre el script.
-- **Bio real de Carli** — su perfil sigue diciendo `Acá la bio de "Carli"`, **y así se queda hasta
-  que ella la mande**: no se inventa ni se rellena (Felipe, 02/10/2026). Pau, Drimy y Lina ya
-  entregaron la suya. La de Maida dejó de ser pendiente: está inactiva.
+- **Videos de las profesoras.** ~~Las fotos~~ llegaron el 02/10/2026: las **cinco** activas están
+  en `public/profesoras/`, con el mismo encuadre, generadas por `scripts/fotos-profesoras.mjs`
+  —la de Isi se convirtió desde HEIC el 05/10—. La de **Lina** se agrandó 1,58x desde un JPG
+  chico: si hay una versión más grande, se reemplaza el archivo de `Assets/`, se vuelven a medir
+  los ojos y se corre el script.
+- ~~**Bio real de Carli**~~ — **llegó el 20/10/2026.** Queda cargarla: es una migración, porque
+  las bios viven en la base. Va **literal**, con sus emojis y sin corregirle la ortografía. Con
+  eso las cinco activas tienen bio propia; la de Maida dejó de ser pendiente porque está inactiva.
 - ~~Horarios, cupos y ubicación~~: resueltos. El catálogo está cargado y las tres sedes también.

@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | ✅ **Aprobado por Felipe el 10/09/2026.** Fases 1 a 6 hechas y verificadas en **staging**: escenario por SQL 20/20 y recorrido con clics 25/25 (§13). Falta la **fase 7** (producción), y antes va **PRD-0019**, que es bloqueante. Precio por defecto ($12.000) y sin sueldo base confirmados en PRD-0009 §8. Bucket privado y embed tras un clic decididos el mismo día (§7.6, §8.7). Soltar el cupo tiene estado propio desde el 10/09 (§8.3.b) |
+| **Estado** | ✅ **En producción desde el 21/09/2026.** Las siete fases cerradas: migración aplicada con aprobación (18/18), parámetros y bucket verificados, `npm run build` verde contra producción. **PRD-0019, que lo bloqueaba, se cerró el 26/09.** 🔴 **Nunca se ha creado la primera clase especial:** falta hacerla con Carla, y eso es contenido, no código. ⚪ Queda sin PRD el **pago de la especial a la profesora** —50% de lo recaudado después de descontar la sala—, que la liquidación de PRD-0010 parte 3 deja fuera de alcance a propósito. Precio por defecto ($12.000) y sin sueldo base confirmados en PRD-0009 §8. Bucket privado y embed tras un clic decididos el 10/09 (§7.6, §8.7). Soltar el cupo tiene estado propio desde el 10/09 (§8.3.b) |
 | **Autor** | Propuesto por Claude a pedido de Felipe Carvalho. Decisiones de §8: Felipe |
 | **Fecha** | 8 de septiembre de 2026 · decisiones cerradas el 9 · Reel y alcance de fase 0 resueltos el 10 |
 | **Hito** | Hito 3 — Reservas (extiende el calendario) · Hito 4 — Portales (formulario en admin) |
