@@ -72,7 +72,7 @@ Todas tienen Instagram propio con seguidores y son parte activa de la campaña d
 | **Precio** | Tarifa de packs para todos los cursos. Teens deja los $45.000/mes |
 | **Costo de sala** | Los Leones: **$17.000/hora** · Diaguitas: **$0** · EB: **$27.000/hora** · Studio 98: **$23.500/hora** |
 | **Capacidad de sala** | Los Leones y Diaguitas: **22** · EB: **40** · Studio 98: **35**. Es un dato de cada sala, no una regla del sistema (PRD-0021) |
-| **Sueldo base profesoras** | **$18.000/hora**. Clases de 1 hora. Variable por definir |
+| **Sueldo base profesoras** | **$18.000/hora**. Clases de 1 hora. **Más $250 por crédito consumido** en esa clase — ver §Costo por clase. Un crédito regalado se le paga igual |
 | **Sitio** | **xodancestudio.cl** — dominio propio, apuntado a Vercel y con certificado |
 | **Instagram** | @xo.dance.co — se abre al público en agosto 2026 |
 | **WhatsApp** | +56 9 8436 2290 |
@@ -538,20 +538,25 @@ Santiago y regiones, contenido digital como canal de adquisición, cursos online
 
 ## 9. Qué está construido (verificado en el repo)
 
+> ⚠️ **El detalle al día vive en `ROADMAP.md`, sección "Estado al…".** Esta tabla es el resumen
+> por track; si las dos se contradicen, manda el ROADMAP. Actualizado el 20/10/2026.
+
 | Track | Estado |
 |---|---|
-| **Sitio público** | ✅ Desplegado en Vercel. **Páginas propias desde el 28/09/2026** (PRD-0022): portada mínima, `/calendario` sin sesión, `/nuestras-profes`, `/comprar`, `/clases-especiales`, `/nosotros` y `/ayuda`, con "Mi Cuenta" aparte |
-| **Captura de leads** | ✅ Funciona. `POST /api/lead` valida en servidor, inserta en Supabase con service role key, y luego abre WhatsApp con mensaje precargado |
-| **Migración de BD** | ✅ `supabase/migrations/20260801000000_leads.sql`. Tabla `leads` con RLS activo, grants revocados a `anon`/`authenticated` y solo `INSERT` a `service_role` |
-| **Sistema de contexto en repo** | ✅ Ya existía: `CLAUDE.md`, `AGENTS.md`, `.claude/rules/estilo.md`, `docs/marca.md` |
-| **Contenido** | ⚠️ Bios en placeholder (`Acá la bio de "X"`), sin fotos ni videos de profesoras, sin video de hero. Precios, horarios y cupos en `null` |
-| **Variables de producción** | ✅ Configuradas el 21/08/2026: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (Sensitive) y `NEXT_PUBLIC_SITE_URL`, las tres en Production |
-| **Flujo verificado de punta a punta** | ✅ 21/08/2026: envío real desde producción → fila en `leads` con `para_quien`, `curso_id` y `edad_alumna` en NULL según el check de la BD |
-| **Constitución legal** | En curso. **Bloquea el cobro online**: sin Inicio de Actividades no hay cuenta de comercio |
+| **Sitio público** | ✅ En línea en `xodancestudio.cl`. **Páginas propias desde el 28/09/2026** (PRD-0022): portada mínima, `/calendario` sin sesión, `/nuestras-profes`, `/comprar`, `/clases-especiales`, `/nosotros` y `/ayuda`, con "Mi Cuenta" aparte |
+| **Cuentas y roles** | ✅ Google y magic link, cuatro roles con `owner` como superconjunto de `admin` (PRD-0004) |
+| **Catálogo** | ✅ **En la base de datos, no en el código** (PRD-0015). Cursos, profesoras, horarios, sedes y planes. `lib/cursos.ts` y `lib/profesoras.ts` ya no existen |
+| **Venta** | ✅ **Por transferencia**, con aprobación manual y bandeja de admin (PRD-0017). Link compartible `/comprar/<oferta>` (PRD-0020). Regalo de créditos sin contarlo como ingreso (PRD-0023). 🔴 Pasarela de pago bloqueada por el SII |
+| **Créditos** | ✅ Lotes con vencimiento y libro de movimientos que nunca se edita. **45 días desde el 05/10/2026**, solo para lo que se emita desde entonces |
+| **Reservas** | ✅ Calendario y reserva con descuento del crédito en una sola transacción, con el cupo validado en la base |
+| **Portales** | ✅ Los cuatro: alumna, profesora, administración y owner. El de la profesora **nunca** muestra datos de contacto de la alumna |
+| **Owner** | ✅ Métricas (parte 1) y egresos con caja neta (parte 2). 🔴 **Liquidación de profesoras sin escribir, y se paga el 1 de noviembre** |
+| **Correo** | ✅ Registro de envíos, reintento diario y visibilidad de los fallidos en `/admin/correos` (PRD-0019). Se manda desde `hola@xodancestudio.cl`, verificado en Resend |
+| **Clases especiales** | 🟡 **Construido y en producción desde el 21/09.** Nunca se ha creado la primera: falta hacerla con Carla |
+| ~~**Captura de leads**~~ | **Retirada el 28/09/2026** con el formulario (PRD-0022). La tabla `leads` se conserva con sus registros, su RLS y `/admin/leads` para mirarlos; lo que ya no existe es el camino que escribía en ella |
+| **Contenido** | 🟡 Las cinco profesoras activas tienen foto. Bios: cuatro cargadas y **la de Carli llegó el 20/10**, por cargar. 🔴 **Falta el video del hero**, que es de Carla y bloquea la portada |
+| **Constitución legal** | En curso. **Bloquea el cobro online**: sin Inicio de Actividades no hay cuenta de comercio. Falta la firma de Carla |
 | **Arquetipo de marca** | Material preparado; selección pendiente de Carla |
-
-**Bugs previamente registrados, ya resueltos:** el mapeo K-Pop → Maida es correcto en
-`lib/cursos.ts`, y el prefijo `+56 9` del formulario se renderiza bien en producción.
 
 ---
 
@@ -616,26 +621,36 @@ sin caché de build · verificación real enviando el formulario desde producci�
 
 ## 12. ⚠️ Decisiones pendientes
 
+> **Revisada el 20/10/2026.** Varias filas decían "sin definir" cuando la decisión ya estaba
+> tomada y escrita en otra parte de este mismo documento —el componente variable del pago, el
+> vencimiento de los créditos, el modelo económico con las profesoras—, lo que es peor que no
+> tenerlas: una sesión que lea esta tabla concluye que falta decidir algo que ya se decidió.
+>
+> 🔴 **De lo que sigue abierto, una cosa bloquea la liquidación de noviembre: la remuneración de
+> Carla.** Ella dicta clases y además es socia. Si cobra como profesora, entra en la liquidación
+> igual que las otras cuatro; si su retiro es otra cosa, no entra y hay que decir qué es. No se
+> puede calcular el pago del 1 de noviembre sin esa respuesta.
+
 | Tema | Estado |
 |---|---|
-| Precios, horarios y cupos de los 5 cursos | Sin definir. Bloquea el lanzamiento |
-| Nueva ubicación / sala | ✅ **EB Dance Studio**, Chucre Manzur 7, Providencia (Bellavista), desde el 27/09/2026: 40 personas, $27.000/hora |
-| Modelo económico con 5 profesoras (cómo se les paga) | Sin definir |
+| ~~Precios, horarios y cupos de los 5 cursos~~ | ✅ **Resuelto.** El catálogo vive en la base (PRD-0015) y el cupo sale de `sedes.capacidad` (PRD-0021). No bloquea nada |
+| ~~Nueva ubicación / sala~~ | ✅ **Las sedes con horarios activos son tres:** Diaguitas, Los Leones y **Studio 98** —Barros Borgoño 71 of. 101, Providencia, 35 lugares, $23.500/hora, desde el 05/10/2026—. **EB Dance Studio no es una sede:** se usó una sola vez para el intensivo de septiembre y por eso salió de lo que lee la alumna (05/10/2026) |
+| ~~Modelo económico con 5 profesoras (cómo se les paga)~~ | ✅ **Resuelto:** $18.000/hora de base **más $250 por crédito consumido**, incluidos los regalados (Felipe, 04/10/2026). Ver §Costo por clase. 🔴 Lo que falta es **construir la liquidación** —PRD-0010 parte 3, para el 1 de noviembre—, no decidir el modelo |
 | Remuneración de Carla | Sin definir |
 | % de revenue share de Fase 2 | Sin cuantificar |
 | Arquetipo de marca | Pendiente decisión de Carla |
-| ~~Dominio propio~~ | ✅ **Registrado y en línea:** `xodancestudio.cl`. Falta verificarlo en Resend agregando sus registros DNS en Vercel, para poder mandar correo desde el dominio (ADR-0007) |
+| ~~Dominio propio~~ | ✅ **Cerrado.** `xodancestudio.cl` sirviendo el sitio, y **verificado en Resend**: los correos salen desde `hola@xodancestudio.cl` y llegan a bandeja de entrada (26/09/2026, ADR-0007) |
 | Registro INAPI | Sin presentar |
 | ~~Cómo se cobran los intensivos mensuales Girly~~ | ✅ **Resuelto el 30/08/2026:** el formato intensivo desapareció con el catálogo nuevo. Créditos universales para todo, salvo Teens con suscripción |
 | ¿Un mes con 5 clases se cobra distinto que uno con 4? | Sin definir |
-| ¿Los créditos vencen? ¿En cuánto tiempo? | Sin definir. Sin vencimiento, la caja cobrada es pasivo eterno |
+| ~~¿Los créditos vencen? ¿En cuánto tiempo?~~ | ✅ **Sí: 45 días desde el 05/10/2026**, antes 60. El cambio aplica solo a lo que se emita desde entonces; la migración abortaba si cambiaba algún vencimiento ya existente. El pack de 8 **se vende y se marketea como pack para dos clases por semana** (Felipe, 06/10/2026), que es lo que hace que 45 días alcancen |
 | Ventana de cancelación: ¿hasta cuántas horas antes se devuelve el crédito? | Sin definir |
 | ~~¿Sobrevive la clase de prueba gratis?~~ | ✅ **Resuelto el 28/09/2026: no.** El incentivo de primera inscripción pasa a los cupones de PRD-0013 |
 | Pasarela de pago y si se puede cobrar antes del Inicio de Actividades | Sin definir. Ver ADR-0003 |
-| Componente **variable** del pago a profesoras | Sin definir. El base son $18.000/hora |
+| ~~Componente **variable** del pago a profesoras~~ | ✅ **Resuelto: $250 por crédito consumido**, sobre el base de $18.000/hora (Felipe, 04/10/2026) |
 | ¿Por qué Los Dominicos es gratis y por cuánto tiempo? | Sin confirmar. Si es un favor, es un riesgo de concentración |
 | ¿Una alumna de Teens puede además comprar packs de Girly? | Sin definir |
 | ¿El precio de los packs es igual en ambas sedes? | Sin definir. El costo de sala no lo es |
-| ~~Sala con capacidad 45~~ | ✅ **Resuelto el 30/08/2026: son 22**, en las dos sedes. El supuesto de 45 era más del doble y bajaba artificialmente el riesgo de abrir horarios |
+| ~~Sala con capacidad 45~~ | ✅ **Resuelto el 30/08/2026: son 22** en Diaguitas y Los Leones. Studio 98 tiene **35** (05/10/2026). Desde PRD-0021 el cupo **sale de `sedes.capacidad`**, no de un número escrito en el código, así que agregar una sala con otra capacidad ya no requiere tocar nada |
 | Qué significa "afiliado" en el perfil de la alumna | Sin definir |
 | ¿Cómo se maneja la cuenta de una alumna menor de edad? | ✅ **Resuelto por ADR-0006 (25/08/2026).** La premisa cambió: ya no hay menores de 11. La cuenta es de la alumna, con magic link por correo porque Google exige 13. Sin dependientes ni cuentas vinculadas. Para comprar, un perfil menor de 18 registra datos del apoderado y **el apoderado confirma por correo** |
