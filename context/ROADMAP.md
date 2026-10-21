@@ -12,7 +12,20 @@
 > nada más. Las tablas de hitos que siguen son el detalle; el changelog es la historia.
 > Se actualiza cada vez que algo entra a producción o cambia de bloqueo.
 
-**Último commit:** `5f26ed2`, 6 de octubre. Catorce días sin código.
+**Último commit en `main`:** `5f26ed2`, 6 de octubre.
+
+### 🔴 Lo que está bloqueando TODO, al 21/10/2026
+
+**No se puede aplicar ninguna migración, ni a staging ni a producción.** Dos cosas a la vez:
+
+1. **Staging está pausado.** `ybopuahlzbjkkwumkllk.supabase.co` responde `NXDOMAIN`. No se usa
+   desde el 6/10 y el plan gratuito pausa los proyectos inactivos (§11 lo advertía).
+2. **El `SUPABASE_ACCESS_TOKEN` de `.env.local` está vencido o revocado:** la API de Supabase
+   devuelve 401. Sin él no corre `migration list` ni `db push --dry-run`.
+
+**Lo desbloquea Felipe desde el panel**, y son dos minutos: reactivar staging y generar un token
+nuevo. Hasta entonces hay dos migraciones escritas y sin aplicar —la bio de Carli y lo que venga
+de la liquidación—, y **el 1 de noviembre está en riesgo**.
 
 ### Lo que está vivo y funcionando
 
@@ -26,8 +39,9 @@ correos con reintento diario.
 
 | Qué | PRD | Para cuándo | Estado |
 |---|---|---|---|
-| **Liquidación de profesoras** | 0010 parte 3 | **1 de noviembre** | PRD sin escribir |
-| Bio de Carli | — | Llegó el 20/10 | Migración por escribir |
+| **Liquidación de profesoras** | 0010 parte 3 | **1 de noviembre** | 🟡 Borrador escrito el 20/10, con 7 preguntas abiertas |
+| Bio de Carli | — | Llegó el 20/10 | 🟡 Migración escrita (`20261020120000_bio_carli.sql`), **sin aplicar**: ver el bloqueo de arriba |
+| Horario de Lina y Carli **+30 min** → 17:30 y 18:30 | — | Pedido el 21/10 | ⚪ Falta saber qué días y desde cuándo. Migración por escribir |
 
 La liquidación es lo único con fecha dura: a las profesoras se les paga **el 1 de cada mes, por
 el mes anterior** (Felipe, 06/10/2026). Son cinco profesoras activas.
@@ -248,6 +262,7 @@ Modelo profesor-cliente: comisiones, rentabilidad por profesora, marca personal.
 
 | Fecha | Cambio |
 |---|---|
+| 21 oct 2026 | **Tres reglas de pago que faltaban, y la de Carla resuelta.** (1) El variable de $250 **tiene un umbral de 5**: se paga a partir de la sexta alumna, `max(0, créditos − 5) × 250`. Lo definió Felipe con un ejemplo —15 alumnas, $2.500— que es el que desambigua si la quinta cuenta: no cuenta. CONTEXT.md decía "$250 × créditos consumidos" sin umbral, así que **toda la economía unitaria estaba mal calculada**: recalculada, el piso para cubrir una clase **baja en una alumna** en tres de los seis casos, y se agrega Studio 98 a la tabla, que con pack de 8 necesita 7 alumnas contra 6 de Los Leones. (2) Se **propone** un incentivo de **$10.000 al mes** por mantener un promedio sobre 20 alumnas; queda anotado sin cerrar porque **el ejemplo con que se planteó promedia exactamente 20**, así que el enunciado y el ejemplo discrepan en si el corte es `>= 20` o `> 20`, y falta definir sobre qué clases se saca el promedio y qué pasa si dicta dos cursos. (3) **La remuneración de Carla ya no bloquea la liquidación:** lo de profesora y lo de socia son dos cosas, cobra como profesora igual que las otras cuatro y entra en la liquidación; el retiro de socia queda **fuera de alcance** por decisión de Felipe. Se anota aparte que si esa cifra se modela algún día hay que decidir si vive en este repo, que es público. Y se registra el **bloqueo operativo**: staging pausado y el token de Supabase vencido, así que no se puede aplicar ninguna migración |
 | 20 oct 2026 | **El ROADMAP se realinea con la realidad, que llevaba dos meses sin coincidir.** La cabecera decía "última actualización 21 de agosto" y las tablas de hitos daban por pendiente lo que estaba en producción y por vivo lo que se había retirado: Hito 0 seguía "EN CURSO" con el dominio, el Open Graph y las migraciones de PRD-0003 como pendientes —las tres hechas—, con el formulario de captación y la landing one-page listados como entregables cuando se retiraron el 28/09, y con "precios, horarios y cupos" bloqueados por una decisión que se tomó en PRD-0015. PRD-0018 y PRD-0019 figuraban como "borrador" estando los dos en producción. **La causa no es descuido: el estado real vivía repartido en las tablas de fases dentro de cada plan de implementación, y no existía ninguna página que dijera dónde está el proyecto.** Felipe se perdió dos veces en una semana —el 15 y el 20 de octubre— y las dos veces hubo que reconstruir el estado leyendo 23 PRDs y un changelog de 60 KB. Se agrega **"Estado al…"** como primera sección: lo que está vivo, lo que está en curso con fecha, lo construido y apagado, lo bloqueado por algo que no es programar, y la deuda con su consecuencia. Es la sección que se lee al volver, y se actualiza cada vez que algo entra a producción o cambia de bloqueo. Además: **PRD-0012 se retoma** y PRD-0013 queda en pausa (Felipe); se anotan como sin PRD el pago de las especiales, la edición de foto y bio por la profesora, y la visibilidad de los crons; y se registra la **decisión abierta del reemplazo**, que no es una causa de cancelación sino un segundo campo de profesora, con la pregunta de a quién se le paga todavía sin responder |
 | 6 oct 2026 | **Sale "Las clases parten en septiembre"** del hero y de la imagen para redes: era del lanzamiento y en octubre hacía ver el sitio abandonado. La constante `INICIO_CLASES` se elimina; esa línea queda solo con la ubicación. Nosotros pasa a titularse **"Más que una clase"**, elegido por Felipe, para no repetir el eslogan del hero. |
 | 6 oct 2026 | **Eslogan nuevo: "Descúbrete y crece bailando"**, reemplaza a "Acá nadie baila sola" en el hero de la portada, el título de Nosotros y la imagen para redes (`opengraph-image.tsx`). No estaba en los metadatos, los correos, BRAND.md ni CONTEXT.md; PRD-0022 lo cita como registro histórico y se deja. `verificar-reservar` medía el ancho del primer bloque del documento, que a 375 px puede estar en una columna oculta y medir 0: fallaba cualquier día con una clase antes de hoy en la semana. Ahora mide el primero visible. |

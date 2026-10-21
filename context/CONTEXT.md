@@ -72,7 +72,7 @@ Todas tienen Instagram propio con seguidores y son parte activa de la campaña d
 | **Precio** | Tarifa de packs para todos los cursos. Teens deja los $45.000/mes |
 | **Costo de sala** | Los Leones: **$17.000/hora** · Diaguitas: **$0** · EB: **$27.000/hora** · Studio 98: **$23.500/hora** |
 | **Capacidad de sala** | Los Leones y Diaguitas: **22** · EB: **40** · Studio 98: **35**. Es un dato de cada sala, no una regla del sistema (PRD-0021) |
-| **Sueldo base profesoras** | **$18.000/hora**. Clases de 1 hora. **Más $250 por crédito consumido** en esa clase — ver §Costo por clase. Un crédito regalado se le paga igual |
+| **Sueldo base profesoras** | **$18.000/hora**. Clases de 1 hora. **Más $250 por crédito consumido a partir de la sexta alumna** — ver §Economía unitaria. Un crédito regalado se le paga igual |
 | **Sitio** | **xodancestudio.cl** — dominio propio, apuntado a Vercel y con certificado |
 | **Instagram** | @xo.dance.co — se abre al público en agosto 2026 |
 | **WhatsApp** | +56 9 8436 2290 |
@@ -335,12 +335,27 @@ Todas las clases duran **1 hora**.
 **El costo de una clase ya no es un número fijo: sube con cuánta gente va.** Desde el 08/09/2026
 la profesora cobra un sueldo base por hora **más $250 por crédito consumido** en esa clase.
 
-| Concepto | Los Leones | Los Dominicos |
-|---|---|---|
-| Arriendo de sala (por hora) | $17.000 | $0 |
-| Sueldo base de la profesora (por hora) | $18.000 | $18.000 |
-| **Costo fijo por clase** | **$35.000** | **$18.000** |
-| Variable de la profesora | $250 × créditos consumidos | $250 × créditos consumidos |
+🔴 **Corregido el 21/10/2026 (Felipe): el variable tiene un umbral de 5.** Los $250 se pagan
+**solo a partir de la sexta alumna**. La fórmula es:
+
+```
+variable = máximo(0, créditos_consumidos − 5) × $250
+```
+
+El ejemplo con el que Felipe lo definió: **15 alumnas → $2.500**, que es `(15 − 5) × 250`. Con 5
+alumnas o menos el variable es **$0**; con 6 es $250. El umbral no se prorratea ni se arrastra
+entre clases: se aplica clase por clase.
+
+**Esto cambia la economía unitaria para mejor**, y las cifras de abajo ya están recalculadas: las
+primeras cinco alumnas de cada clase ya no le cuestan variable a XO, así que el piso para cubrir
+una clase baja en una alumna en tres de los seis casos.
+
+| Concepto | Los Leones | Studio 98 | Los Dominicos |
+|---|---|---|---|
+| Arriendo de sala (por hora) | $17.000 | $23.500 | $0 |
+| Sueldo base de la profesora (por hora) | $18.000 | $18.000 | $18.000 |
+| **Costo fijo por clase** | **$35.000** | **$41.500** | **$18.000** |
+| Variable de la profesora | $250 × (créditos − 5) | $250 × (créditos − 5) | $250 × (créditos − 5) |
 
 El variable se cuenta por **crédito consumido y no devuelto**, no por alumna presente: si la
 alumna reservó y no llegó, el crédito se gastó y se paga igual. Una cancelada a tiempo devuelve
@@ -353,6 +368,26 @@ cualquier otro crédito consumido: **hizo el mismo trabajo, y el costo del regal
 ella**. Es una regla de negocio, no un efecto del código. Consecuencia que hay que tener presente:
 una clase pagada con regalo **cuesta $250 y aporta $0** de ingreso, así que regalar no es gratis.
 
+### 🟡 Incentivo por promedio mensual — propuesto, sin cerrar
+
+**Propuesto el 21/10/2026 (Felipe): $10.000 extra al mes** si la profesora mantiene un promedio
+sobre las 20 alumnas durante el mes. El ejemplo con el que lo planteó: clases de **25, 15, 18 y
+22** alumnas obtienen el incentivo.
+
+🔴 **Ese ejemplo promedia exactamente 20**, no más de 20: `(25+15+18+22) / 4 = 20`. Así que el
+enunciado "sobre las 20" y el ejemplo dicen cosas distintas, y la diferencia es si el corte es
+`>= 20` o `> 20`. **Hay que decidirlo antes de implementarlo**, y el ejemplo sugiere `>= 20`. Es
+la misma clase de ambigüedad que la hora de término de la promoción en PRD-0012 §1: un borde
+leído al revés cambia quién cobra.
+
+Tres cosas más sin definir, que el PRD tiene que preguntar:
+
+1. **El promedio se saca sobre qué clases.** Solo las dictadas, o también las que no se dictaron.
+   Una clase no dictada contada como cero le hunde el promedio por algo que puede no ser suyo.
+2. **Si la profesora dicta dos cursos**, es un promedio junto o uno por curso.
+3. **Es un monto fijo de $10.000**, no por clase ni por curso. Techo: $50.000 al mes con cinco
+   profesoras, que contra el margen de una clase de 20 alumnas es barato.
+
 ⚠️ **Teens se calcula sobre otra base.** Ver más abajo: allá el variable va por inscripción
 mensual, no por crédito. Son dos ramas de negocio distintas y el pago sigue a cada una.
 
@@ -364,13 +399,22 @@ regla de pago, no un caso de las otras dos, y **todavía no está construida**: 
 
 **Alumnas necesarias para cubrir el costo de una clase:**
 
-Cada alumna aporta su tarifa menos los $250 que se lleva la profesora por ella.
+**Recalculado el 21/10/2026 con el umbral de 5.** Las primeras cinco alumnas aportan su tarifa
+completa; desde la sexta, su tarifa menos $250.
 
-| Tarifa | Aporta neto | Los Leones | Los Dominicos |
+| Tarifa | Los Leones | Studio 98 | Los Dominicos |
 |---|---|---|---|
-| Clase suelta ($8.500) | $8.250 | 5 | 3 |
-| Pack de 4 ($7.000) | $6.750 | **6** | 3 |
-| Pack de 8 ($6.000) | $5.750 | **7** | **4** |
+| Clase suelta ($8.500) | 5 | 5 | 3 |
+| Pack de 4 ($7.000) | **5** | 6 | 3 |
+| Pack de 8 ($6.000) | **6** | 7 | **3** |
+
+> Antes del umbral eran 6 y 7 en Los Leones y 4 en Los Dominicos para el pack de 8. El umbral
+> **baja el piso en una alumna** en el pack de 4 de Los Leones, el pack de 8 de Los Leones y el
+> pack de 8 de Los Dominicos. Los dos empates exactos: pack de 4 en Los Leones con 5 alumnas da
+> $35.000 contra $35.000, y pack de 8 en Los Dominicos con 3 da $18.000 contra $18.000.
+>
+> **Studio 98 es la sede más exigente**, como corresponde a $23.500 la hora: con el pack de 8
+> necesita **7 alumnas** donde Los Leones necesita 6, y tiene 35 lugares que llenar.
 
 ⚠️ **El piso sube en tres de los seis casos.** Con packs de 8 en Los Leones ahora hacen falta
 **7** alumnas para no perder plata, no 6.
@@ -626,17 +670,19 @@ sin caché de build · verificación real enviando el formulario desde producci�
 > vencimiento de los créditos, el modelo económico con las profesoras—, lo que es peor que no
 > tenerlas: una sesión que lea esta tabla concluye que falta decidir algo que ya se decidió.
 >
-> 🔴 **De lo que sigue abierto, una cosa bloquea la liquidación de noviembre: la remuneración de
-> Carla.** Ella dicta clases y además es socia. Si cobra como profesora, entra en la liquidación
-> igual que las otras cuatro; si su retiro es otra cosa, no entra y hay que decir qué es. No se
-> puede calcular el pago del 1 de noviembre sin esa respuesta.
+> ✅ **La remuneración de Carla quedó resuelta el 21/10/2026 y ya no bloquea la liquidación.**
+> Son **dos cosas separadas**: lo que cobra **como profesora** es el mismo trato que las otras
+> cuatro —base por hora más variable— y **entra en la liquidación igual que ellas**. El **retiro
+> de socia** es otra cosa, va por otro camino y **Felipe lo dejó fuera de alcance por ahora**: no
+> se modela, no se calcula y no entra en la liquidación. Cuando se aborde, es su propio PRD.
 
 | Tema | Estado |
 |---|---|
 | ~~Precios, horarios y cupos de los 5 cursos~~ | ✅ **Resuelto.** El catálogo vive en la base (PRD-0015) y el cupo sale de `sedes.capacidad` (PRD-0021). No bloquea nada |
 | ~~Nueva ubicación / sala~~ | ✅ **Las sedes con horarios activos son tres:** Diaguitas, Los Leones y **Studio 98** —Barros Borgoño 71 of. 101, Providencia, 35 lugares, $23.500/hora, desde el 05/10/2026—. **EB Dance Studio no es una sede:** se usó una sola vez para el intensivo de septiembre y por eso salió de lo que lee la alumna (05/10/2026) |
 | ~~Modelo económico con 5 profesoras (cómo se les paga)~~ | ✅ **Resuelto:** $18.000/hora de base **más $250 por crédito consumido**, incluidos los regalados (Felipe, 04/10/2026). Ver §Costo por clase. 🔴 Lo que falta es **construir la liquidación** —PRD-0010 parte 3, para el 1 de noviembre—, no decidir el modelo |
-| Remuneración de Carla | Sin definir |
+| ~~Remuneración de Carla~~ | ✅ **Resuelto el 21/10/2026: son dos cosas.** Como **profesora** cobra igual que las otras cuatro y entra en la liquidación. Como **socia** es un retiro aparte, **fuera de alcance por ahora** por decisión de Felipe |
+| Retiro de los socios | ⏸ **Fuera de alcance por decisión de Felipe (21/10/2026).** Hay dos socios y el monto está definido, pero no se modela ni se calcula todavía. Cuando se aborde, es su propio PRD y hay que decidir si la cifra vive en este repo, que es **público** |
 | % de revenue share de Fase 2 | Sin cuantificar |
 | Arquetipo de marca | Pendiente decisión de Carla |
 | ~~Dominio propio~~ | ✅ **Cerrado.** `xodancestudio.cl` sirviendo el sitio, y **verificado en Resend**: los correos salen desde `hola@xodancestudio.cl` y llegan a bandeja de entrada (26/09/2026, ADR-0007) |
