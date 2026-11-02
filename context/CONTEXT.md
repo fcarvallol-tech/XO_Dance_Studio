@@ -43,7 +43,7 @@ de sus atletas.
 
 | Profesora | Cursos | Instagram |
 |---|---|---|
-| Carli | Girly · ~~Teens~~ | @carlataty.20 |
+| Carli | Girly —dos horarios: viernes en Studio 98 y sábado en Los Leones— · ~~Teens~~ | @carlataty.20 |
 | Pau | Reggaeton Femme · Girly | @pau_balbontinc |
 | Drimy | Reggaeton Femme | @ladrimy |
 | Lina | Slow Femme | @linaapop |
@@ -198,19 +198,33 @@ cupos están en `null` y se muestran como **"Por confirmar"**. No inventarlos.
 > `20261005120000_catalogo_octubre.sql`. Con esto **todos los cursos activos son desde los 15
 > años**.
 
-### Horarios (vigentes desde el 05/10/2026)
+### Horarios (vigentes desde el lunes 09/11/2026)
 
 Siete clases a la semana. Viven en la tabla `horarios` y se muestran en el sitio.
 
 | Curso | Profesora | Día | Hora | Sede |
 |---|---|---|---|---|
-| Reggaeton Femme | Drimy | lunes | 17:00 | Seducción Latina Experience |
-| Girly | Pau | **martes** | 20:00 | Centro Comunitario Diaguitas |
-| Reggaeton Femme | Pau | **jueves** | **19:30** | Centro Comunitario Diaguitas |
-| **Reggaeton Antiguo** | **Isi** | **viernes** | **17:00** | **Studio 98** |
-| Girly | Carli | viernes | 20:00 | Seducción Latina Experience |
-| Slow Femme | Lina | sábado | 17:00 | Seducción Latina Experience |
-| Girly | Carli | sábado | 18:00 | Seducción Latina Experience |
+| Girly | Pau | martes | **18:00** | **Seducción Latina Experience** (Los Leones) |
+| Reggaeton Femme | **Drimy** | **jueves** | 17:00 | Seducción Latina Experience (Los Leones) |
+| Reggaeton Femme | Pau | jueves | 19:30 | Centro Comunitario Diaguitas (Los Dominicos) |
+| Reggaeton Antiguo | Isi | viernes | 17:00 | Studio 98 (Manuel Montt) |
+| Girly | Carli | viernes | **20:30** | **Studio 98** (Manuel Montt) |
+| Slow Femme | Lina | sábado | **17:30** | Seducción Latina Experience (Los Leones) |
+| Girly | Carli | sábado | **18:30** | Seducción Latina Experience (Los Leones) |
+
+> **Cambio del 09/11/2026: cinco horarios se mueven** (Felipe, 02/11/2026). La semana del 2 al 8
+> de noviembre se dictó con la parrilla anterior; la primera clase con esta es el lunes 9.
+> Drimy pasa de lunes a jueves; Pau lleva su Girly de Diaguitas a Los Leones; Carli lleva su
+> Girly del viernes a Studio 98, a las 20:30; Lina y Carli corren media hora el sábado y quedan
+> **seguidas, sin margen, a propósito**. **Excepción de una fecha:** el viernes 13/11 la Girly de
+> Carli es a las 18:30 en Studio 98. Migración `20261102120000_horarios_noviembre.sql`.
+>
+> **Carli dicta dos horarios del mismo curso, Girly** —no dos cursos distintos—: el **viernes en
+> Studio 98** y el **sábado en Los Leones** (Felipe, 02/11/2026).
+>
+> **Dos clases pasan a costar más:** la Girly de Pau, de $18.000 a **$35.000** de costo fijo (piso
+> con pack de 8, de 3 a 6 alumnas), y la Girly del viernes de Carli, de $35.000 a **$41.500** (de
+> 6 a 7 alumnas). El cupo de esta última sube a **35**, la capacidad de Studio 98.
 
 > **Cambio del 08/09/2026: las dos clases de Pau se mueven** por un problema de salas. Girly pasa
 > de lunes 20:00 a **martes 20:00** y Reggaeton Femme de miércoles 20:00 a **jueves 19:30**, las

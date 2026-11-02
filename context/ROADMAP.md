@@ -1,7 +1,7 @@
 # ROADMAP.md — XO Dance Studio
 
 > Qué se construye, en qué orden y por qué.
-> Última actualización: **20 de octubre de 2026**.
+> Última actualización: **2 de noviembre de 2026**.
 > ⚠️ Replanificado tras el cambio a modelo de paquetes y reservas.
 
 ---
@@ -19,24 +19,28 @@
 
 | Qué | Desde | Estado |
 |---|---|---|
-| Rama `alinear-roadmap` (3 commits de documentación) | 21/10 | **Sin mergear.** `main` sigue en `5f26ed2` del 6/10 |
-| Bio de Carli | 20/10 | Migración escrita en el Mac, **nunca commiteada ni aplicada**. En producción sigue el placeholder |
-| PRD-0010 parte 3, borrador de 594 líneas | 20/10 | Escrito en el Mac, **nunca commiteado**. Revisar si sobrevive como archivo sin seguimiento antes de reescribirlo |
-| Cuatro cambios de horario | 21/10 y 2/11 | Ninguno aplicado. Ver abajo |
-| Staging pausado + token de Supabase vencido | ~13/10 | Bloquea migraciones **y** los preview de Vercel |
+| Rama `alinear-roadmap` (5 commits de documentación) | 21/10 | ✅ **En `main` desde el 2/11** |
+| Bio de Carli | 20/10 | Migración rescatada en la rama `rescate-20-octubre` (pusheada el 2/11), **sin aplicar**. En producción sigue el placeholder |
+| PRD-0010 parte 3, borrador de 594 líneas | 20/10 | **Sobrevivió.** Rescatado en `rescate-20-octubre`, pusheado el 2/11. Sin mergear |
+| **Cinco cambios de horario** | 21/10 y 2/11 | 🟡 Migración `20261102120000_horarios_noviembre.sql` en la rama `horarios-noviembre`, **aplicada y verificada en staging**, esperando aprobación para producción. Rigen desde el **lunes 9/11** |
+| Staging pausado + token de Supabase vencido | ~13/10 | ✅ **Resuelto el 2/11**: staging despausado, token nuevo, y el registro de migraciones de staging reparado (1002, 1004 y 1005 estaban aplicadas sin su fila) |
+| Grilla: una clase de 14:50 se dibuja a las 15:00 | 2/10 | Arreglo en la rama `grilla-filas-de-cinco-minutos`, **sin mergear a propósito**: sale cuando exista una clase a una hora rara para mirarlo en pantalla (Felipe, 2/11). Las de 17:30 y 18:30 ya se dibujan bien sin él |
 
-### Los cuatro cambios de horario pendientes
+### Los cinco cambios de horario, desde el lunes 9/11
 
-| # | Cambio | Pedido | Consecuencia |
-|---|---|---|---|
-| 1 | **Lina**: 17:00 → **17:30** | 21/10 | Empieza a la media hora: destapa la deuda de que una clase de 14:50 se dibuje a las 15:00 |
-| 2 | **Carli**, la de las 18:00 → **18:30** | 21/10 | Igual que la anterior |
-| 3 | **Drimy** → **jueves 17:00**, misma sede | 2/11 | Cambio de día: hay clases futuras ya materializadas que mover o cancelar |
-| 4 | **Pau** → **martes 18:00**, de Los Dominicos a **Los Leones** | 2/11 | 🔴 **Sube el costo.** Los Dominicos es $0/hora y Los Leones $17.000: ~$68.000 más al mes, y el piso de esa clase pasa de 3 a 6 alumnas con pack de 8 |
+| # | Cambio | Consecuencia |
+|---|---|---|
+| 1 | **Lina**, sábado: 17:00 → **17:30**, Los Leones | Queda seguida de Carli, sin margen, a propósito |
+| 2 | **Carli**, sábado: 18:00 → **18:30**, Los Leones | — |
+| 3 | **Drimy**: lunes → **jueves 17:00**, Los Leones | — |
+| 4 | **Pau**, Girly: martes 20:00 Diaguitas → **martes 18:00 Los Leones** | 🔴 Costo fijo de $18.000 a $35.000; piso con pack de 8, de 3 a 6 alumnas |
+| 5 | **Carli**, viernes: 20:00 Los Leones → **20:30 Studio 98**. El **13/11 a las 18:30** | 🔴 Costo fijo de $35.000 a $41.500; piso de 6 a 7. Cupo 35 |
 
-⚠️ **El cambio 4 está sin resolver: Pau dicta dos cursos** —Girly y Reggaeton Femme— y "el curso
-de la Pau" no dice cuál. Si es Reggaeton Femme, pasa de jueves 19:30 a martes 18:00 y hay que
-comprobar que no choque con la Girly del martes en la misma sala.
+La Girly de Pau era la del martes (confirmado en el catálogo); su Reggaeton del jueves no se toca.
+Al 2/11 eran 46 clases futuras a cortar en producción, **ninguna con reservas**: las alumnas
+coordinan por redes y todavía no usan las reservas. ⚠️ **Los perfiles de las profesoras muestran el
+horario nuevo desde que se aplique**, aunque esa semana se dicte con el viejo: leen los horarios
+activos, no las clases.
 
 ---
 
@@ -296,6 +300,7 @@ Modelo profesor-cliente: comisiones, rentabilidad por profesora, marca personal.
 
 | Fecha | Cambio |
 |---|---|
+| 2 nov 2026 | **Cinco cambios de horario que rigen desde el lunes 9/11**, en `20261102120000_horarios_noviembre.sql` (rama `horarios-noviembre`): Lina y Carli el sábado a las 17:30 y 18:30, Drimy al jueves 17:00, la Girly de Pau a Los Leones el martes 18:00, y la Girly del viernes de Carli a Studio 98 a las 20:30, con el **viernes 13 a las 18:30**. La semana del 2 al 8 se dicta como estaba (Felipe). **El corte futuro obligó a una columna nueva, `horarios.vigente_desde`**, que `generar_clases()` respeta: sin ella el cron diario habría materializado los horarios nuevos esta misma semana, encima de los viejos. Las clases viejas desde el 9 se borran —ninguna tenía reservas— y se regeneran con el cupo de la sala nueva: 35 en Studio 98. `/owner/finanzas` lee el costo por `clases.sede_id`, así que toma la sede nueva sin tocar nada. **Aplicada y verificada en staging** (parrilla final sin choques, rama de cancelación con reserva probada, idempotente, cron simulado sin clases antes del corte, calendario mirado en pantalla); producción espera la aprobación de Felipe. Antes: `alinear-roadmap` a `main`, el trabajo del 20/10 rescatado y pusheado en `rescate-20-octubre`, y el registro de migraciones de staging reparado. El arreglo de la grilla de 14:50 queda en su propia rama, sin mergear |
 | 21 oct 2026 | **Tres reglas de pago que faltaban, y la de Carla resuelta.** (1) El variable de $250 **tiene un umbral de 5**: se paga a partir de la sexta alumna, `max(0, créditos − 5) × 250`. Lo definió Felipe con un ejemplo —15 alumnas, $2.500— que es el que desambigua si la quinta cuenta: no cuenta. CONTEXT.md decía "$250 × créditos consumidos" sin umbral, así que **toda la economía unitaria estaba mal calculada**: recalculada, el piso para cubrir una clase **baja en una alumna** en tres de los seis casos, y se agrega Studio 98 a la tabla, que con pack de 8 necesita 7 alumnas contra 6 de Los Leones. (2) Se **propone** un incentivo de **$10.000 al mes** por mantener un promedio sobre 20 alumnas; queda anotado sin cerrar porque **el ejemplo con que se planteó promedia exactamente 20**, así que el enunciado y el ejemplo discrepan en si el corte es `>= 20` o `> 20`, y falta definir sobre qué clases se saca el promedio y qué pasa si dicta dos cursos. (3) **La remuneración de Carla ya no bloquea la liquidación:** lo de profesora y lo de socia son dos cosas, cobra como profesora igual que las otras cuatro y entra en la liquidación; el retiro de socia queda **fuera de alcance** por decisión de Felipe. Se anota aparte que si esa cifra se modela algún día hay que decidir si vive en este repo, que es público. Y se registra el **bloqueo operativo**: staging pausado y el token de Supabase vencido, así que no se puede aplicar ninguna migración |
 | 20 oct 2026 | **El ROADMAP se realinea con la realidad, que llevaba dos meses sin coincidir.** La cabecera decía "última actualización 21 de agosto" y las tablas de hitos daban por pendiente lo que estaba en producción y por vivo lo que se había retirado: Hito 0 seguía "EN CURSO" con el dominio, el Open Graph y las migraciones de PRD-0003 como pendientes —las tres hechas—, con el formulario de captación y la landing one-page listados como entregables cuando se retiraron el 28/09, y con "precios, horarios y cupos" bloqueados por una decisión que se tomó en PRD-0015. PRD-0018 y PRD-0019 figuraban como "borrador" estando los dos en producción. **La causa no es descuido: el estado real vivía repartido en las tablas de fases dentro de cada plan de implementación, y no existía ninguna página que dijera dónde está el proyecto.** Felipe se perdió dos veces en una semana —el 15 y el 20 de octubre— y las dos veces hubo que reconstruir el estado leyendo 23 PRDs y un changelog de 60 KB. Se agrega **"Estado al…"** como primera sección: lo que está vivo, lo que está en curso con fecha, lo construido y apagado, lo bloqueado por algo que no es programar, y la deuda con su consecuencia. Es la sección que se lee al volver, y se actualiza cada vez que algo entra a producción o cambia de bloqueo. Además: **PRD-0012 se retoma** y PRD-0013 queda en pausa (Felipe); se anotan como sin PRD el pago de las especiales, la edición de foto y bio por la profesora, y la visibilidad de los crons; y se registra la **decisión abierta del reemplazo**, que no es una causa de cancelación sino un segundo campo de profesora, con la pregunta de a quién se le paga todavía sin responder |
 | 6 oct 2026 | **Sale "Las clases parten en septiembre"** del hero y de la imagen para redes: era del lanzamiento y en octubre hacía ver el sitio abandonado. La constante `INICIO_CLASES` se elimina; esa línea queda solo con la ubicación. Nosotros pasa a titularse **"Más que una clase"**, elegido por Felipe, para no repetir el eslogan del hero. |
