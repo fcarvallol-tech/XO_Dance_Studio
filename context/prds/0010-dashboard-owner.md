@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | Parte 1 ✅ implementada el 08/09/2026 · **Parte 2 en desarrollo desde el 30/09/2026** (§17) · Parte 3 enunciada |
+| **Estado** | Parte 1 ✅ implementada el 08/09/2026 · **Parte 2 en desarrollo desde el 30/09/2026** (§17) · Parte 3 **en borrador desde el 20/10/2026**, en `0010-parte-3-liquidacion-de-profesoras.md` |
 | **Fecha** | 21 de agosto de 2026 · reescrito el 6 de septiembre de 2026 |
 | **Hito** | Hito 5 |
 | **Relacionados** | PRD-0009 · PRD-0017 · `ARCHITECTURE.md` §8 · ADR-0002 |
