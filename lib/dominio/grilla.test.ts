@@ -11,11 +11,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  FILAS_POR_TRAMO,
+  MINUTOS_POR_FILA,
   MINUTOS_POR_TRAMO,
   esPasada,
+  filaDe,
+  filasQueOcupa,
   semanaInicial,
   semanasDeLaGrilla,
-  tramoDe,
   tramosQueOcupa,
   ventanaDeHoras,
 } from "./grilla.ts";
@@ -30,13 +33,35 @@ test("los tramos son de media hora", () => {
   assert.equal(MINUTOS_POR_TRAMO, 30);
 });
 
-test("tramoDe: las 18:00 con la grilla abriendo a las 9:00 caen en el tramo 18", () => {
-  // (18 − 9) × 2 = 18 tramos de media hora.
-  assert.equal(tramoDe(SEP_18_00, 9), 18);
+test("una media hora son seis filas de cinco minutos", () => {
+  assert.equal(MINUTOS_POR_FILA, 5);
+  assert.equal(FILAS_POR_TRAMO, 6);
 });
 
-test("tramoDe: una clase a y media cae en un tramo impar", () => {
-  assert.equal(tramoDe(utc("2026-09-11T22:30:00"), 9), 21);
+test("filaDe: las 18:00 con la grilla abriendo a las 9:00 caen en la fila 108", () => {
+  // (18 − 9) × 12 = 108 filas de cinco minutos.
+  assert.equal(filaDe(SEP_18_00, 9), 108);
+});
+
+test("filaDe: una clase a y media cae justo sobre la línea de la media", () => {
+  // 19:30 → 126 filas, que es 21 tramos exactos.
+  assert.equal(filaDe(SEP_19_30, 9), 21 * FILAS_POR_TRAMO);
+});
+
+test("filaDe: una clase de las 14:50 cae a las 14:50, no en el tramo de las 15:00", () => {
+  // La deuda de PRD-0022 §14. Antes se redondeaba al tramo más cercano.
+  const f = filaDe(utc("2026-09-11T17:50:00"), 14);
+  assert.equal(f, 10);
+  assert.notEqual(f, FILAS_POR_TRAMO * 2);
+});
+
+test("filasQueOcupa: una hora son doce filas y hora y media, dieciocho", () => {
+  assert.equal(filasQueOcupa(SEP_18_00, null), 12);
+  assert.equal(filasQueOcupa(SEP_18_00, SEP_19_30), 18);
+});
+
+test("filasQueOcupa: 45 minutos se dibujan como 45, no como una hora", () => {
+  assert.equal(filasQueOcupa(SEP_18_00, utc("2026-09-11T21:45:00")), 9);
 });
 
 test("tramosQueOcupa: una hora son dos tramos", () => {

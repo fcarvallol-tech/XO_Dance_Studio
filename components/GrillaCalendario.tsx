@@ -10,11 +10,13 @@ import {
 import Link from "next/link";
 import { rangoHorario } from "@/lib/dominio/horarios";
 import {
+  FILAS_POR_TRAMO,
   MINUTOS_POR_TRAMO,
   esPasada,
+  filaDe,
+  filasQueOcupa,
   semanaInicial,
   semanasDeLaGrilla,
-  tramoDe,
   tramosQueOcupa,
   ventanaDeHoras,
 } from "@/lib/dominio/grilla";
@@ -301,7 +303,11 @@ export function GrillaCalendario({
                 key={dia}
                 data-hoy={dia === hoy ? "si" : undefined}
                 className={`${dia === diaVisible ? "grid" : "hidden"} relative border-r lg:grid ${T.borde} ${dia === hoy ? T.hoyColumna : ""}`}
-                style={{ gridTemplateRows: `repeat(${filas}, 1.75rem)` }}
+                // Filas de cinco minutos: las clases se ubican en ellas, y las
+                // líneas abarcan seis. Mismo alto total que la columna de horas.
+                style={{
+                  gridTemplateRows: `repeat(${filas * FILAS_POR_TRAMO}, calc(1.75rem / ${FILAS_POR_TRAMO}))`,
+                }}
               >
                 {/* Una línea al pie de cada tramo: la que cierra la hora en punto
                     más marcada, la de la media más tenue. Es lo que permite
@@ -313,24 +319,30 @@ export function GrillaCalendario({
                     className={`border-b ${
                       i % 2 === 0 ? T.lineaTenue : T.borde
                     }`}
-                    style={{ gridRow: i + 1, gridColumn: 1 }}
+                    style={{
+                      gridRow: `${i * FILAS_POR_TRAMO + 1} / span ${FILAS_POR_TRAMO}`,
+                      gridColumn: 1,
+                    }}
                   />
                 ))}
 
                 {delDia.length === 0 ? (
                   <p
                     className={`self-start px-3 pt-3 text-sm lg:hidden ${T.vacio}`}
-                    style={{ gridRow: 1, gridColumn: 1 }}
+                    style={{ gridRow: `1 / span ${FILAS_POR_TRAMO * 2}`, gridColumn: 1 }}
                   >
                     El {nombreDelDia(dia)} no hay clases.
                   </p>
                 ) : null}
 
                 {delDia.map((clase) => {
-                  const inicio = tramoDe(clase.inicio, desde);
+                  const inicio = filaDe(clase.inicio, desde);
                   const alto = tramosQueOcupa(clase.inicio, clase.fin);
                   const ubicacion: Ubicacion = {
-                    style: { gridRow: `${inicio + 1} / span ${alto}`, gridColumn: 1 },
+                    style: {
+                      gridRow: `${inicio + 1} / span ${filasQueOcupa(clase.inicio, clase.fin)}`,
+                      gridColumn: 1,
+                    },
                     className: "z-10 mx-1 overflow-hidden rounded border px-2 py-1",
                     tramos: alto,
                     pasada: esPasada(clase.inicio, ahora),

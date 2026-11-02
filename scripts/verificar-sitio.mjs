@@ -208,27 +208,32 @@ try {
       document.body.textContent?.match(/(\d{2}):00/)?.[1] ?? -1,
     );
 
+    // Se mide en **píxeles contra la hora escrita**, no contra el número de
+    // fila: las filas son de cinco minutos desde el 02/11/2026 y lo que importa
+    // es que el bloque quede donde el eje dice esa hora. Medido así, una clase
+    // de las 14:50 dibujada en el tramo de las 15:00 falla (PRD-0022 §14).
+    const minutos = (h, m) => Number(h) * 60 + Number(m);
     const bloques = [];
     for (const a of document.querySelectorAll("main a[style*='grid-']")) {
-      // Del estilo **calculado**, no del atributo: el navegador lo escribe
-      // `grid-row: 15 / span 2` cuando la grilla llega del servidor y lo resume
-      // en `grid-area: 15 / 1 / span 2` cuando la dibuja el cliente.
-      const cs = getComputedStyle(a);
-      const m = [null, cs.gridRowStart, cs.gridRowEnd.replace("span ", "")];
-      const hhmm = a.textContent?.match(/(\d{1,2}):(\d{2})/);
-      if (!m || !hhmm) continue;
-      const [, tramo, span] = m.map(Number);
+      const rango = a.textContent?.match(/(\d{1,2}):(\d{2})(?:–(\d{1,2}):(\d{2}))?/);
+      if (!rango) continue;
+      const empieza = minutos(rango[1], rango[2]);
+      // Sin hora de término escrita, dura una hora: es lo que `rangoHorario` omite.
+      const dura = rango[3] ? minutos(rango[3], rango[4]) - empieza : 60;
       const caja = a.getBoundingClientRect();
       const columna = a.parentElement.getBoundingClientRect();
+      const arribaEsperado = ((empieza - primeraHora * 60) / 30) * fila;
       bloques.push({
-        // El alto dibujado contra los tramos que dice ocupar.
-        altoOk: Math.abs(caja.height - span * fila) <= 1,
-        // Y el borde de arriba contra el tramo en que dice empezar.
-        arribaOk: Math.abs(caja.top - columna.top - (tramo - 1) * fila) <= 1,
-        // Y la hora escrita contra la hora que le toca por su posición.
+        hora: `${rango[1]}:${rango[2]}`,
+        // El alto dibujado contra la duración que dice tener.
+        altoOk: Math.abs(caja.height - (dura / 30) * fila) <= 1,
+        // Y el borde de arriba contra la hora que dice, leída en el eje.
+        arribaOk: Math.abs(caja.top - columna.top - arribaEsperado) <= 1,
+        // Y la fila en que el navegador lo ubicó, en filas de cinco minutos.
+        // Del estilo **calculado**: el atributo llega como `grid-row` desde el
+        // servidor y como `grid-area` cuando lo dibuja el cliente.
         horaOk:
-          Number(hhmm[1]) * 60 + Number(hhmm[2]) ===
-          primeraHora * 60 + (tramo - 1) * 30,
+          (Number(getComputedStyle(a).gridRowStart) - 1) * 5 === empieza - primeraHora * 60,
       });
     }
     return { encabezados, conLinea, bloques };

@@ -23,6 +23,18 @@ import { lunesDe, sumarDias } from "../semana.ts";
 
 export const MINUTOS_POR_TRAMO = 30;
 
+/**
+ * Las clases se **ubican** en filas de cinco minutos, aunque las líneas se
+ * dibujen cada media hora.
+ *
+ * Antes se ubicaban en el tramo de media hora más cercano, y una clase de las
+ * 14:50 se dibujaba en el de las 15:00 (PRD-0022 §14): el bloque decía "14:50"
+ * y el eje decía otra cosa. Con filas de cinco minutos cae donde dice, y una
+ * de 18:30 sigue cayendo justo sobre la línea de la media.
+ */
+export const MINUTOS_POR_FILA = 5;
+export const FILAS_POR_TRAMO = MINUTOS_POR_TRAMO / MINUTOS_POR_FILA;
+
 /** Una clase sin `fin` se asume de una hora, como la parrilla. */
 const MINUTOS_QUE_SE_SUPONEN = 60;
 
@@ -41,17 +53,26 @@ function horaDecimal(iso: string): number {
 }
 
 /**
- * En qué tramo empieza una clase, contando desde la hora en que abre la grilla.
- * El primero es el 0.
+ * En qué fila de cinco minutos empieza una clase, contando desde la hora en que
+ * abre la grilla. La primera es la 0.
  */
-export function tramoDe(inicio: string, horaDeApertura: number): number {
-  return Math.round((horaDecimal(inicio) - horaDeApertura) * (60 / MINUTOS_POR_TRAMO));
+export function filaDe(inicio: string, horaDeApertura: number): number {
+  return Math.round((horaDecimal(inicio) - horaDeApertura) * (60 / MINUTOS_POR_FILA));
 }
 
 /**
- * Cuántos tramos ocupa. **Se redondea hacia arriba**: una clase de 45 minutos
- * ocupa dos tramos, porque mostrar uno la haría parecer más corta y dejaría un
- * hueco donde en realidad hay una clase.
+ * Cuántas filas de cinco minutos ocupa: su duración, redondeada hacia arriba
+ * para que una clase nunca se dibuje más corta de lo que dura.
+ */
+export function filasQueOcupa(inicio: string, fin: string | null): number {
+  const minutos = duracionMin(inicio, fin) ?? MINUTOS_QUE_SE_SUPONEN;
+  return Math.max(1, Math.ceil(minutos / MINUTOS_POR_FILA));
+}
+
+/**
+ * Cuántos tramos de media hora ocupa, para decidir **cuánto texto cabe** en el
+ * bloque, no dónde se dibuja. **Se redondea hacia arriba**: una clase de 45
+ * minutos cuenta como dos tramos.
  */
 export function tramosQueOcupa(inicio: string, fin: string | null): number {
   const minutos = duracionMin(inicio, fin) ?? MINUTOS_QUE_SE_SUPONEN;
