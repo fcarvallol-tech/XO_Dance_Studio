@@ -89,6 +89,18 @@ Cuatro sedes con costos radicalmente distintos:
 | **EB Dance Studio** | **$27.000/hora** | **40** | La más grande y la más cara. Desde el 27/09/2026 |
 | **Studio 98** | **$23.500/hora** | **35** | Desde el 05/10/2026. Las cuentas de equilibrio de abajo todavía no la incluyen |
 
+🔴 **Dos sedes tienen dos nombres cada una, y eso ya casi creó una sede duplicada.** Felipe las
+nombra por el barrio o el metro; la base las tiene por su nombre propio. **Son la misma fila de
+`sedes`, no se crea ninguna sede nueva al oírlas:**
+
+| Como las nombra Felipe | Como está en la base |
+|---|---|
+| **Manuel Montt** | **Studio 98** — Barros Borgoño 71 of. 101, Providencia, al lado del metro Manuel Montt (confirmado por Felipe el 02/11/2026) |
+| **Los Dominicos** | **Centro Comunitario Diaguitas** — Diaguitas 911, Las Condes, en el sector de Los Dominicos. Es la sede gratis |
+
+Antes de insertar una sede porque apareció un nombre que no está en `sedes`, **comparar la
+dirección**: las dos veces que esto pasó, la dirección ya estaba cargada.
+
 **Punto de equilibrio por clase, con el pricing de packs** (pack de 4 = $7.500 por clase):
 
 | Sede | Alumnas para cubrir la sala | Con 8 alumnas | Con 15 alumnas |
