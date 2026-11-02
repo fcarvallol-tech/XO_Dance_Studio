@@ -368,25 +368,30 @@ cualquier otro crédito consumido: **hizo el mismo trabajo, y el costo del regal
 ella**. Es una regla de negocio, no un efecto del código. Consecuencia que hay que tener presente:
 una clase pagada con regalo **cuesta $250 y aporta $0** de ingreso, así que regalar no es gratis.
 
-### 🟡 Incentivo por promedio mensual — propuesto, sin cerrar
+### Incentivo por promedio — reglas cerradas el 02/11/2026
 
-**Propuesto el 21/10/2026 (Felipe): $10.000 extra al mes** si la profesora mantiene un promedio
-sobre las 20 alumnas durante el mes. El ejemplo con el que lo planteó: clases de **25, 15, 18 y
-22** alumnas obtienen el incentivo.
+**$10.000 extra** cuando el promedio de alumnas es **mayor o igual a 20** (Felipe, 02/11/2026).
+El corte es `>= 20`, no `> 20`: el ejemplo con que se planteó —25, 15, 18 y 22— promedia
+exactamente 20 y **sí gana el incentivo**.
 
-🔴 **Ese ejemplo promedia exactamente 20**, no más de 20: `(25+15+18+22) / 4 = 20`. Así que el
-enunciado "sobre las 20" y el ejemplo dicen cosas distintas, y la diferencia es si el corte es
-`>= 20` o `> 20`. **Hay que decidirlo antes de implementarlo**, y el ejemplo sugiere `>= 20`. Es
-la misma clase de ambigüedad que la hora de término de la promoción en PRD-0012 §1: un borde
-leído al revés cambia quién cobra.
+**El promedio se saca sobre las 4 últimas clases dictadas del curso** (Felipe, 02/11/2026). Tres
+consecuencias que el PRD tiene que respetar:
 
-Tres cosas más sin definir, que el PRD tiene que preguntar:
+1. **Son las últimas 4 dictadas, no las del mes.** Es una ventana móvil que **puede cruzar el
+   cambio de mes**: si un curso tuvo 3 clases en noviembre, la cuarta sale de octubre. No es
+   "promedio del mes" y no se debe implementar como tal.
+2. **Solo cuentan las dictadas.** Una clase que no se dictó no entra como cero: sale de la
+   ventana, y la ventana toma la anterior.
+3. **Es por curso, no por profesora.** Una profesora con dos cursos tiene dos promedios.
 
-1. **El promedio se saca sobre qué clases.** Solo las dictadas, o también las que no se dictaron.
-   Una clase no dictada contada como cero le hunde el promedio por algo que puede no ser suyo.
-2. **Si la profesora dicta dos cursos**, es un promedio junto o uno por curso.
-3. **Es un monto fijo de $10.000**, no por clase ni por curso. Techo: $50.000 al mes con cinco
-   profesoras, que contra el margen de una clase de 20 alumnas es barato.
+🔴 **Lo único que queda abierto:** si una profesora con dos cursos y los dos sobre 20 cobra
+**$10.000 o $20.000**. El enunciado dice "$10.000 extra" en singular y el promedio es por curso,
+así que las dos lecturas son defendibles. Techo si es por curso: hoy hay 7 cursos activos.
+
+**Una clase que no se dicta se tiene que recuperar** (Felipe, 02/11/2026). Esto no es solo del
+incentivo: significa que el estado "no dictada" **genera una obligación de reagendar**, no solo
+una decisión de pago. El PRD de la liquidación tiene que decir si el sistema la registra, la
+muestra como pendiente, o si eso se coordina por fuera.
 
 ⚠️ **Teens se calcula sobre otra base.** Ver más abajo: allá el variable va por inscripción
 mensual, no por crédito. Son dos ramas de negocio distintas y el pago sigue a cada una.

@@ -6,6 +6,40 @@
 
 ---
 
+## Estado al 2 de noviembre de 2026
+
+> 🔴 **El plazo del 1 de noviembre se pasó.** A las profesoras había que pagarles ayer y **la
+> liquidación no existe**: el PRD quedó en borrador sin commitear el 20/10 y desde entonces no se
+> tocó. El pago de octubre se hizo —o no— a mano, por fuera del sistema. Lo que esto cambia:
+> **ya no hay fecha que salvar, hay un mes que reconstruir.** Octubre tiene que quedar calculado
+> en el sistema igual, para que cuadre con lo que efectivamente se pagó y para que noviembre no
+> arranque con el mismo problema. El plazo real ahora es el **1 de diciembre**.
+
+### Lo que está esperando, al 2/11/2026
+
+| Qué | Desde | Estado |
+|---|---|---|
+| Rama `alinear-roadmap` (3 commits de documentación) | 21/10 | **Sin mergear.** `main` sigue en `5f26ed2` del 6/10 |
+| Bio de Carli | 20/10 | Migración escrita en el Mac, **nunca commiteada ni aplicada**. En producción sigue el placeholder |
+| PRD-0010 parte 3, borrador de 594 líneas | 20/10 | Escrito en el Mac, **nunca commiteado**. Revisar si sobrevive como archivo sin seguimiento antes de reescribirlo |
+| Cuatro cambios de horario | 21/10 y 2/11 | Ninguno aplicado. Ver abajo |
+| Staging pausado + token de Supabase vencido | ~13/10 | Bloquea migraciones **y** los preview de Vercel |
+
+### Los cuatro cambios de horario pendientes
+
+| # | Cambio | Pedido | Consecuencia |
+|---|---|---|---|
+| 1 | **Lina**: 17:00 → **17:30** | 21/10 | Empieza a la media hora: destapa la deuda de que una clase de 14:50 se dibuje a las 15:00 |
+| 2 | **Carli**, la de las 18:00 → **18:30** | 21/10 | Igual que la anterior |
+| 3 | **Drimy** → **jueves 17:00**, misma sede | 2/11 | Cambio de día: hay clases futuras ya materializadas que mover o cancelar |
+| 4 | **Pau** → **martes 18:00**, de Los Dominicos a **Los Leones** | 2/11 | 🔴 **Sube el costo.** Los Dominicos es $0/hora y Los Leones $17.000: ~$68.000 más al mes, y el piso de esa clase pasa de 3 a 6 alumnas con pack de 8 |
+
+⚠️ **El cambio 4 está sin resolver: Pau dicta dos cursos** —Girly y Reggaeton Femme— y "el curso
+de la Pau" no dice cuál. Si es Reggaeton Femme, pasa de jueves 19:30 a martes 18:00 y hay que
+comprobar que no choque con la Girly del martes en la misma sala.
+
+---
+
 ## Estado al 20 de octubre de 2026
 
 > **Esta sección es el resumen de una página.** Si vuelves después de varios días, lee esto y
