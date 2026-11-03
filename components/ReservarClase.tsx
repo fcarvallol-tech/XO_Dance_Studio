@@ -6,6 +6,7 @@ import Link from "next/link";
 import { reservarClase } from "@/lib/acciones";
 import { lugaresLibres, type ClaseDelCalendario } from "@/lib/compras";
 import { rangoHorario } from "@/lib/dominio/horarios";
+import { AVISO_CANCELACION } from "@/lib/dominio/reservas";
 
 /**
  * Reservar **una** clase, la que trae la URL.
@@ -66,7 +67,7 @@ export function ReservarClase({
       <dl className="rounded-lg border border-xo-negro/20 p-5">
         <Dato etiqueta="Horario" valor={rangoHorario(clase.inicio, clase.fin)} />
         <Dato etiqueta="Profesora" valor={clase.profesoraNombre} />
-        <Dato etiqueta="Dónde" valor={`${clase.sedeNombre}, ${clase.sedeComuna}`} />
+        <Dato etiqueta="Dónde" valor={`${clase.sedeDireccion}, ${clase.sedeComuna}`} />
         <Dato
           etiqueta="Lugares"
           valor={libres === 0 ? "Llena" : `Quedan ${libres} de ${clase.cupoMaximo}`}
@@ -135,7 +136,7 @@ export function ReservarClase({
           </button>
 
           <p className="mt-4 text-sm leading-relaxed text-xo-gris">
-            Puedes cancelar hasta 30 minutos antes y recuperas tu clase.
+            {AVISO_CANCELACION}
           </p>
         </>
       )}

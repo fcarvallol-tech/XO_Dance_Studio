@@ -414,7 +414,7 @@ export function GrillaCalendario({
                       </p>
                       {alto > 2 ? (
                         <p className="mt-0.5 text-[11px] leading-tight text-xo-blanco/50">
-                          {clase.sedeNombre}
+                          {clase.sedeDireccion}
                         </p>
                       ) : null}
                     </Link>

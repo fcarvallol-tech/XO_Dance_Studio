@@ -49,3 +49,23 @@ export function destaque(profesoraSlug: string, filtro: string | null): Destaque
   if (filtro === null) return "normal";
   return profesoraSlug === filtro ? "destacada" : "atenuada";
 }
+
+/**
+ * Hasta cuántas horas antes de que empiece se cancela recuperando la clase
+ * (Felipe, 02/11/2026; antes eran 30 minutos). Después se puede cancelar igual,
+ * pero la clase se consume.
+ *
+ * Quien aplica la regla es `cancelar_reserva()` en la base, con el parámetro
+ * `cancelacion_minutos`. Esto es lo que dicen los textos y lo que decide si se
+ * le advierte antes de cancelar: si no coinciden, el sitio promete algo que la
+ * base no cumple. La migración 20261102150000 deja el parámetro en 720 y lo
+ * comprueba.
+ */
+export const HORAS_PARA_CANCELAR = 12;
+
+export const AVISO_CANCELACION = `Puedes cancelar hasta ${HORAS_PARA_CANCELAR} horas antes y recuperas tu clase.`;
+
+/** Lo mismo que `v_a_tiempo` en `cancelar_reserva()`: estricto, como allá. */
+export function cancelaATiempo(inicio: string, ahora: Date): boolean {
+  return ahora.getTime() < new Date(inicio).getTime() - HORAS_PARA_CANCELAR * 60 * 60 * 1000;
+}

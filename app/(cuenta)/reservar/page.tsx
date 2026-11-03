@@ -47,7 +47,7 @@ export default async function Reservar() {
       <TituloPortal
         eyebrow="Reservar"
         titulo="Las próximas clases"
-        bajada="Reservas al tiro, sin esperar a nadie. Cada reserva descuenta una clase de tu saldo, y puedes cancelar hasta 30 minutos antes."
+        bajada="Reservas al tiro, sin esperar a nadie. Cada reserva descuenta una clase de tu saldo, y puedes cancelar hasta 12 horas antes."
       />
 
       <ErrorDeLectura que="tu saldo de clases" error={saldo.error} />

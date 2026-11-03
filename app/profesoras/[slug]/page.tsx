@@ -11,6 +11,7 @@ import {
   cuandoConMayuscula,
   estiloDeProfesora,
   horariosDeProfesora,
+  direccionDe,
   nombreDe,
   porSlug,
 } from "@/lib/catalogo";
@@ -161,7 +162,7 @@ export default async function PerfilProfesora({ params }: Props) {
                         {cuandoConMayuscula(horario)} · {nombreDe(todos, horario.cursoSlug)}
                       </span>
                       <span className="block text-sm text-xo-blanco/55">
-                        {nombreDe(sedes, horario.sedeSlug)}
+                        {direccionDe(sedes, horario.sedeSlug)}
                       </span>
                     </li>
                   ))}
