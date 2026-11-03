@@ -281,14 +281,8 @@ npx supabase db push             # ⚠️ solo con aprobación explícita de Fel
 
 ## Pendientes de Carla
 
-- **Video del hero.** Es lo que más falta: la portada de PRD-0022 es mínima y hoy el hero es negro
-  plano. Bloquea el despliegue.
 - **Videos de las profesoras.** ~~Las fotos~~ llegaron el 02/10/2026: las **cinco** activas están
   en `public/profesoras/`, con el mismo encuadre, generadas por `scripts/fotos-profesoras.mjs`
   —la de Isi se convirtió desde HEIC el 05/10—. La de **Lina** se agrandó 1,58x desde un JPG
   chico: si hay una versión más grande, se reemplaza el archivo de `Assets/`, se vuelven a medir
   los ojos y se corre el script.
-- ~~**Bio real de Carli**~~ — **llegó el 20/10/2026.** Queda cargarla: es una migración, porque
-  las bios viven en la base. Va **literal**, con sus emojis y sin corregirle la ortografía. Con
-  eso las cinco activas tienen bio propia; la de Maida dejó de ser pendiente porque está inactiva.
-- ~~Horarios, cupos y ubicación~~: resueltos. El catálogo está cargado y las tres sedes también.
