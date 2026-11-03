@@ -59,7 +59,7 @@ export default async function ReservarUna({ params }: Props) {
       <TituloPortal
         eyebrow="Reservar"
         titulo={clase.cursoNombre}
-        bajada={`${cuandoLegible(clase.inicio)} · con ${clase.profesoraNombre} · ${clase.sedeNombre}, ${clase.sedeComuna}`}
+        bajada={`${cuandoLegible(clase.inicio)} · con ${clase.profesoraNombre} · ${clase.sedeDireccion}, ${clase.sedeComuna}`}
       />
 
       <ReservarClase clase={clase} saldo={saldo.datos} />

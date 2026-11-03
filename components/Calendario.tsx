@@ -6,7 +6,15 @@ import { cancelarReserva, reservarClase } from "@/lib/acciones";
 import { diaLegible, lugaresLibres, type ClaseDelCalendario } from "@/lib/compras";
 import { clp } from "@/lib/planes";
 import { rangoHorario } from "@/lib/dominio/horarios";
-import { destaque, estadoParaAlumna, type Destaque, type EstadoParaAlumna } from "@/lib/dominio/reservas";
+import {
+  AVISO_CANCELACION,
+  HORAS_PARA_CANCELAR,
+  cancelaATiempo,
+  destaque,
+  estadoParaAlumna,
+  type Destaque,
+  type EstadoParaAlumna,
+} from "@/lib/dominio/reservas";
 import { GrillaCalendario, type Ubicacion } from "@/components/GrillaCalendario";
 
 /**
@@ -172,7 +180,7 @@ export function Calendario({
             <dl className="mt-6 divide-y divide-xo-negro/10 border-y border-xo-negro/10 text-sm">
               <Fila etiqueta="Horario" valor={rangoHorario(abierta.inicio, abierta.fin)} />
               <Fila etiqueta="Profesora" valor={abierta.profesoraNombre} />
-              <Fila etiqueta="Dónde" valor={`${abierta.sedeNombre}, ${abierta.sedeComuna}`} />
+              <Fila etiqueta="Dónde" valor={`${abierta.sedeDireccion}, ${abierta.sedeComuna}`} />
               {abierta.especial ? (
                 <Fila
                   etiqueta="Precio"
@@ -298,7 +306,7 @@ function BloqueAlumna({
       </p>
       <p className={`mt-0.5 text-[11px] leading-tight ${c.sub}`}>{clase.profesoraNombre}</p>
       {ubicacion.tramos > 2 ? (
-        <p className={`mt-0.5 text-[11px] leading-tight ${c.sub}`}>{clase.sedeNombre}</p>
+        <p className={`mt-0.5 text-[11px] leading-tight ${c.sub}`}>{clase.sedeDireccion}</p>
       ) : null}
     </button>
   );
@@ -360,8 +368,12 @@ function Accion({
     return (
       <div className="mt-6">
         <p className="text-sm leading-relaxed text-xo-negro">
-          <span aria-hidden="true">✦ </span>Esta clase ya es tuya. Puedes cancelar hasta 30 minutos
-          antes y recuperas la clase.
+          <span aria-hidden="true">✦ </span>Esta clase ya es tuya.{" "}
+          {/* Con 12 horas el plazo deja de ser un detalle: se le dice antes de
+              que apriete, no después de que pierda la clase. */}
+          {cancelaATiempo(clase.inicio, new Date())
+            ? AVISO_CANCELACION
+            : `Ya pasó el plazo de ${HORAS_PARA_CANCELAR} horas: si cancelas, la clase se descuenta igual.`}
         </p>
         <button
           type="button"

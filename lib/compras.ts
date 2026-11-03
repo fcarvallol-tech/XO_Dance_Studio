@@ -47,6 +47,8 @@ export type ClaseDelCalendario = {
   profesoraSlug: string;
   profesoraNombre: string;
   sedeNombre: string;
+  /** Lo que se le muestra a la alumna: la calle, no el nombre de la sala (02/11/2026). */
+  sedeDireccion: string;
   sedeComuna: string;
   cupoMaximo: number;
   tomados: number;

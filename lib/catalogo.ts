@@ -177,6 +177,19 @@ export function nombreDe<T extends { slug: string; nombre: string }>(
   return porSlug(lista, slug)?.nombre ?? slug;
 }
 
+/**
+ * Dónde es, como se le dice a la alumna: la calle y la comuna, no el nombre de
+ * la sala (Felipe, 02/11/2026). Si la sede ya no está, el slug pelado.
+ */
+export function direccionDe(
+  sedes: Pick<Sede, "slug" | "direccion" | "comuna">[],
+  slug: string | null | undefined,
+): string | null {
+  if (!slug) return null;
+  const sede = sedes.find((s) => s.slug === slug);
+  return sede ? `${sede.direccion}, ${sede.comuna}` : slug;
+}
+
 export function horariosDeCurso(horarios: Horario[], slug: string): Horario[] {
   return horarios.filter((h) => h.cursoSlug === slug).sort(porDiaYHora);
 }

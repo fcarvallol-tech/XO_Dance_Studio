@@ -30,15 +30,17 @@ export function Sedes({ sedes }: { sedes: Sede[] }) {
             <li key={sede.slug} className="bg-xo-negro-alt p-7 sm:p-9">
               <p className="xo-eyebrow text-xo-rosa-claro">{sede.comuna}</p>
 
+              {/* La dirección es el título, no el nombre de la sala (Felipe,
+                  02/11/2026): es lo que le sirve para llegar. El nombre queda
+                  abajo, chico, hasta que Felipe diga si se saca del todo. */}
               <h3 className="mt-3 font-display text-[clamp(1.5rem,3.5vw,2rem)] leading-tight text-xo-rosa">
-                {sede.nombre}
+                <address className="not-italic">{sede.direccion}</address>
               </h3>
 
-              <address className="mt-5 text-lg leading-relaxed text-xo-blanco/85 not-italic">
-                {sede.direccion}
-                <br />
+              <p className="mt-3 text-lg leading-relaxed text-xo-blanco/85">
                 {sede.comuna}, Santiago
-              </address>
+              </p>
+              <p className="mt-1 text-sm text-xo-blanco/60">{sede.nombre}</p>
 
               {sede.referencia ? (
                 <p className="mt-3 text-sm text-xo-blanco/60">

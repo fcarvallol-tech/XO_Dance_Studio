@@ -44,8 +44,8 @@ de sus atletas.
 | Profesora | Cursos | Instagram |
 |---|---|---|
 | Carli | Girly —dos horarios: viernes en Studio 98 y sábado en Los Leones— · ~~Teens~~ | @carlataty.20 |
-| Pau | Reggaeton Femme · Girly | @pau_balbontinc |
-| Drimy | Reggaeton Femme | @ladrimy |
+| Pau | Reggaeton Femme —martes en Los Leones y jueves en Los Dominicos— · ~~Girly~~ | @pau_balbontinc |
+| Drimy | **Reggaeton** (hasta el 01/11/2026 se llamaba Reggaeton Femme) | @ladrimy |
 | Lina | Slow Femme | @linaapop |
 | **Isi** | Reggaeton Antiguo | @isimonttrios |
 | ~~Maida~~ | — | @maidaquirozc |
@@ -174,8 +174,9 @@ cupos están en `null` y se muestran como **"Por confirmar"**. No inventarlos.
 
 | Curso | Público | Estilo | Nivel | Profesoras |
 |---|---|---|---|---|
-| **Reggaeton Femme** | Desde los 15 años | Reggaeton Femme | Principiante | Drimy · Pau |
-| **Girly** | Desde los 15 años | Girly | Principiante | Pau · Carli |
+| **Reggaeton Femme** | Desde los 15 años | Reggaeton Femme | Principiante | Pau |
+| **Reggaeton** | Desde los 15 años | Reggaeton | Principiante | Drimy |
+| **Girly** | Desde los 15 años | Girly | Principiante | Carli |
 | **Slow Femme** | Desde los 15 años | Slow Femme | Principiante | Lina |
 | ~~**Teens**~~ | Niñas de 11 a 14 años · **inactivo desde el 05/10/2026** | Variado | Principiante | ~~Carli~~ |
 | **Reggaeton Antiguo** | Desde los 15 años | Reggaeton Antiguo | Principiante | Isi |
@@ -198,33 +199,41 @@ cupos están en `null` y se muestran como **"Por confirmar"**. No inventarlos.
 > `20261005120000_catalogo_octubre.sql`. Con esto **todos los cursos activos son desde los 15
 > años**.
 
-### Horarios (vigentes desde el lunes 09/11/2026)
+### Horarios (vigentes desde el domingo 01/11/2026)
 
 Siete clases a la semana. Viven en la tabla `horarios` y se muestran en el sitio.
 
 | Curso | Profesora | Día | Hora | Sede |
 |---|---|---|---|---|
-| Girly | Pau | martes | **18:00** | **Seducción Latina Experience** (Los Leones) |
-| Reggaeton Femme | **Drimy** | **jueves** | 17:00 | Seducción Latina Experience (Los Leones) |
+| **Reggaeton Femme** | Pau | martes | **18:00** | **Seducción Latina Experience** (Los Leones) |
+| **Reggaeton** | **Drimy** | **jueves** | 17:00 | Seducción Latina Experience (Los Leones) |
 | Reggaeton Femme | Pau | jueves | 19:30 | Centro Comunitario Diaguitas (Los Dominicos) |
 | Reggaeton Antiguo | Isi | viernes | 17:00 | Studio 98 (Manuel Montt) |
 | Girly | Carli | viernes | **20:30** | **Studio 98** (Manuel Montt) |
 | Slow Femme | Lina | sábado | **17:30** | Seducción Latina Experience (Los Leones) |
 | Girly | Carli | sábado | **18:30** | Seducción Latina Experience (Los Leones) |
 
-> **Cambio del 09/11/2026: cinco horarios se mueven** (Felipe, 02/11/2026). La semana del 2 al 8
-> de noviembre se dictó con la parrilla anterior; la primera clase con esta es el lunes 9.
-> Drimy pasa de lunes a jueves; Pau lleva su Girly de Diaguitas a Los Leones; Carli lleva su
-> Girly del viernes a Studio 98, a las 20:30; Lina y Carli corren media hora el sábado y quedan
-> **seguidas, sin margen, a propósito**. **Excepción de una fecha:** el viernes 13/11 la Girly de
-> Carli es a las 18:30 en Studio 98. Migración `20261102120000_horarios_noviembre.sql`.
+> **Cambio del 01/11/2026: cinco horarios se mueven** (Felipe, 02/11/2026). Rige **desde el
+> domingo 1 de noviembre**: la semana del 2 al 8 ya va con esta parrilla. Un corte el lunes 9 se
+> llegó a proponer y nunca se tomó. Drimy pasa de lunes a jueves —su clase del **lunes 02/11 no
+> se dictó**: la decisión se tomó dos semanas antes y ya se sabía; queda cancelada con ese motivo
+> y **no tiene consecuencia de pago**—. La clase de Pau del martes pasa a Los Leones a las 18:00 y
+> **deja de ser Girly: es Reggaeton Femme**. Carli lleva su Girly del viernes a Studio 98, a las
+> 20:30; Lina y Carli corren media hora el sábado y quedan **seguidas, sin margen, a propósito**.
+> **Excepción de una fecha:** el viernes 13/11 la Girly de Carli es a las 18:30 en Studio 98.
+> Migración `20261102120000_horarios_noviembre.sql`.
 >
-> **Carli dicta dos horarios del mismo curso, Girly** —no dos cursos distintos—: el **viernes en
-> Studio 98** y el **sábado en Los Leones** (Felipe, 02/11/2026).
+> **Los cursos quedan así** (Felipe, 02/11/2026): **Girly solo con Carli**, en dos horarios del
+> mismo curso —el **viernes en Studio 98** y el **sábado en Los Leones**—; **Reggaeton Femme con
+> Pau**, martes y jueves; y el de **Drimy se llama Reggaeton**. En la base, `reggaeton-femme`
+> queda con Pau y Drimy pasa a un curso nuevo, `reggaeton`: renombrar la fila compartida le
+> habría cambiado el nombre también al jueves de Pau. Sus clases pasadas conservan el curso con
+> que se dictaron. 🟡 **El curso `reggaeton` no tiene descripción**: el sitio no la muestra, y no
+> se inventa; falta que Felipe la mande si algún día se usa.
 >
-> **Dos clases pasan a costar más:** la Girly de Pau, de $18.000 a **$35.000** de costo fijo (piso
-> con pack de 8, de 3 a 6 alumnas), y la Girly del viernes de Carli, de $35.000 a **$41.500** (de
-> 6 a 7 alumnas). El cupo de esta última sube a **35**, la capacidad de Studio 98.
+> **Dos clases pasan a costar más:** el martes de Pau, de $18.000 a **$35.000** de costo fijo
+> (Diaguitas → Los Leones), y la Girly del viernes de Carli, de $35.000 a **$41.500** (Los Leones
+> → Studio 98).
 
 > **Cambio del 08/09/2026: las dos clases de Pau se mueven** por un problema de salas. Girly pasa
 > de lunes 20:00 a **martes 20:00** y Reggaeton Femme de miércoles 20:00 a **jueves 19:30**, las
@@ -349,10 +358,14 @@ dos segmentos de precio, ni verificación, ni un documento personal que guardar.
 universitarias se hará con un **código de descuento** (PRD-0013), que llega por el canal que
 corresponda y no obliga a construir un flujo de aprobación ni a custodiar certificados.
 
-**Vigencia de los créditos: 45 días** desde que se acreditan (desde el 05/10/2026; antes eran 60).
-Aplica a lo que se emite desde ese día —packs y regalos—: **los créditos ya emitidos conservan su
-fecha**, porque se guarda al emitir. Una transferencia pagada antes y aprobada después recibe 45.
-**Ventana de cancelación: hasta 30 minutos antes** de la clase, devolviendo el crédito.
+**Vigencia de los créditos: 30 días** desde que se acreditan (Felipe, 02/11/2026; 45 desde el
+05/10/2026, y antes 60). Aplica a lo que se emite desde el cambio —packs y regalos—: **los créditos
+ya emitidos conservan su fecha**, porque se guarda al emitir. La migración
+`20261102140000_vigencia_30_dias.sql` suma los vencimientos antes y después y aborta si cambia uno.
+
+**Ventana de cancelación: hasta 12 horas antes** de la clase, devolviendo el crédito (Felipe,
+02/11/2026). Después se puede cancelar, pero la clase se consume. Hasta esa fecha eran **30
+minutos**: lo aplicaba `cancelar_reserva()` con el parámetro `cancelacion_minutos`, que pasa a 720.
 
 ### Economía unitaria por clase (definitiva)
 
@@ -394,25 +407,28 @@ cualquier otro crédito consumido: **hizo el mismo trabajo, y el costo del regal
 ella**. Es una regla de negocio, no un efecto del código. Consecuencia que hay que tener presente:
 una clase pagada con regalo **cuesta $250 y aporta $0** de ingreso, así que regalar no es gratis.
 
-### Incentivo por promedio — reglas cerradas el 02/11/2026
+### Incentivo por promedio — regla del 02/11/2026
 
-**$10.000 extra** cuando el promedio de alumnas es **mayor o igual a 20** (Felipe, 02/11/2026).
-El corte es `>= 20`, no `> 20`: el ejemplo con que se planteó —25, 15, 18 y 22— promedia
-exactamente 20 y **sí gana el incentivo**.
+**Reemplaza la regla anterior del mismo día** ("4 últimas dictadas, ventana móvil, ≥ 20"). Felipe,
+02/11/2026:
 
-**El promedio se saca sobre las 4 últimas clases dictadas del curso** (Felipe, 02/11/2026). Tres
-consecuencias que el PRD tiene que respetar:
+**$10.000 extra** cuando el promedio de alumnas es **mayor o igual a 17**, sacado de **las 4
+mejores clases del mes por asistencia**, **dentro del mes calendario**.
 
-1. **Son las últimas 4 dictadas, no las del mes.** Es una ventana móvil que **puede cruzar el
-   cambio de mes**: si un curso tuvo 3 clases en noviembre, la cuarta sale de octubre. No es
-   "promedio del mes" y no se debe implementar como tal.
-2. **Solo cuentan las dictadas.** Una clase que no se dictó no entra como cero: sale de la
-   ventana, y la ventana toma la anterior.
+1. **Las 4 mejores, no las 4 últimas.** Si la profesora dicta 5 clases del curso en el mes, se
+   **descarta la peor**. La favorece a propósito: trabajó más.
+2. **No cruza meses.** El promedio es del mes calendario; ya no hay ventana móvil que tome una
+   clase del mes anterior.
 3. **Es por curso, no por profesora.** Una profesora con dos cursos tiene dos promedios.
+4. **Solo cuentan las dictadas.** Una clase que no se dictó no entra como cero.
 
-🔴 **Lo único que queda abierto:** si una profesora con dos cursos y los dos sobre 20 cobra
-**$10.000 o $20.000**. El enunciado dice "$10.000 extra" en singular y el promedio es por curso,
-así que las dos lecturas son defendibles. Techo si es por curso: hoy hay 7 cursos activos.
+🔴 **Queda abierto, sin decidir:**
+
+- **Qué pasa con un mes de menos de 4 clases** del curso: si se promedia lo que hay, si no
+  califica, o si se completa de otra forma.
+- **Si una profesora con dos cursos sobre el umbral cobra $10.000 o $20.000.** El enunciado dice
+  "$10.000 extra" en singular y el promedio es por curso, así que las dos lecturas son
+  defendibles.
 
 **Una clase que no se dicta se tiene que recuperar** (Felipe, 02/11/2026). Esto no es solo del
 incentivo: significa que el estado "no dictada" **genera una obligación de reagendar**, no solo
@@ -445,10 +461,13 @@ completa; desde la sexta, su tarifa menos $250.
 > $35.000 contra $35.000, y pack de 8 en Los Dominicos con 3 da $18.000 contra $18.000.
 >
 > **Studio 98 es la sede más exigente**, como corresponde a $23.500 la hora: con el pack de 8
-> necesita **7 alumnas** donde Los Leones necesita 6, y tiene 35 lugares que llenar.
+> necesita **7 alumnas** donde Los Leones necesita 6, y tiene 30 lugares que llenar (35 hasta el 02/11/2026).
 
 ⚠️ **El piso sube en tres de los seis casos.** Con packs de 8 en Los Leones ahora hacen falta
 **7** alumnas para no perder plata, no 6.
+
+⚠️ **Desde el 02/11/2026 Los Leones es para 18 y Studio 98 para 30** (Felipe). Las cuentas de sala
+llena de abajo siguen con 22 y **no se recalcularon**.
 
 **Capacidad real: 22 personas** en Los Leones y Diaguitas, confirmada el 30/08/2026. **EB Dance
 Studio son 40** (27/09/2026), así que las cuentas de abajo son de las dos salas de 22; en EB el
@@ -622,7 +641,7 @@ Santiago y regiones, contenido digital como canal de adquisición, cursos online
 | **Cuentas y roles** | ✅ Google y magic link, cuatro roles con `owner` como superconjunto de `admin` (PRD-0004) |
 | **Catálogo** | ✅ **En la base de datos, no en el código** (PRD-0015). Cursos, profesoras, horarios, sedes y planes. `lib/cursos.ts` y `lib/profesoras.ts` ya no existen |
 | **Venta** | ✅ **Por transferencia**, con aprobación manual y bandeja de admin (PRD-0017). Link compartible `/comprar/<oferta>` (PRD-0020). Regalo de créditos sin contarlo como ingreso (PRD-0023). 🔴 Pasarela de pago bloqueada por el SII |
-| **Créditos** | ✅ Lotes con vencimiento y libro de movimientos que nunca se edita. **45 días desde el 05/10/2026**, solo para lo que se emita desde entonces |
+| **Créditos** | ✅ Lotes con vencimiento y libro de movimientos que nunca se edita. **30 días desde el 02/11/2026** (45 desde el 05/10), solo para lo que se emita desde entonces |
 | **Reservas** | ✅ Calendario y reserva con descuento del crédito en una sola transacción, con el cupo validado en la base |
 | **Portales** | ✅ Los cuatro: alumna, profesora, administración y owner. El de la profesora **nunca** muestra datos de contacto de la alumna |
 | **Owner** | ✅ Métricas (parte 1) y egresos con caja neta (parte 2). 🔴 **Liquidación de profesoras sin escribir, y se paga el 1 de noviembre** |
@@ -720,14 +739,14 @@ sin caché de build · verificación real enviando el formulario desde producci�
 | Registro INAPI | Sin presentar |
 | ~~Cómo se cobran los intensivos mensuales Girly~~ | ✅ **Resuelto el 30/08/2026:** el formato intensivo desapareció con el catálogo nuevo. Créditos universales para todo, salvo Teens con suscripción |
 | ¿Un mes con 5 clases se cobra distinto que uno con 4? | Sin definir |
-| ~~¿Los créditos vencen? ¿En cuánto tiempo?~~ | ✅ **Sí: 45 días desde el 05/10/2026**, antes 60. El cambio aplica solo a lo que se emita desde entonces; la migración abortaba si cambiaba algún vencimiento ya existente. El pack de 8 **se vende y se marketea como pack para dos clases por semana** (Felipe, 06/10/2026), que es lo que hace que 45 días alcancen |
-| Ventana de cancelación: ¿hasta cuántas horas antes se devuelve el crédito? | Sin definir |
+| ~~¿Los créditos vencen? ¿En cuánto tiempo?~~ | ✅ **Sí: 30 días desde el 02/11/2026**; 45 desde el 05/10/2026 y antes 60. Lo que sigue es del cambio a 45: El cambio aplica solo a lo que se emita desde entonces; la migración abortaba si cambiaba algún vencimiento ya existente. El pack de 8 **se vende y se marketea como pack para dos clases por semana** (Felipe, 06/10/2026), que es lo que hace que 45 días alcancen |
+| ~~Ventana de cancelación: ¿hasta cuántas horas antes se devuelve el crédito?~~ | ✅ **Resuelto el 02/11/2026: 12 horas** (Felipe). Antes de eso regía, sin estar decidido, el valor inicial de 30 minutos |
 | ~~¿Sobrevive la clase de prueba gratis?~~ | ✅ **Resuelto el 28/09/2026: no.** El incentivo de primera inscripción pasa a los cupones de PRD-0013 |
 | Pasarela de pago y si se puede cobrar antes del Inicio de Actividades | Sin definir. Ver ADR-0003 |
 | ~~Componente **variable** del pago a profesoras~~ | ✅ **Resuelto: $250 por crédito consumido**, sobre el base de $18.000/hora (Felipe, 04/10/2026) |
 | ¿Por qué Los Dominicos es gratis y por cuánto tiempo? | Sin confirmar. Si es un favor, es un riesgo de concentración |
 | ¿Una alumna de Teens puede además comprar packs de Girly? | Sin definir |
 | ¿El precio de los packs es igual en ambas sedes? | Sin definir. El costo de sala no lo es |
-| ~~Sala con capacidad 45~~ | ✅ **Resuelto el 30/08/2026: son 22** en Diaguitas y Los Leones. Studio 98 tiene **35** (05/10/2026). Desde PRD-0021 el cupo **sale de `sedes.capacidad`**, no de un número escrito en el código, así que agregar una sala con otra capacidad ya no requiere tocar nada |
+| ~~Sala con capacidad 45~~ | ✅ **Resuelto el 30/08/2026: son 22** en Diaguitas y Los Leones. Studio 98 tiene **35** (05/10/2026). **Desde el 02/11/2026: Los Leones 18 y Studio 98 30** (Felipe); Diaguitas sigue en 22. Desde PRD-0021 el cupo **sale de `sedes.capacidad`**, no de un número escrito en el código, así que agregar una sala con otra capacidad ya no requiere tocar nada |
 | Qué significa "afiliado" en el perfil de la alumna | Sin definir |
 | ¿Cómo se maneja la cuenta de una alumna menor de edad? | ✅ **Resuelto por ADR-0006 (25/08/2026).** La premisa cambió: ya no hay menores de 11. La cuenta es de la alumna, con magic link por correo porque Google exige 13. Sin dependientes ni cuentas vinculadas. Para comprar, un perfil menor de 18 registra datos del apoderado y **el apoderado confirma por correo** |

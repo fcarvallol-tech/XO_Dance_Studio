@@ -3,25 +3,28 @@ import assert from "node:assert/strict";
 import { conSedes, conVigencia } from "./ayuda.ts";
 
 const sedes = [
-  { nombre: "Seducción Latina Experience", comuna: "Providencia" },
-  { nombre: "Centro Comunitario Diaguitas", comuna: "Las Condes" },
-  { nombre: "EB Dance Studio", comuna: "Providencia" },
-  { nombre: "Studio 98", comuna: "Providencia" },
+  { direccion: "Av. Nueva Providencia 2260, local 130", comuna: "Providencia" },
+  { direccion: "Diaguitas 911", comuna: "Las Condes" },
+  { direccion: "Barros Borgoño 71, oficina 101", comuna: "Providencia" },
 ];
 
-test("conSedes: agrupa por comuna, en el orden de la tabla", () => {
+test("conSedes: las direcciones, no los nombres de las salas, en el orden de la tabla", () => {
   assert.equal(
-    conSedes("{sedes} Las direcciones están en Nosotros.", sedes),
-    "En Providencia: Seducción Latina Experience, EB Dance Studio y Studio 98. " +
-      "En Las Condes: Centro Comunitario Diaguitas. Las direcciones están en Nosotros.",
+    conSedes("{sedes} Cada clase dice en cuál es.", sedes),
+    "Son en Av. Nueva Providencia 2260, local 130, Providencia; Diaguitas 911, Las Condes; " +
+      "y Barros Borgoño 71, oficina 101, Providencia. Cada clase dice en cuál es.",
   );
 });
 
+test("conSedes: una sola sede, sin punto y coma", () => {
+  assert.equal(conSedes("{sedes}", sedes.slice(1, 2)), "Son en Diaguitas 911, Las Condes.");
+});
+
 test("conSedes: sin sedes, la frase se omite y no queda el marcador", () => {
-  assert.equal(conSedes("{sedes} Las direcciones están en Nosotros.", []), "Las direcciones están en Nosotros.");
+  assert.equal(conSedes("{sedes} Cada clase dice en cuál es.", []), "Cada clase dice en cuál es.");
 });
 
 test("conVigencia: los días que dice la base", () => {
-  assert.equal(conVigencia("Packs. {vigencia}", 45), "Packs. Tienes 45 días para ocuparlas desde que te las acreditamos.");
+  assert.equal(conVigencia("Packs. {vigencia}", 30), "Packs. Tienes 30 días para ocuparlas desde que te las acreditamos.");
   assert.equal(conVigencia("Packs. {vigencia}", null), "Packs.");
 });

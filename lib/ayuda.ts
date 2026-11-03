@@ -1,4 +1,4 @@
-import { enumerar, type Sede } from "./catalogo.ts";
+import type { Sede } from "./catalogo.ts";
 
 /**
  * Las preguntas frecuentes.
@@ -76,7 +76,8 @@ export const PREGUNTAS: BloqueDePreguntas[] = [
       {
         pregunta: "¿Qué pasa si no puedo ir a una clase que reservé?",
         respuesta:
-          "Puedes cancelar hasta 30 minutos antes y recuperas la clase para usarla en otra. " +
+          "Puedes cancelar hasta 12 horas antes de que empiece y recuperas la clase para " +
+          "usarla en otra. " +
           "Si cancelas después, la clase se consume igual. Y si la clase la cancelamos " +
           "nosotras, te la devolvemos siempre, sin importar cuándo.",
       },
@@ -94,8 +95,7 @@ export const PREGUNTAS: BloqueDePreguntas[] = [
       {
         pregunta: "¿Dónde son las clases?",
         respuesta:
-          "{sedes} Las direcciones están en Nosotros, y cada clase del calendario dice en " +
-          "cuál es.",
+          "{sedes} Cada clase del calendario dice en cuál es.",
       },
       {
         pregunta: "¿Qué llevo a la clase?",
@@ -103,19 +103,6 @@ export const PREGUNTAS: BloqueDePreguntas[] = [
           "Ropa cómoda con la que puedas moverte y zapatillas deportivas. Si tienes " +
           "rodilleras acolchadas, tráelas: en algunos estilos se agradecen, pero no son " +
           "obligatorias. Y trae agua.",
-      },
-      {
-        pregunta: "¿Cómo llego?",
-        respuesta:
-          "Las salas están cerca del metro. El Centro Comunitario Diaguitas, en Las Condes, " +
-          "tiene un video que muestra cómo llegar. Seducción Latina queda en Av. Nueva " +
-          "Providencia 2260, local 130, piso 3, en el sector Los Leones.",
-        // El video vive acá y no dentro del texto: así el componente lo puede
-        // mostrar como enlace sin que haya que parsear la respuesta.
-        enlace: {
-          texto: "Ver cómo llegar a Diaguitas",
-          url: "https://www.instagram.com/reel/Dcw4N64g9fi/",
-        },
       },
     ],
   },
@@ -135,12 +122,19 @@ export function pendientes(): number {
 /**
  * Dónde son las clases, desde la tabla `sedes`. Antes estaban escritas a mano
  * —"en tres salas"— y quedaron viejas el día que llegó Studio 98 (05/10/2026).
- * Agrupadas por comuna, en el orden de la tabla.
+ *
+ * **Las direcciones, no los nombres de las salas** (Felipe, 02/11/2026): a la
+ * alumna "Seducción Latina Experience" no le dice adónde ir. Separadas por punto
+ * y coma porque cada dirección ya lleva comas adentro.
  */
-export function conSedes(respuesta: string, sedes: Pick<Sede, "nombre" | "comuna">[]): string {
-  const comunas = new Map<string, string[]>();
-  for (const s of sedes) comunas.set(s.comuna, [...(comunas.get(s.comuna) ?? []), s.nombre]);
-  const frase = [...comunas].map(([comuna, nombres]) => `En ${comuna}: ${enumerar(nombres)}.`).join(" ");
+export function conSedes(respuesta: string, sedes: Pick<Sede, "direccion" | "comuna">[]): string {
+  const lugares = sedes.map((s) => `${s.direccion}, ${s.comuna}`);
+  const frase =
+    lugares.length === 0
+      ? ""
+      : lugares.length === 1
+        ? `Son en ${lugares[0]}.`
+        : `Son en ${lugares.slice(0, -1).join("; ")}; y ${lugares[lugares.length - 1]}.`;
   return respuesta.replace("{sedes}", frase).trim();
 }
 

@@ -10,7 +10,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { destaque, estadoParaAlumna } from "./reservas.ts";
+import { AVISO_CANCELACION, cancelaATiempo, destaque, estadoParaAlumna } from "./reservas.ts";
 
 const clase = (cambios = {}) => ({
   cupoMaximo: 22,
@@ -70,4 +70,25 @@ test("destaque: sin filtro, ninguna se destaca ni se atenúa", () => {
 test("destaque: con filtro, la elegida se destaca y el resto se atenúa", () => {
   assert.equal(destaque("pau", "pau"), "destacada");
   assert.equal(destaque("lina", "pau"), "atenuada");
+});
+
+// --- cancelaATiempo ---------------------------------------------------------
+// Clase del martes 03/11/2026 a las 18:00 en Santiago (UTC−3).
+const CLASE = "2026-11-03T21:00:00Z";
+
+test("cancelaATiempo: 12 horas y un minuto antes, recupera la clase", () => {
+  assert.equal(cancelaATiempo(CLASE, new Date("2026-11-03T08:59:00Z")), true);
+});
+
+test("cancelaATiempo: justo 12 horas antes ya no, igual que en la base", () => {
+  // `now() < inicio - 12 h` es estricto: en el borde exacto, no.
+  assert.equal(cancelaATiempo(CLASE, new Date("2026-11-03T09:00:00Z")), false);
+});
+
+test("cancelaATiempo: 30 minutos antes, que era el plazo viejo, ya no", () => {
+  assert.equal(cancelaATiempo(CLASE, new Date("2026-11-03T20:30:00Z")), false);
+});
+
+test("AVISO_CANCELACION dice las mismas horas que la regla", () => {
+  assert.match(AVISO_CANCELACION, /hasta 12 horas antes/);
 });

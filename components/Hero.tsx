@@ -17,9 +17,9 @@ export function Hero() {
         <p className="xo-eyebrow text-xo-rosa-claro">Academia de baile</p>
 
         <h1 className="mt-5 font-display text-[clamp(3.5rem,13vw,8.75rem)] leading-[0.85] text-xo-rosa">
-          Descúbrete
+          Tu lugar
           <br />
-          y crece bailando
+          para brillar
         </h1>
 
         <p className="mt-7 max-w-xl font-serif-xo text-xl italic leading-snug text-xo-rosa-claro sm:text-2xl">

@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { clp } from "./planes";
+import { AVISO_CANCELACION } from "./dominio/reservas";
 import { sitio } from "./sitio";
 import { clienteAdmin } from "./supabase/admin";
 import {
@@ -324,7 +325,7 @@ const CUERPOS: Cuerpos = {
       `<p ${P}><strong>${d.curso}</strong> con ${d.profesora}</p>
        <p ${P}>${d.cuando}</p>
        <p ${P}>${d.sede}<br>${d.direccion}</p>
-       <p style="margin:20px 0 0;font-size:13px;color:#f7f7f7;opacity:.6;">Puedes cancelar hasta 30 minutos antes y recuperas tu clase.</p>`,
+       <p style="margin:20px 0 0;font-size:13px;color:#f7f7f7;opacity:.6;">${AVISO_CANCELACION}</p>`,
     ),
   }),
 
