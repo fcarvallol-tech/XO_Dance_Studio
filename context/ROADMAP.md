@@ -144,6 +144,20 @@ en pausa por decisión suya.
 - Que un cron que falla en silencio se vea en pantalla, igual que se hizo con los correos. El de
   generación de clases ya se cayó dos veces por una variable de entorno.
 
+### 📋 Pedidos de Felipe mientras usa el sitio
+
+> **Esta lista se acumula, no se trabaja de a uno.** Son ajustes que Felipe va encontrando al
+> operar la academia con la página ya en producción. **No se implementan cuando se anotan**: se
+> juntan acá hasta que haya suficiente para un PRD propio, y él dice cuándo. Anotar algo acá no
+> es aprobarlo.
+>
+> Abierta el 03/11/2026, el día que el sitio empezó a usarse de verdad.
+
+| # | Qué pidió | Por qué, y qué hay hoy | Fecha |
+|---|---|---|---|
+| 1 | **El owner tiene que poder ver quiénes se inscribieron a una clase** | Hoy **no puede**. `inscritas_de_clase` exige `dicta_la_clase(p_clase_id)` y **no tiene excepción para `admin` ni para `owner`**: Felipe ve el contador —"3 de 18 inscritas"— pero no los nombres, y solo la profesora que dicta esa clase ve la lista. Peor: **el portal de administración no tiene reservas en ninguna parte** —tiene compras, correos, planes, solicitudes y leads—, así que quien aprueba las transferencias y contesta los mensajes no tiene dónde mirar cuando una alumna escribe "transferí y no sé si quedé". ⚠️ Al resolverlo, respetar la regla dura de PRD-0008: **nombres sí, datos de contacto nunca** —ni RUT, ni correo, ni teléfono, ni datos del apoderado— | 03/11/2026 |
+| 2 | **Buscar por nombre en el listado de personas** | `/admin` ("Personas y roles") lista sin filtro. Con una academia chica se ve entera; con cien alumnas, no. Felipe quiere un buscador por nombre | 03/11/2026 |
+
 ---
 
 ## Principio de secuenciación
