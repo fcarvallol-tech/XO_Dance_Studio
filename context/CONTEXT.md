@@ -229,7 +229,7 @@ Siete clases a la semana. Viven en la tabla `horarios` y se muestran en el sitio
 > queda con Pau y Drimy pasa a un curso nuevo, `reggaeton`: renombrar la fila compartida le
 > habría cambiado el nombre también al jueves de Pau. Sus clases pasadas conservan el curso con
 > que se dictaron. 🟡 **El curso `reggaeton` no tiene descripción**: el sitio no la muestra, y no
-> se inventa; falta que Felipe la mande si algún día se usa.
+> se inventa; **pendiente de Felipe**, que la escribe cuando el sitio la necesite (confirmado el 02/11/2026).
 >
 > **Dos clases pasan a costar más:** el martes de Pau, de $18.000 a **$35.000** de costo fijo
 > (Diaguitas → Los Leones), y la Girly del viernes de Carli, de $35.000 a **$41.500** (Los Leones

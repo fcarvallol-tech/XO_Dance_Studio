@@ -20,12 +20,14 @@
 | Qué | Desde | Estado |
 |---|---|---|
 | Rama `alinear-roadmap` (5 commits de documentación) | 21/10 | ✅ **En `main` desde el 2/11** |
-| Bio de Carli | 20/10 | 🟡 Migración `20261020120000_bio_carli.sql` traída a `horarios-noviembre`, **aplicada en staging**, esperando aprobación para producción. En producción sigue el placeholder |
+| Bio de Carli | 20/10 | ✅ **En producción desde el 2/11** (`20261020120000_bio_carli.sql`) |
 | PRD-0010 parte 3, borrador de 594 líneas | 20/10 | **Sobrevivió.** Rescatado en `rescate-20-octubre`, pusheado el 2/11. Sin mergear |
-| **Cinco cambios de horario** | 21/10 y 2/11 | 🟡 `20261102120000_horarios_noviembre.sql`, **rehecha el 2/11 con corte el domingo 1/11** (el corte del 9 nunca se tomó). Aplicada y verificada en staging, esperando aprobación. 🔴 **Urgente: la clase de Pau es el martes 3 a las 18:00 y producción todavía dice 20:00 en Diaguitas** |
-| Capacidades, vigencia y cancelación | 2/11 | 🟡 Tres migraciones aplicadas en staging, esperando aprobación: salas a 18 y 30, créditos a 30 días, cancelación hasta 12 horas antes |
-| Eslogan, direcciones, "¿Cómo llego?" | 2/11 | 🟡 En `horarios-noviembre`, sin mergear: sale a producción con el merge a `main` |
-| Corte contable al 1/11 | 2/11 | 🔴 **Detenido**: en producción hay una compra pagada de octubre ($28.000) y un crédito vivo de octubre. Ver el changelog del 2/11 |
+| **Cinco cambios de horario** | 21/10 y 2/11 | ✅ **En producción desde el 2/11** (`20261102120000_horarios_noviembre.sql`, corte el domingo 1/11) |
+| Capacidades, vigencia y cancelación | 2/11 | ✅ **En producción desde el 2/11**: salas a 18 y 30, créditos a 30 días, cancelación hasta 12 horas antes |
+| Eslogan, direcciones, "¿Cómo llego?" | 2/11 | ✅ Mergeado a `main` el 2/11, después del push de la base |
+| Botón "Cancelar" de Mis reservas | 2/11 | Pendiente, no urgente: **no avisa del plazo de 12 horas**. El calendario sí avisa; desde Mis reservas una alumna puede cancelar tarde sin saber que pierde la clase |
+| Descripción del curso `reggaeton` (Drimy) | 2/11 | **Pendiente de Felipe.** Quedó vacía a propósito: el sitio no la muestra y no se inventa. La escribe él cuando el sitio la necesite |
+| Corte contable al 1/11 | 2/11 | **No se construye** (Felipe): lo de octubre es la cuenta de prueba y un regalo a un perfil de profesora. En su lugar se anula la compra de prueba por `compras.deleted_at`, **esperando aprobación de Felipe** |
 | Staging pausado + token de Supabase vencido | ~13/10 | ✅ **Resuelto el 2/11**: staging despausado, token nuevo, y el registro de migraciones de staging reparado (1002, 1004 y 1005 estaban aplicadas sin su fila) |
 | Grilla: una clase de 14:50 se dibuja a las 15:00 | 2/10 | Arreglo en la rama `grilla-filas-de-cinco-minutos`, **sin mergear a propósito**: sale cuando exista una clase a una hora rara para mirarlo en pantalla (Felipe, 2/11). Las de 17:30 y 18:30 ya se dibujan bien sin él |
 
