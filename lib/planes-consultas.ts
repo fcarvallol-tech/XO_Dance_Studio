@@ -1,5 +1,7 @@
 import { clientePublico } from "./supabase/publico";
 import { fechaLegible, type Plan } from "./planes";
+import { promoVigente } from "./dominio/ofertas";
+import { hoyEnSantiago } from "./semana";
 
 /**
  * Los planes, desde la base. **Solo servidor.**
@@ -20,7 +22,11 @@ type Fila = {
 };
 
 export async function getPlanes(): Promise<Plan[]> {
-  const supabase = clientePublico();
+  // Un minuto y no la hora del resto del catálogo: un precio que dura un día
+  // —la preventa del 03/11/2026— no puede tardar una hora en aparecer, ni el
+  // precio de lista en volver. Pasó en el primer ensayo: la página siguió
+  // mostrando $28.000 con la preventa ya cargada, por la caché de datos.
+  const supabase = clientePublico({ revalidarSegundos: 60 });
 
   const { data, error } = await supabase
     .from("planes")
@@ -42,15 +48,13 @@ export async function getPlanes(): Promise<Plan[]> {
     );
   }
 
-  const hoy = new Date().toISOString().slice(0, 10);
+  // El día en Santiago, no en UTC: ver `promoVigente`.
+  const hoy = hoyEnSantiago();
 
   return (data as Fila[]).map((fila) => {
     // La promo se apaga sola al pasar la fecha. Que además haya que editarla
     // en el Table Editor es opcional, no un requisito para que deje de verse.
-    const vigente =
-      fila.precio_promocional !== null &&
-      fila.promo_hasta !== null &&
-      fila.promo_hasta >= hoy;
+    const vigente = promoVigente(fila.precio_promocional, fila.promo_hasta, hoy);
 
     return {
       slug: fila.slug,
