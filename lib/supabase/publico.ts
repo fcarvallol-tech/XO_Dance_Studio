@@ -12,10 +12,22 @@ import { configSupabase } from "./config";
  * Como entra sin sesión, RLS le entrega solo cursos y profesoras activos. El
  * filtro es del motor, no de la aplicación.
  */
-export function clientePublico() {
+export function clientePublico(opciones: { revalidarSegundos?: number } = {}) {
   const { url, llave } = configSupabase();
+  const { revalidarSegundos } = opciones;
 
   return createClient(url, llave, {
     auth: { persistSession: false, autoRefreshToken: false },
+    // Next guarda cada `fetch` en su caché de datos con el `revalidate` de la
+    // página —una hora en casi todo el sitio—. Para lo que no puede esperar una
+    // hora, quien llama pide menos.
+    ...(revalidarSegundos !== undefined
+      ? {
+          global: {
+            fetch: (entrada: RequestInfo | URL, init?: RequestInit) =>
+              fetch(entrada, { ...init, next: { revalidate: revalidarSegundos } }),
+          },
+        }
+      : {}),
   });
 }

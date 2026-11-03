@@ -65,6 +65,8 @@ export const HORAS_PARA_CANCELAR = 12;
 
 export const AVISO_CANCELACION = `Puedes cancelar hasta ${HORAS_PARA_CANCELAR} horas antes y recuperas tu clase.`;
 
+export const AVISO_FUERA_DE_PLAZO = `Ya pasó el plazo de ${HORAS_PARA_CANCELAR} horas: si cancelas, la clase se descuenta igual.`;
+
 /** Lo mismo que `v_a_tiempo` en `cancelar_reserva()`: estricto, como allá. */
 export function cancelaATiempo(inicio: string, ahora: Date): boolean {
   return ahora.getTime() < new Date(inicio).getTime() - HORAS_PARA_CANCELAR * 60 * 60 * 1000;

@@ -61,6 +61,22 @@ const sql = async (q, p = []) => {
   }
 };
 
+// El monto que se tiene que cobrar hoy, leído de la base con la misma regla que
+// el sitio (`promoVigente`: el último día cuenta entero, en Santiago). Estaba
+// escrito "$28.000" a mano y una promoción lo rompía (preventa del 03/11/2026).
+const [plan] = await sql(
+  `select precio_clp, precio_promocional, promo_hasta::text as promo_hasta,
+          (now() at time zone 'America/Santiago')::date::text as hoy
+   from planes where slug = $1`,
+  [OFERTA],
+);
+const MONTO_CLP =
+  plan.precio_promocional !== null && plan.promo_hasta !== null && plan.promo_hasta >= plan.hoy
+    ? plan.precio_promocional
+    : plan.precio_clp;
+const MONTO = "$" + MONTO_CLP.toLocaleString("es-CL");
+console.log(`Monto esperado hoy (${plan.hoy}): ${MONTO}`);
+
 const r = [];
 const caso = (n, esperado, real) =>
   r.push({ n, esperado, real, ok: String(real) === String(esperado) });
@@ -143,7 +159,7 @@ try {
   const pagTransferir = await alumna.locator("main").innerText();
   caso("3. ve el banco y el número de cuenta", true,
        pagTransferir.includes("Banco") && pagTransferir.includes("Cuenta"));
-  caso("3. ve el monto", true, pagTransferir.includes("$28.000"));
+  caso(`3. ve el monto (${MONTO})`, true, pagTransferir.includes(MONTO));
 
   await alumna.locator("[name=titular]").fill("Mamá De La Alumna");
   await alumna.locator("[name=nota]").fill("Transferí a las 10:15 desde el BancoEstado");
@@ -154,11 +170,13 @@ try {
        await alumna.getByText("No pudimos mandarte el correo con este aviso").isVisible());
 
   const [compra] = await sql(
-    `select c.id, c.estado, c.titular_declarado, c.nota_alumna, p.id as perfil_id
+    `select c.id, c.estado, c.titular_declarado, c.nota_alumna, c.monto_clp, p.id as perfil_id
      from compras c join perfiles p on p.id = c.perfil_id where p.email = $1`,
     [EMAIL],
   );
   caso("2. la compra queda pendiente", "pendiente", compra?.estado);
+  // Lo que de verdad se cobra: el monto lo fija el servidor al declarar.
+  caso("2. con el monto de hoy guardado en la compra", MONTO_CLP, compra?.monto_clp);
   caso("4. con el titular y la nota que escribió",
        "Mamá De La Alumna | Transferí a las 10:15 desde el BancoEstado",
        `${compra?.titular_declarado} | ${compra?.nota_alumna}`);
@@ -208,7 +226,7 @@ try {
   await dialogo.waitFor();
   const textoDialogo = await dialogo.innerText();
   for (const [que, dato] of [
-    ["el nombre", "Alumna Flujo"], ["el monto", "$28.000"], ["las clases", "4 clases"],
+    ["el nombre", "Alumna Flujo"], ["el monto", MONTO], ["las clases", "4 clases"],
     ["el titular", "Mamá De La Alumna"], ["la nota", "Transferí a las 10:15"],
   ]) {
     caso(`6. el diálogo muestra ${que}`, true, textoDialogo.includes(dato));

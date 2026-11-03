@@ -250,7 +250,12 @@ export function GrillaCalendario({
       <div className="overflow-x-auto pb-2">
         {/* La cuadrícula completa: borde por fuera, una línea vertical entre
             días y una horizontal por tramo. */}
-        <div className={`grid min-w-0 grid-cols-[3rem_minmax(0,1fr)] border-t border-l lg:grid-cols-[4rem_repeat(7,minmax(0,1fr))] ${T.borde}`}>
+        {/* El alto de un tramo: 28 px en el teléfono, 44 px en escritorio. Con
+            siete columnas de ~128 px el nombre del curso ocupa dos líneas, y a
+            28 px una clase de una hora (56 px) cortaba por abajo justo la línea
+            de dónde es (03/11/2026). En el teléfono se ve un día a la vez, la
+            columna es ancha y 28 px alcanzan. */}
+        <div className={`grid min-w-0 grid-cols-[3rem_minmax(0,1fr)] border-t border-l [--alto-tramo:1.75rem] lg:grid-cols-[4rem_repeat(7,minmax(0,1fr))] lg:[--alto-tramo:2.75rem] ${T.borde}`}>
           {/* Encabezado de días */}
           <div aria-hidden="true" className={`border-r border-b ${T.borde}`} />
           {dias.map((dia) => (
@@ -273,7 +278,7 @@ export function GrillaCalendario({
           {/* La columna de horas */}
           <div
             className={`grid border-r ${T.borde}`}
-            style={{ gridTemplateRows: `repeat(${filas}, 1.75rem)` }}
+            style={{ gridTemplateRows: `repeat(${filas}, var(--alto-tramo))` }}
           >
             {Array.from({ length: filas }, (_, i) => {
               const enPunto = i % 2 === 0;
@@ -301,7 +306,7 @@ export function GrillaCalendario({
                 key={dia}
                 data-hoy={dia === hoy ? "si" : undefined}
                 className={`${dia === diaVisible ? "grid" : "hidden"} relative border-r lg:grid ${T.borde} ${dia === hoy ? T.hoyColumna : ""}`}
-                style={{ gridTemplateRows: `repeat(${filas}, 1.75rem)` }}
+                style={{ gridTemplateRows: `repeat(${filas}, var(--alto-tramo))` }}
               >
                 {/* Una línea al pie de cada tramo: la que cierra la hora en punto
                     más marcada, la de la media más tenue. Es lo que permite
@@ -409,14 +414,15 @@ export function GrillaCalendario({
                               : `${libres} ${libres === 1 ? "lugar" : "lugares"}`}
                         </span>
                       </p>
-                      <p className="mt-0.5 text-[11px] leading-tight text-xo-blanco/60">
+                      {/* Dónde, antes que quién: sin esto quien entra sin
+                          sesión no distingue en qué sala es cada clase. Una
+                          sola línea que no se parte; la dirección completa va
+                          debajo del calendario (03/11/2026). */}
+                      <p className="mt-0.5 truncate text-[11px] leading-tight text-xo-blanco/60 lg:whitespace-normal">
+                        <span className="text-xo-blanco/85">{clase.sedeEtiqueta}</span>
+                        {" · "}
                         {clase.profesoraNombre}
                       </p>
-                      {alto > 2 ? (
-                        <p className="mt-0.5 text-[11px] leading-tight text-xo-blanco/50">
-                          {clase.sedeDireccion}
-                        </p>
-                      ) : null}
                     </Link>
                   );
                 })}

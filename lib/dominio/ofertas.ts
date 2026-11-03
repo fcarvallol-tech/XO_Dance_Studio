@@ -62,3 +62,20 @@ export function porClaseDeOferta(oferta: Oferta): number {
   if (oferta.clases <= 0) return oferta.precioClp;
   return oferta.precioClp / oferta.clases;
 }
+
+/**
+ * Si una promoción sigue vigente: `promo_hasta` es el **último día** en que
+ * vale, inclusive, contado en Santiago.
+ *
+ * `hoy` tiene que ser el día civil en Santiago (`hoyEnSantiago()`), no el de
+ * UTC. Antes se comparaba contra `toISOString()`, y una promo "hasta el martes"
+ * se apagaba el martes a las 21:00 —medianoche UTC—, tres horas antes de lo
+ * prometido. Se notó al cargar la preventa del 03/11/2026.
+ */
+export function promoVigente(
+  precioPromocional: number | null,
+  promoHasta: string | null,
+  hoy: string,
+): boolean {
+  return precioPromocional !== null && promoHasta !== null && promoHasta >= hoy;
+}

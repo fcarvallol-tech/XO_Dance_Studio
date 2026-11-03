@@ -8,7 +8,7 @@ import { clp } from "@/lib/planes";
 import { rangoHorario } from "@/lib/dominio/horarios";
 import {
   AVISO_CANCELACION,
-  HORAS_PARA_CANCELAR,
+  AVISO_FUERA_DE_PLAZO,
   cancelaATiempo,
   destaque,
   estadoParaAlumna,
@@ -373,7 +373,7 @@ function Accion({
               que apriete, no después de que pierda la clase. */}
           {cancelaATiempo(clase.inicio, new Date())
             ? AVISO_CANCELACION
-            : `Ya pasó el plazo de ${HORAS_PARA_CANCELAR} horas: si cancelas, la clase se descuenta igual.`}
+            : AVISO_FUERA_DE_PLAZO}
         </p>
         <button
           type="button"

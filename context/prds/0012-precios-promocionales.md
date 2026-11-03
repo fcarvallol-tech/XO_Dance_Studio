@@ -7,6 +7,24 @@
 | **Hito** | Hito 2 |
 | **Relacionados** | PRD-0005 (planes y compras) · PRD-0013 (códigos) |
 
+> 🔴 **Actualización del 03/11/2026 — la ventana es recurrente y ya hubo que hacerla a mano.**
+>
+> - **La ventana de precios rebajados es recurrente: el último día del mes y los dos primeros del
+>   siguiente** (Felipe). La primera fue una preventa de un solo día, el martes 03/11/2026 —pack de
+>   4 a $26.000 y de 8 a $45.000—, cargada a mano en las columnas provisionales
+>   `planes.precio_promocional`/`promo_hasta` (`20261103140000_preventa_noviembre.sql`) y revertida
+>   a mano el 04/11. Es exactamente lo que este PRD existe para reemplazar.
+> - **La próxima es del 30 de noviembre al 2 de diciembre.** Hay un mes para construir esto en vez
+>   de repetir la migración y su reversión.
+> - **Se resolvió la pregunta abierta del encabezado: el plazo aplica a la fecha de compra, no a la
+>   de uso** (Felipe, 03/11/2026). Quien compra dentro de la ventana paga ese precio, y sus
+>   créditos corren con su vencimiento normal —hoy **30 días**, no 60 ni 45 como dice el §1—. En
+>   el sistema, "fecha de compra" es la de **declarar la transferencia**: ahí el servidor fija
+>   `compras.monto_clp`.
+> - Dos lecciones del arreglo a mano que este PRD tiene que heredar: el día de término se cuenta
+>   **en Santiago** (comparar contra UTC apagaba la promo a las 21:00), y el precio no puede vivir
+>   en una caché de una hora (`getPlanes` refresca cada minuto desde el 03/11).
+
 ## 1. Problema
 
 Los precios de lista son fijos, pero el negocio necesita bajarlos por períodos acotados.

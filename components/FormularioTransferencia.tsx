@@ -77,7 +77,7 @@ export function FormularioTransferencia({
           {oferta.precioNormalClp !== null ? (
             <p className="mt-2 text-sm text-xo-gris">
               Precio normal <s>{clp(oferta.precioNormalClp)}</s>
-              {oferta.vigenteHasta ? ` · esta oferta vale hasta el ${oferta.vigenteHasta}` : ""}
+              {oferta.vigenteHasta ? ` · este precio vale para compras hasta el ${oferta.vigenteHasta}` : ""}
             </p>
           ) : null}
         </div>
