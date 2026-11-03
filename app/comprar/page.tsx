@@ -75,6 +75,13 @@ export default async function Comprar() {
                       {clp(porClaseDeOferta(oferta))} por clase ·{" "}
                       {oferta.vigenciaDias} días para usarlas
                     </p>
+                    {/* El tachado solo dice que es más barato; el plazo dice
+                        hasta cuándo, y es por fecha de compra, no de uso. */}
+                    {oferta.vigenteHasta ? (
+                      <p className="mt-1 text-sm text-xo-rosa-claro">
+                        Precio para compras hasta el {oferta.vigenteHasta}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="flex flex-wrap items-baseline gap-x-5 gap-y-3">

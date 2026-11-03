@@ -11,7 +11,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { ofertaDePlan, porClaseDeOferta } from "./ofertas.ts";
+import { diaEnSantiago } from "../semana.ts";
+
+import { ofertaDePlan, porClaseDeOferta, promoVigente } from "./ofertas.ts";
 
 const PACK_4 = {
   slug: "pack-4",
@@ -79,4 +81,21 @@ test("porClaseDeOferta: el precio vigente repartido entre las clases", () => {
 test("porClaseDeOferta: una oferta de una clase no divide por cero ni infla el número", () => {
   const suelta = ofertaDePlan({ ...PACK_4, slug: "suelta", nombre: "Clase suelta", clases: 1, precio: 8_500 });
   assert.equal(porClaseDeOferta(suelta), 8_500);
+});
+
+// --- promoVigente: el último día cuenta entero, en Santiago ----------------
+test("promoVigente: el martes 3 a las 23:30 de Santiago la promo hasta el 3 sigue", () => {
+  // 23:30 en Santiago (UTC−3) ya es miércoles 4 en UTC.
+  const hoy = diaEnSantiago(new Date("2026-11-04T02:30:00Z"));
+  assert.equal(hoy, "2026-11-03");
+  assert.equal(promoVigente(26_000, "2026-11-03", hoy), true);
+});
+
+test("promoVigente: el miércoles 4 a las 00:01 de Santiago ya no", () => {
+  assert.equal(promoVigente(26_000, "2026-11-03", diaEnSantiago(new Date("2026-11-04T03:01:00Z"))), false);
+});
+
+test("promoVigente: sin precio o sin fecha, no hay promo", () => {
+  assert.equal(promoVigente(null, "2026-11-03", "2026-11-01"), false);
+  assert.equal(promoVigente(26_000, null, "2026-11-01"), false);
 });

@@ -98,11 +98,13 @@ export default async function PaginaDeOferta({ params }: Props) {
 
           {oferta.vigenteHasta ? (
             <p className="mt-6 border border-xo-rosa/40 p-5 leading-relaxed text-xo-blanco/85">
-              Este precio vale hasta el{" "}
+              Este precio vale para compras hechas hasta el final del{" "}
               <strong className="font-semibold text-xo-rosa-claro">
                 {oferta.vigenteHasta}
               </strong>
-              . Después vuelve a su valor normal.
+              . Después vuelve a su valor normal. Lo que cuenta es
+              el día en que compras: las clases duran igual{" "}
+              {oferta.vigenciaDias} días desde que te las acreditamos.
             </p>
           ) : null}
 
