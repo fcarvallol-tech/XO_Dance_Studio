@@ -4,6 +4,7 @@ import { MarcoSitio } from "@/components/MarcoSitio";
 import { GrillaCalendario } from "@/components/GrillaCalendario";
 import { ErrorDeLectura } from "@/components/ErrorDeLectura";
 import { getCalendarioPublico } from "@/lib/compras-consultas";
+import type { ClaseDelCalendario } from "@/lib/compras";
 
 /**
  * `/calendario` — los horarios, **sin sesión** (PRD-0022 §8.3).
@@ -68,10 +69,39 @@ export default async function CalendarioPagina() {
               </Link>
             </div>
           ) : (
-            <GrillaCalendario clases={clases.datos} ahora={new Date().toISOString()} />
+            <>
+              <GrillaCalendario clases={clases.datos} ahora={new Date().toISOString()} />
+              <DondeSon clases={clases.datos} />
+            </>
           )}
         </div>
       </section>
     </MarcoSitio>
+  );
+}
+
+/**
+ * Las direcciones, una vez. La celda dice solo el sector —"Los Leones"—,
+ * porque la dirección completa no cabe en una clase de una hora; acá se lee
+ * a qué calle corresponde cada etiqueta. Solo las sedes que tienen clases en
+ * el calendario, no cada fila de la tabla.
+ */
+function DondeSon({ clases }: { clases: ClaseDelCalendario[] }) {
+  const sedes = new Map<string, string>();
+  for (const c of clases) sedes.set(c.sedeEtiqueta, `${c.sedeDireccion}, ${c.sedeComuna}`);
+  if (sedes.size === 0) return null;
+
+  return (
+    <div className="mt-10 border-t border-xo-blanco/15 pt-8">
+      <h2 className="xo-eyebrow text-xo-rosa-claro">Dónde es cada clase</h2>
+      <dl className="mt-5 grid gap-x-10 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+        {[...sedes].sort(([a], [b]) => a.localeCompare(b, "es")).map(([etiqueta, direccion]) => (
+          <div key={etiqueta}>
+            <dt className="font-semibold text-xo-blanco">{etiqueta}</dt>
+            <dd className="mt-1 text-sm leading-relaxed text-xo-blanco/75">{direccion}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }

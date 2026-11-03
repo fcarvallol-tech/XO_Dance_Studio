@@ -265,7 +265,7 @@ type FilaClase = {
   cupo_maximo: number;
   cursos: { slug: string; nombre: string } | null;
   profesoras: { slug: string; nombre: string } | null;
-  sedes: { nombre: string; direccion: string; comuna: string } | null;
+  sedes: { nombre: string; direccion: string; comuna: string; sector: string | null } | null;
   tipo: string;
   slug: string | null;
   titulo: string | null;
@@ -311,7 +311,7 @@ export async function getCalendarioPublico(
   const { data, error } = await publico
     .from("clases")
     .select(
-      "id, inicio, fin, cupo_maximo, tipo, slug, titulo, precio_clp, cursos ( slug, nombre ), profesoras ( slug, nombre ), sedes ( nombre, direccion, comuna )",
+      "id, inicio, fin, cupo_maximo, tipo, slug, titulo, precio_clp, cursos ( slug, nombre ), profesoras ( slug, nombre ), sedes ( nombre, direccion, comuna, sector )",
     )
     // Una especial sin publicar no se muestra (PRD-0018). Explícito acá además
     // de en RLS: la consulta filtra igual que la política, no confía en ella.
@@ -355,6 +355,7 @@ export async function getCalendarioPublico(
       profesoraNombre: c.profesoras!.nombre,
       sedeNombre: c.sedes!.nombre,
       sedeDireccion: c.sedes!.direccion,
+      sedeEtiqueta: c.sedes!.sector ?? c.sedes!.comuna,
       sedeComuna: c.sedes!.comuna,
       cupoMaximo: c.cupo_maximo,
       tomados: tomados.get(c.id) ?? 0,
@@ -380,7 +381,7 @@ export async function getCalendario(
   const { data, error } = await supabase
     .from("clases")
     .select(
-      "id, inicio, fin, cupo_maximo, tipo, slug, titulo, precio_clp, cursos ( slug, nombre ), profesoras ( slug, nombre ), sedes ( nombre, direccion, comuna )",
+      "id, inicio, fin, cupo_maximo, tipo, slug, titulo, precio_clp, cursos ( slug, nombre ), profesoras ( slug, nombre ), sedes ( nombre, direccion, comuna, sector )",
     )
     // Una especial sin publicar no se muestra (PRD-0018). Explícito acá además
     // de en RLS: la consulta filtra igual que la política, no confía en ella.
@@ -445,6 +446,7 @@ export async function getCalendario(
       profesoraNombre: c.profesoras!.nombre,
       sedeNombre: c.sedes!.nombre,
       sedeDireccion: c.sedes!.direccion,
+      sedeEtiqueta: c.sedes!.sector ?? c.sedes!.comuna,
       sedeComuna: c.sedes!.comuna,
       cupoMaximo: c.cupo_maximo,
       tomados: tomados.get(c.id) ?? 0,

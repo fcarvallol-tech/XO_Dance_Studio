@@ -22,7 +22,7 @@ const U = {
 /** Las columnas de `sedes` que anon tiene que poder leer, y ninguna más. */
 const COLUMNAS_PUBLICAS = [
   "activa", "capacidad", "comuna", "created_at", "deleted_at", "direccion",
-  "id", "nombre", "orden", "referencia", "slug", "updated_at",
+  "id", "nombre", "orden", "referencia", "sector", "slug", "updated_at",
 ];
 
 const cliente = await conectar();

@@ -10,7 +10,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { AVISO_CANCELACION, cancelaATiempo, destaque, estadoParaAlumna } from "./reservas.ts";
+import { AVISO_CANCELACION, AVISO_FUERA_DE_PLAZO, cancelaATiempo, destaque, estadoParaAlumna } from "./reservas.ts";
 
 const clase = (cambios = {}) => ({
   cupoMaximo: 22,
@@ -91,4 +91,8 @@ test("cancelaATiempo: 30 minutos antes, que era el plazo viejo, ya no", () => {
 
 test("AVISO_CANCELACION dice las mismas horas que la regla", () => {
   assert.match(AVISO_CANCELACION, /hasta 12 horas antes/);
+});
+
+test("AVISO_FUERA_DE_PLAZO dice las mismas horas que la regla", () => {
+  assert.match(AVISO_FUERA_DE_PLAZO, /plazo de 12 horas/);
 });

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { cancelarReserva } from "@/lib/acciones";
 import { cuandoLegible, type ReservaPropia } from "@/lib/compras";
+import { AVISO_CANCELACION, AVISO_FUERA_DE_PLAZO, cancelaATiempo } from "@/lib/dominio/reservas";
 
 /**
  * Sus reservas.
@@ -103,6 +104,18 @@ export function MisReservas({
                       Puedes reservar otro horario cuando quieras.
                     </p>
                   </div>
+                ) : null}
+
+                {/* Es la pantalla donde se cancela: el plazo se dice acá, antes
+                    de apretar, y no solo en Ayuda. Las especiales no se rigen
+                    por él —su plata no se devuelve sola, PRD-0018 §8.3— y una
+                    pendiente de pago solo suelta el cupo. */}
+                {!reserva.claseCancelada && !reserva.esEspecial && reserva.estado !== "pendiente_pago" ? (
+                  <p className="mt-2 text-sm text-xo-gris">
+                    {cancelaATiempo(reserva.inicio, new Date())
+                      ? AVISO_CANCELACION
+                      : AVISO_FUERA_DE_PLAZO}
+                  </p>
                 ) : null}
               </div>
 

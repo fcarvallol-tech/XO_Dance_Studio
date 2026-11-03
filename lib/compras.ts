@@ -49,6 +49,11 @@ export type ClaseDelCalendario = {
   sedeNombre: string;
   /** Lo que se le muestra a la alumna: la calle, no el nombre de la sala (02/11/2026). */
   sedeDireccion: string;
+  /**
+   * Lo que cabe en la celda del calendario: el sector ("Los Leones"), o la
+   * comuna si la sede no tiene. La dirección completa va una vez, debajo.
+   */
+  sedeEtiqueta: string;
   sedeComuna: string;
   cupoMaximo: number;
   tomados: number;
