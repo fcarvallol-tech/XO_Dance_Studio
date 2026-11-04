@@ -71,7 +71,7 @@ Todas tienen Instagram propio con seguidores y son parte activa de la campaña d
 | **Alumnas hoy** | 7–8 (⚠️ confirmar el número exacto). Migran de Kids a Teens. **No se migran al sistema**: septiembre se cierra por fuera y desde octubre entran registrándose por la web (ver §5.b, "Puesta en marcha") |
 | **Precio** | Tarifa de packs para todos los cursos. Teens deja los $45.000/mes |
 | **Costo de sala** | Los Leones: **$17.000/hora** · Diaguitas: **$0** · EB: **$27.000/hora** · Studio 98: **$23.500/hora** |
-| **Capacidad de sala** | Los Leones y Diaguitas: **22** · EB: **40** · Studio 98: **35**. Es un dato de cada sala, no una regla del sistema (PRD-0021) |
+| **Capacidad de sala** | Los Leones: **16** desde el 03/11/2026, por reclamos de que la sala quedaba muy llena (Felipe) — ⚠️ **cambió dos veces en dos días**: 22 → 18 el 02/11 y 18 → 16 el 03/11 · Diaguitas: **22** · EB: **40** · Studio 98: **30** desde el 02/11/2026 (era 35). Es un dato de cada sala, no una regla del sistema (PRD-0021) |
 | **Sueldo base profesoras** | **$18.000/hora**. Clases de 1 hora. **Más $250 por crédito consumido a partir de la sexta alumna** — ver §Economía unitaria. Un crédito regalado se le paga igual |
 | **Sitio** | **xodancestudio.cl** — dominio propio, apuntado a Vercel y con certificado |
 | **Instagram** | @xo.dance.co — se abre al público en agosto 2026 |
@@ -84,10 +84,10 @@ Cuatro sedes con costos radicalmente distintos:
 
 | Sede | Costo de sala | Capacidad | Nota |
 |---|---|---|---|
-| **Los Leones** | $17.000/hora | 22 | ⚠️ confirmar si es por hora o por clase |
+| **Los Leones** | $17.000/hora | **16** (03/11/2026) | ⚠️ confirmar si es por hora o por clase. Capacidad: 22 → 18 el 02/11 y 18 → 16 el 03/11, por reclamos de sala llena |
 | **Diaguitas** | $0 | 22 | ⚠️ confirmar por qué es gratis y si es estable en el tiempo |
 | **EB Dance Studio** | **$27.000/hora** | **40** | La más grande y la más cara. Desde el 27/09/2026 |
-| **Studio 98** | **$23.500/hora** | **35** | Desde el 05/10/2026. Las cuentas de equilibrio de abajo todavía no la incluyen |
+| **Studio 98** | **$23.500/hora** | **30** (02/11/2026; era 35) | Desde el 05/10/2026. Las cuentas de equilibrio de abajo todavía no la incluyen |
 
 🔴 **Dos sedes tienen dos nombres cada una, y eso ya casi creó una sede duplicada.** Felipe las
 nombra por el barrio o el metro; la base las tiene por su nombre propio. **Son la misma fila de
@@ -466,8 +466,9 @@ completa; desde la sexta, su tarifa menos $250.
 ⚠️ **El piso sube en tres de los seis casos.** Con packs de 8 en Los Leones ahora hacen falta
 **7** alumnas para no perder plata, no 6.
 
-⚠️ **Desde el 02/11/2026 Los Leones es para 18 y Studio 98 para 30** (Felipe). Las cuentas de sala
-llena de abajo siguen con 22 y **no se recalcularon**.
+⚠️ **Desde el 02/11/2026 Studio 98 es para 30, y Los Leones es para 16 desde el 03/11/2026**
+(Felipe): el 02/11 bajó de 22 a 18 y al día siguiente de 18 a 16, porque llegaron reclamos de que
+la sala quedaba muy llena. Las cuentas de sala llena de abajo siguen con 22 y **no se recalcularon**.
 
 **Capacidad real: 22 personas** en Los Leones y Diaguitas, confirmada el 30/08/2026. **EB Dance
 Studio son 40** (27/09/2026), así que las cuentas de abajo son de las dos salas de 22; en EB el
@@ -729,7 +730,7 @@ sin caché de build · verificación real enviando el formulario desde producci�
 | Tema | Estado |
 |---|---|
 | ~~Precios, horarios y cupos de los 5 cursos~~ | ✅ **Resuelto.** El catálogo vive en la base (PRD-0015) y el cupo sale de `sedes.capacidad` (PRD-0021). No bloquea nada |
-| ~~Nueva ubicación / sala~~ | ✅ **Las sedes con horarios activos son tres:** Diaguitas, Los Leones y **Studio 98** —Barros Borgoño 71 of. 101, Providencia, 35 lugares, $23.500/hora, desde el 05/10/2026—. **EB Dance Studio no es una sede:** se usó una sola vez para el intensivo de septiembre y por eso salió de lo que lee la alumna (05/10/2026) |
+| ~~Nueva ubicación / sala~~ | ✅ **Las sedes con horarios activos son tres:** Diaguitas, Los Leones y **Studio 98** —Barros Borgoño 71 of. 101, Providencia, 30 lugares desde el 02/11/2026 (eran 35), $23.500/hora, desde el 05/10/2026—. **EB Dance Studio no es una sede:** se usó una sola vez para el intensivo de septiembre y por eso salió de lo que lee la alumna (05/10/2026) |
 | ~~Modelo económico con 5 profesoras (cómo se les paga)~~ | ✅ **Resuelto:** $18.000/hora de base **más $250 por crédito consumido**, incluidos los regalados (Felipe, 04/10/2026). Ver §Costo por clase. 🔴 Lo que falta es **construir la liquidación** —PRD-0010 parte 3, para el 1 de noviembre—, no decidir el modelo |
 | ~~Remuneración de Carla~~ | ✅ **Resuelto el 21/10/2026: son dos cosas.** Como **profesora** cobra igual que las otras cuatro y entra en la liquidación. Como **socia** es un retiro aparte, **fuera de alcance por ahora** por decisión de Felipe |
 | Retiro de los socios | ⏸ **Fuera de alcance por decisión de Felipe (21/10/2026).** Hay dos socios y el monto está definido, pero no se modela ni se calcula todavía. Cuando se aborde, es su propio PRD y hay que decidir si la cifra vive en este repo, que es **público** |
@@ -747,6 +748,6 @@ sin caché de build · verificación real enviando el formulario desde producci�
 | ¿Por qué Los Dominicos es gratis y por cuánto tiempo? | Sin confirmar. Si es un favor, es un riesgo de concentración |
 | ¿Una alumna de Teens puede además comprar packs de Girly? | Sin definir |
 | ¿El precio de los packs es igual en ambas sedes? | Sin definir. El costo de sala no lo es |
-| ~~Sala con capacidad 45~~ | ✅ **Resuelto el 30/08/2026: son 22** en Diaguitas y Los Leones. Studio 98 tiene **35** (05/10/2026). **Desde el 02/11/2026: Los Leones 18 y Studio 98 30** (Felipe); Diaguitas sigue en 22. Desde PRD-0021 el cupo **sale de `sedes.capacidad`**, no de un número escrito en el código, así que agregar una sala con otra capacidad ya no requiere tocar nada |
+| ~~Sala con capacidad 45~~ | ✅ **Resuelto el 30/08/2026: son 22** en Diaguitas y Los Leones. Studio 98 tiene **35** (05/10/2026). **Desde el 02/11/2026: Los Leones 18 y Studio 98 30** (Felipe), y **desde el 03/11/2026 Los Leones 16**, por reclamos de sala llena; Diaguitas sigue en 22. Desde PRD-0021 el cupo **sale de `sedes.capacidad`**, no de un número escrito en el código, así que agregar una sala con otra capacidad ya no requiere tocar nada |
 | Qué significa "afiliado" en el perfil de la alumna | Sin definir |
 | ¿Cómo se maneja la cuenta de una alumna menor de edad? | ✅ **Resuelto por ADR-0006 (25/08/2026).** La premisa cambió: ya no hay menores de 11. La cuenta es de la alumna, con magic link por correo porque Google exige 13. Sin dependientes ni cuentas vinculadas. Para comprar, un perfil menor de 18 registra datos del apoderado y **el apoderado confirma por correo** |
