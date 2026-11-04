@@ -233,6 +233,21 @@ Casos reales en el repo:
 | Lun 07/09 | La Girly de Pau de los lunes **no se dictó** por el problema de salas que movió su horario. La migración se escribió el 08, después de esa clase | `CONTEXT.md` §4, migración `20260908150000` (la borró, no la canceló) | **Ambiguo**: es una clase perdida a última hora (base) y también la primera del cambio de parrilla (nada). Está justo en el borde de la pregunta 2 |
 | 08–09/09 | Las clases futuras de los horarios viejos de Pau se cancelaron (con reserva) o borraron, con motivo "Cambio de horario…" | misma migración | El horario se movió; las clases nuevas reemplazan a las viejas. **Pagar la base por cada clase vieja sería pagarle dos veces la misma semana** |
 | 05/10 | Las clases futuras de Teens con reserva se cancelaron con motivo "XO Teens se deja de dictar por ahora…" | `20261005120000` | El curso ya no existe. **Pagar la base sería pagarle a Carli por clases que nadie iba a dictar** |
+| Mar 03/11 | La Reggaeton Femme de Pau de las 18:00 en Los Leones **no se dictó porque muchas alumnas no alcanzaron a llegar**. Pau no faltó. Se cancela después de la hora, con los créditos devueltos, y se va a recuperar; la sala de la recuperación no se cobra (Felipe, 03/11) | migración `20261103210000` | 🔴 **Pendiente de clasificar.** No calza en ningún valor de abajo: no es la sala, no es la parrilla y no es la profesora. Ver la nota que sigue |
+
+> 🔴 **Caso nuevo, 03/11/2026: la clase que no se dicta por asistencia.** La de Pau del martes 3 es
+> la primera clase de parrilla que no se dictó **por las alumnas**: Pau estaba, la sala estaba y la
+> clase existía, pero no llegó gente suficiente para hacerla. **Esa causa no existe en el modelo**
+> —ni en los tres valores propuestos ni en `sin_alumnas`, que pensaba en una clase sin reservas, y
+> esta sí tenía— y no se puede liquidar hasta que exista. Queda **pendiente de clasificar para el
+> pago**, y la pregunta es de Felipe: ¿se le paga la base a Pau, que fue y no faltó?
+>
+> Dos cosas más que el cálculo tendrá que saber, porque esta clase no viene sola:
+> - **Se va a recuperar.** La recuperación es una clase más en el mes de Pau. Si se paga la base
+>   por la del 3 y también por la recuperación, son dos pagos por una sola clase dictada.
+> - **La sala de la recuperación no se cobra** (Felipe). El costo de sala sale hoy de
+>   `sedes.costo_hora_clp` por `clases.sede_id`, sin excepción posible por clase: la recuperación
+>   en Los Leones se costearía a $17.000 la hora aunque no se pague. Hace falta un modo de marcarla.
 
 De ahí, los valores propuestos:
 
