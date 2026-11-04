@@ -435,6 +435,19 @@ incentivo: significa que el estado "no dictada" **genera una obligación de reag
 una decisión de pago. El PRD de la liquidación tiene que decir si el sistema la registra, la
 muestra como pendiente, o si eso se coordina por fuera.
 
+✅ **Y cómo se paga una clase recuperada, decidido el 03/11/2026 (Felipe): se paga una sola vez,
+en la recuperación.** La clase que no se dictó **no se paga**; la que la recupera sí, como
+cualquier otra. No se pagan las dos.
+
+Salió de un caso real: el **martes 03/11** la Reggaeton Femme de Pau en Los Leones no se dictó
+porque muchas alumnas no alcanzaron a llegar en el primer día de uso del sitio. Pau no faltó, y
+aun así esa fecha no se le paga: se le paga el día que la recupere. **Con la sala pasa lo mismo**
+—no cobran la hora perdida, la cobran cuando se recupere—, así que ni el costo de sala ni el
+sueldo se duplican.
+
+🔴 **Lo que sigue abierto es el otro caso: una clase que no se dicta y NO se recupera.** Esta
+regla no lo responde, y el PRD-0010 parte 3 tiene que preguntarlo por separado.
+
 ⚠️ **Teens se calcula sobre otra base.** Ver más abajo: allá el variable va por inscripción
 mensual, no por crédito. Son dos ramas de negocio distintas y el pago sigue a cada una.
 
