@@ -71,7 +71,7 @@ Todas tienen Instagram propio con seguidores y son parte activa de la campaña d
 | **Alumnas hoy** | 7–8 (⚠️ confirmar el número exacto). Migran de Kids a Teens. **No se migran al sistema**: septiembre se cierra por fuera y desde octubre entran registrándose por la web (ver §5.b, "Puesta en marcha") |
 | **Precio** | Tarifa de packs para todos los cursos. Teens deja los $45.000/mes |
 | **Costo de sala** | Los Leones: **$17.000/hora** · Diaguitas: **$0** · EB: **$27.000/hora** · Studio 98: **$23.500/hora** |
-| **Capacidad de sala** | Los Leones y Diaguitas: **22** · EB: **40** · Studio 98: **35**. Es un dato de cada sala, no una regla del sistema (PRD-0021) |
+| **Capacidad de sala** | Los Leones: **16** desde el 03/11/2026, por reclamos de que la sala quedaba muy llena (Felipe) — ⚠️ **cambió dos veces en dos días**: 22 → 18 el 02/11 y 18 → 16 el 03/11 · Diaguitas: **22** · EB: **40** · Studio 98: **35**. Es un dato de cada sala, no una regla del sistema (PRD-0021) |
 | **Sueldo base profesoras** | **$18.000/hora**. Clases de 1 hora. **Más $250 por crédito consumido a partir de la sexta alumna** — ver §Economía unitaria. Un crédito regalado se le paga igual |
 | **Sitio** | **xodancestudio.cl** — dominio propio, apuntado a Vercel y con certificado |
 | **Instagram** | @xo.dance.co — se abre al público en agosto 2026 |
@@ -84,7 +84,7 @@ Cuatro sedes con costos radicalmente distintos:
 
 | Sede | Costo de sala | Capacidad | Nota |
 |---|---|---|---|
-| **Los Leones** | $17.000/hora | 22 | ⚠️ confirmar si es por hora o por clase |
+| **Los Leones** | $17.000/hora | **16** (03/11/2026) | ⚠️ confirmar si es por hora o por clase. Capacidad: 22 → 18 el 02/11 y 18 → 16 el 03/11, por reclamos de sala llena |
 | **Diaguitas** | $0 | 22 | ⚠️ confirmar por qué es gratis y si es estable en el tiempo |
 | **EB Dance Studio** | **$27.000/hora** | **40** | La más grande y la más cara. Desde el 27/09/2026 |
 | **Studio 98** | **$23.500/hora** | **35** | Desde el 05/10/2026. Las cuentas de equilibrio de abajo todavía no la incluyen |
@@ -466,8 +466,9 @@ completa; desde la sexta, su tarifa menos $250.
 ⚠️ **El piso sube en tres de los seis casos.** Con packs de 8 en Los Leones ahora hacen falta
 **7** alumnas para no perder plata, no 6.
 
-⚠️ **Desde el 02/11/2026 Los Leones es para 18 y Studio 98 para 30** (Felipe). Las cuentas de sala
-llena de abajo siguen con 22 y **no se recalcularon**.
+⚠️ **Desde el 02/11/2026 Studio 98 es para 30, y Los Leones es para 16 desde el 03/11/2026**
+(Felipe): el 02/11 bajó de 22 a 18 y al día siguiente de 18 a 16, porque llegaron reclamos de que
+la sala quedaba muy llena. Las cuentas de sala llena de abajo siguen con 22 y **no se recalcularon**.
 
 **Capacidad real: 22 personas** en Los Leones y Diaguitas, confirmada el 30/08/2026. **EB Dance
 Studio son 40** (27/09/2026), así que las cuentas de abajo son de las dos salas de 22; en EB el
