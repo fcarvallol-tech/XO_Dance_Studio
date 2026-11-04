@@ -23,8 +23,9 @@
 -- aparece alguna, la migración **aborta antes de cancelar** y se resuelve
 -- distinto.
 --
--- El motivo lo lee la alumna en Mis reservas. La fecha de la recuperación no
--- se conoce todavía, así que no se promete ninguna.
+-- El motivo es "Cancelada", sin nada más (Felipe, 03/11/2026): nada de
+-- explicaciones en ese campo. Lo que importa es que el crédito vuelva, y eso
+-- lo hace el disparador.
 --
 -- ---------------------------------------------------------------------------
 -- Lo que esta migración NO resuelve: el pago a Pau
@@ -38,8 +39,7 @@
 do $$
 declare
   v_fecha constant date := '2026-11-03';
-  v_motivo constant text :=
-    'Esta clase no se dictó: muchas alumnas no alcanzaron a llegar. Se va a recuperar en otra fecha.';
+  v_motivo constant text := 'Cancelada';
 
   v_clase public.clases;
   v_confirmadas int;
