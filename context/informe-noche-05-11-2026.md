@@ -1,0 +1,461 @@
+# Informe de la noche del 05/11/2026
+
+> Escrito mientras avanzaba, no al final. Empecé a la 01:30 (hora de Chile).
+> Nada de esta noche tocó una base remota salvo **una** lectura autorizada (el conteo de alumnas).
+> Nada se mergeó a `main`. Ninguna migración se aplicó, ni en producción ni en staging.
+
+## Antes que nada: tres cosas que tienes que saber
+
+1. **Las secciones de CONTEXT.md que me pediste leer no están en `main`.** "Incentivo por promedio
+   — regla del 04/11/2026, en dos tramos" y "Las cinco decisiones que destraban la liquidación"
+   viven solo en la rama `origin/pedidos-de-uso` (commits `3510721` y `0e3f2a6`), que **contiene a
+   `main` entero** y le suma solo documentación (CONTEXT.md y la lista de pedidos del ROADMAP). Las
+   leí de ahí, como pediste. No edité CONTEXT.md. **Mergear `pedidos-de-uso` a `main` no tiene
+   conflictos**, y conviene hacerlo antes que el bloque 4, para que el PRD no cite una regla que en
+   `main` todavía no existe.
+2. **Cada bloque está en su rama, todas salen de `main` (`774aa79`) y todas están pusheadas.** Los
+   cuatro se pueden tomar por separado. Juntos hay **un solo conflicto**, entre los bloques 1 y 3,
+   en `app/(admin)/admin/page.tsx`, y es fácil de resolver: ver "Cruces entre ramas".
+3. **Alumnas en producción: 74.** El tope de 200 todavía no deja a nadie afuera.
+
+| Bloque | Rama | Estado | Migración |
+|---|---|---|---|
+| 1 · Filtrar Personas (PRD-0025) | `prd-0025-filtrar-personas` | ✅ Listo para publicar solo | Ninguna |
+| 2 · Pack de amigas (PRD-0026) | `prd-0026-pack-de-amigas` | ✅ Hecho · escenario 33/33 | `20261105120000_pack_de_amigas.sql`, sin aplicar |
+| 3 · Revocar créditos (PRD-0024) | `prd-0024-revocar-creditos` | ✅ Hecho · escenario 20/20 | `20261105130000_revocar_creditos.sql`, sin aplicar |
+| 4 · Liquidación (PRD-0010 p. 3) | `prd-0010-parte-3-liquidacion` | ✅ A–D · 43 tests · escenario 29/29 · ⏸ E sin empezar | `20261105140000_liquidacion_profesoras.sql`, sin aplicar |
+
+En todas las ramas `npm test` y `npm run build` pasan. Ninguna quedó roja.
+
+**Lo primero que te pido revisar** es la lectura que hice de "cancelar temprano ahorra el sueldo"
+(bloque 4, y la lista "Decisiones mías para revisar" al final).
+
+---
+
+## Cómo probé esta noche sin tocar ninguna base remota
+
+No hay Docker ni Postgres en este computador, y staging estaba prohibido. Armé una **base local en
+PGlite** (Postgres 16 real, compilado a WebAssembly, instalado en el scratchpad, **no en el repo**):
+crea los roles `anon`/`authenticated`/`service_role`, un `auth.users` y `auth.uid()` de mentira, y
+aplica **todas las migraciones de `supabase/migrations/` en orden**. Tarda 2,5 segundos. Solo se
+salta `20261103210000_clase_pau_3_nov_no_dictada.sql`, que busca una clase real que una base vacía
+no tiene.
+
+Con eso los escenarios de los bloques 2, 3 y 4 corrieron **contra las funciones de verdad**, con
+`set role authenticated` y las claims de cada persona, como pide CLAUDE.md. Lo que **no** reemplaza:
+PostgREST, Supabase Auth y la cola de correos real. Eso queda para staging, con tu aprobación.
+
+---
+
+## Bloque 1 — PRD-0025, filtrar Personas ✅ listo para publicar solo
+
+- **Rama:** `prd-0025-filtrar-personas` · **commit `4236074`** · pusheada.
+- **Sin migración.** No toca la base: se puede publicar mergeando esa rama sola.
+- **Alumnas en producción: 74** (`select count(*) from perfiles where rol = 'alumna' and
+  deleted_at is null`, solo lectura, 05/11 01:31). **El tope de 200 todavía no deja a nadie
+  afuera.** Fue la única consulta a producción de la noche.
+- **Qué hace:**
+  - Un buscador por nombre o correo en `/admin`, con formulario nativo. La búsqueda queda en la URL
+    (`?q=`) y funciona sin JavaScript.
+  - El filtro va en la consulta y el total llega en la misma respuesta (`count: "exact"`), así que
+    no suma una llamada.
+  - **El total se muestra siempre** ("74 personas registradas.").
+  - **Si la lista llega al tope**, aparece un aviso aparte que dice cuántas no se ven.
+  - Con búsqueda, los saldos se leen solo de las personas que aparecen.
+- **Tests:** 11 nuevos (escapes de LIKE y de PostgREST, intento de inyectar otra condición). Los
+  232 del repo pasan, y `npm run build` también.
+- **Decisiones mías:**
+  - **El total cuenta a todas las personas, no solo a las alumnas**, porque la lista muestra todos
+    los roles. Por eso puede decir un número mayor que 74.
+  - **El `*` se saca de la búsqueda:** PostgREST lo convierte en comodín y no hay forma de
+    escaparlo.
+  - **Sin búsqueda, los saldos se siguen leyendo todos de una vez.** Pasar 200 ids en la URL son
+    más de 7 KB.
+  - **Corregí una contradicción de mi propio PRD.** El §3 decía "sin importar tildes" y el §8.6.a
+    proponía no hacerlo todavía. Quedó lo del §8.6.a: "maria" **no** encuentra "María". Si molesta,
+    se agrega `unaccent`, y eso sí lleva migración.
+- **Qué falta:** probarlo **desde la página con sesión de admin**. No se pudo hacer sin crear una
+  sesión en una base remota. Al publicar, buscar:
+  - `cami`, `CAMI`, `o"x`, `50%` y algo que no exista;
+  - y abrir `/admin` con una alumna, para confirmar que no entra.
+
+  Lo que no está probado es que PostgREST lea bien `\"` dentro de comillas. Así lo dice su
+  documentación, pero no lo pude comprobar.
+
+---
+
+## Bloque 2 — PRD-0026, pack de amigas ✅ hecho, migración sin aplicar
+
+- **Rama:** `prd-0026-pack-de-amigas` · commits `db0df49` (el bloque) y `11defd4` (arreglo del arnés de prueba, ver abajo) · pusheada.
+- **PRD:** `context/prds/0026-pack-de-amigas.md`, con tus once decisiones tal cual. Las que tomé yo
+  están en su §8.6.
+- **Migración:** `20261105120000_pack_de_amigas.sql`. **No está aplicada.**
+- **`--dry-run` contra producción** (enlacé el CLI a producción solo para eso y lo devolví a
+  staging):
+
+  ```
+  Would push these migrations:
+   • 20261105120000_pack_de_amigas.sql
+  {"upToDate":false,"dryRun":true,"migrations":["20261105120000_pack_de_amigas.sql"],...}
+  ```
+
+- **Escenario en la base local: 33 de 33 pasos.** Lo puedes correr tú con
+  `node scripts/base-local/escenario-pack-amigas.mjs`. Comprueba:
+  - El plan quedó como lo pediste y anon lo ve.
+  - **Búsqueda de la amiga:** el propio correo se rechaza; un correo sin cuenta da no; uno con cuenta
+    da sí, sin importar mayúsculas.
+  - **El límite:** la 6.ª consulta en una hora y la 11.ª en el día se rechazan.
+  - **Atajos cerrados:** declarar el plan por la API sin la función se rechaza, y nombrar a la amiga
+    en un insert directo no tiene permiso.
+  - **Aprobar:** crea dos lotes con el mismo `compra_id` y una clase cada uno, con el mismo
+    vencimiento a 30 días, y dos movimientos `compra`. Aprobar dos veces no duplica nada, y el libro
+    cuadra con los lotes.
+  - **Qué ve cada una:** Bea ve su lote y no la compra; Ana no ve el lote de Bea; otra alumna no ve
+    nada.
+  - **Rechazar y anular:** rechazar antes de aprobar no deja lotes; anular una compra con clases
+    vivas se rechaza.
+  - **Pack normal:** el de 2 clases sigue igual.
+- **`metricas_resumen` no cambia, y cuenta bien.** Con sesión de owner devolvió
+  `{"venta":{"compras":1,"ingresos":16000},"creditos":{"vendidas":2,"regaladas":0},"conciliacion":{"libro":2,"lotes":2}}`.
+  Una compra, no dos.
+- **`npm test` (223) y `npm run build` pasan.**
+- **Decisiones mías:**
+  - **Nombre "Pack de amigas"**, que es como ya circula la promo. Va al final de la vitrina.
+  - **Límite: 5 consultas por hora y 10 por día**, por cuenta compradora. Quedan en `parametros`, así
+    que se cambian sin migración. Cuentan todas las consultas, y declarar también cuenta, porque el
+    servidor vuelve a buscar a la amiga. Si no contara, declarar serviría para preguntar sin límite.
+    **El correo consultado no se guarda**: solo quién preguntó, cuándo y si había cuenta.
+  - **Los datos para transferir no aparecen hasta que el servidor confirma a la amiga.** Tu punto 3
+    decía "Continuar". En este flujo, la gente transfiere *antes* de apretar "Ya transferí", así que
+    validar recién ahí habría sido justo la trampa que querías evitar.
+  - **Anular (`deleted_at`) una compra que todavía tiene clases vigentes sin usar se rechaza**, en
+    cualquier compra y no solo en este pack. Hoy anular a mano en el Table Editor deja las clases
+    vivas y reservables. Para anular, primero se quitan con PRD-0024 y después se marca. Así no
+    existe "uno sí y otro no".
+  - **El correo a la amiga lleva el nombre de pila de quien compró**, escapado como HTML. El de quien
+    compró dice "la otra clase quedó en la cuenta de tu amiga", sin su nombre.
+  - **El link de PRD-0020 funciona sin excluirlo:** `/comprar/pack-amigas` es una oferta como
+    cualquier otra.
+- **Orden para publicar: primero la migración, después el código.**
+  - Si el código sale antes, `/comprar` no se cae (lo dejé tolerante a la columna faltante), **pero
+    la bandeja de compras sí falla**.
+  - En el build de esta rama, `/comprar` se generó contra staging sin la columna, y pasó por esa
+    tolerancia.
+- **Qué falta:** probarlo desde la página en staging. Hay que comprar con un correo sin cuenta y con
+  uno con cuenta, aprobar, ver que lleguen los dos correos y reservar con la clase de la amiga. Para
+  eso la migración tiene que estar en staging, que va tres migraciones atrás.
+- **Hallazgo de paso, sin arreglar:** las plantillas de correo de antes ponen el nombre de la propia
+  destinataria sin escapar HTML. El riesgo es mínimo, pero queda anotado en el PRD-0026 §11.
+
+---
+
+## Bloque 3 — PRD-0024, revocar créditos ✅ hecho, migración sin aplicar
+
+- **Rama:** `prd-0024-revocar-creditos` · commits `a420f2a` (el bloque) y `3291cb8` (arreglo del arnés de prueba) · pusheada.
+- **PRD:** `context/prds/0024-revocar-creditos.md`, con el §8.6 como lo decidiste.
+  - "Fue a clase y no reservó" quedó **fuera**, como pieza aparte: inscribir a una alumna en una
+    clase pasada. **No la empecé.**
+  - El diálogo de Quitar avisa que para ese caso no corresponde.
+- **Migración:** `20261105130000_revocar_creditos.sql`. **No está aplicada.**
+- **`--dry-run` contra producción:**
+
+  ```
+  Would push these migrations:
+   • 20261105130000_revocar_creditos.sql
+  {"upToDate":false,"dryRun":true,"migrations":["20261105130000_revocar_creditos.sql"],...}
+  ```
+
+- **El escenario que pediste, en la base local: 20 de 20**
+  (`node scripts/base-local/escenario-revocar.mjs`). Ana parte con un lote vencido de 1, uno de 2
+  que vence en 10 días y uno de 3 que vence en 20.
+  - **Saldo de sobra (quitar 3 de 5):**
+    - el lote de 10 días baja de 2 a 0 y el de 20 días baja de 3 a 2;
+    - el vencido no se toca;
+    - quedan dos movimientos, −2 y −1, con motivo y autor;
+    - el saldo queda en 2.
+  - **Exactamente lo que hay (quitar 2 de 2):** queda en 0 y ningún lote negativo.
+  - **De más:** con saldo 0 se piden 1, y a Bea, que tiene 2, se le piden 3. Las dos se rechazan
+    **sin cambiar nada**: comparé lotes y libro antes y después.
+  - **En los tres casos:** libro = lotes, y el último `saldo_resultante` es igual a
+    `saldo_creditos()`.
+  - **Candado:** la misma revocación enseguida se rechaza.
+  - **Permisos, con la sesión de cada rol:**
+    - nadie con sesión llama la función directo;
+    - admin y alumna son rechazados adentro aunque pasen su propio `user_id`;
+    - `revocaciones_recientes` solo la lee el owner;
+    - la alumna ve el movimiento, pero no el motivo.
+- **Tablero:** `revocadas` es una línea propia, en el período, el anterior y desde siempre.
+  - En `/owner/metricas` aparece como **"Quitadas este mes"**.
+  - Vendidas, regaladas y consumidas quedan iguales; el escenario lo mide antes y después:
+
+  ```
+  antes:   {"vendidas":2,"regaladas":6,"revocadas":0,"vigentes_regaladas":7,"conciliacion":{"libro":8,"lotes":8}}
+  después: {"vendidas":2,"regaladas":6,"revocadas":5,"vigentes_regaladas":2,"conciliacion":{"libro":3,"lotes":3}}
+  ```
+
+- **`npm test` (221) y `npm run build` pasan.**
+- **Decisiones mías:**
+  - **La tasa de utilización descuenta lo revocado.** La calculo sobre otorgadas menos revocadas:
+    una clase quitada ya no se puede tomar, y si siguiera en el denominador la tasa bajaría sin que
+    nadie haya dejado de venir.
+  - **Un `check` nuevo en el libro:** una revocación siempre es negativa y siempre lleva motivo,
+    autor y lote, también si alguien la escribe a mano.
+  - **La lista "Clases quitadas recientes" muestra una fila por revocación**, no una por lote.
+  - **El botón Quitar no aparece si la persona no tiene saldo vigente.**
+- **Qué falta:**
+  - Probar la **concurrencia con `reservar()`** con dos conexiones. La base local tiene una sola.
+  - Probarlo desde la pantalla. Las dos cosas van en staging, con la migración.
+
+---
+
+## Bloque 4 — PRD-0010 parte 3, liquidación ✅ A–D hechos · E no empezado
+
+**Rama:** `prd-0010-parte-3-liquidacion`. Un commit por paso.
+
+**Las respuestas salieron de `CONTEXT.md` en `origin/pedidos-de-uso`**, como pediste, no del PRD
+viejo.
+
+### Paso A ✅ — §13 contestado · commit `03a30ed`
+
+- **Las siete preguntas, con lo que dice CONTEXT.** Se agrega el §6.5 (incentivo) y el §6.6
+  (causas y recuperación).
+- **La pregunta 4 no tiene respuesta en CONTEXT** ("pasa al mes siguiente": ¿por profesora o por
+  mes?). Tomé la propuesta del PRD: la página muestra el mes más antiguo con algo pendiente y avanza
+  cuando se paga la última. Es pantalla, no modelo.
+- **Sumé la pregunta 8:** ¿se promedia con 3 cuando no se dictaron por decisión de la academia?
+  CONTEXT dice que el PRD lo pregunte antes de implementarlo, así que **no está implementado**: con
+  menos de 4 dictadas no hay incentivo.
+
+### Paso B ✅ — ADR-0008 · commit `1c442c9`
+
+- `context/decisions/0008-la-profesora-ve-su-liquidacion.md` reemplaza la regla 4 de PRD-0008 por
+  "ningún monto que no sea el suyo".
+- **La regla 2 no cambia y no tiene excepción.** El ADR fija que la liquidación **no lee
+  `perfiles`**: ni nombres, ni RUT, ni correo, ni teléfono, ni apoderado.
+- PRD-0008 quedó con una nota que apunta al ADR, sin borrar el texto original.
+
+### Paso C ✅ — `lib/dominio/liquidacion.ts` con 38 tests · commit `1ac78c7`
+
+- **Toda la regla de pago vive ahí.** La base de datos solo entrega insumos (cada clase, su estado,
+  su causa y sus créditos) y no calcula montos.
+- **Los casos de borde que pediste, uno por uno, con montos calculados a mano:**
+  - **Menos clases que el piso:** 3 dictadas con 30 alumnas cada una → $0. Y 3 dictadas más una no
+    dictada → $0, porque la no dictada no cuenta para el piso.
+  - **Justo en el límite de cada tramo:**
+    - promedio 14 exacto → $7.500; 13,75 → $0;
+    - 22 exacto → $15.000; 21,75 → $7.500;
+    - 25 → $15.000, porque los tramos se suman.
+  - **Una profe con dos cursos:** gana en los dos ($7.500 + $15.000). Tampoco se juntan dos cursos
+    para llegar al piso.
+  - **Un mes con una clase no dictada y su recuperación:**
+    - la original paga $0;
+    - la recuperación se paga entera y es la cuarta dictada que habilita el incentivo;
+    - sin recuperación, la original paga la base y el curso no llega al piso;
+    - si la recuperación cae en el mes siguiente, noviembre paga $0 y diciembre la recuperación.
+  - **Variable:** 5 créditos → $0, 6 → $250, 15 → $2.500 (tu ejemplo). En una clase de 90 minutos el
+    variable no escala con la duración.
+  - **Reemplazo:** la clase se le paga a quien dictó, y la titular no la ve en su liquidación.
+  - **Un mes completo de P1 calculado a mano:** $169.750 (base $153.000, variable $9.250,
+    incentivo $7.500). Deja afuera una especial, una del mes siguiente y una de otra profesora.
+  - **El mes en Santiago:** la clase del 30/11 a las 22:00 es de noviembre, y el mes no termina a
+    medianoche UTC.
+  - **Octubre:** se bloquea con "se pagaron a mano".
+- **Prueba de mutación:** rompí la regla a propósito en tres lugares (el umbral, la recuperación y
+  el `>=` del tramo). Los tests lo detectan: fallan 10, 5 y 6. No pasan por casualidad.
+- **Lecturas mías**, todas escritas en el PRD §6.5 y §6.6:
+  - **"Alumnas" de una clase son los créditos consumidos**, el mismo número del variable. No hay
+    registro de asistencia.
+  - **El promedio se compara sin decimales:** la suma de las 4 mejores tiene que ser ≥ 56.
+  - **El reemplazo suma al promedio de quien dictó.**
+  - **"Cancelar temprano ahorra el sueldo"**: lo traduje como cancelar antes del día de la clase, en
+    Santiago, y solo para `sin_alumnas` y `asistencia_insuficiente`. Si se canceló el mismo día, se
+    paga la base. **Esta es la lectura que más conviene que revises.**
+  - **Recuperada, por la causa que sea, la original paga $0.** Incluye `sala_no_disponible`: lo leí
+    de "una clase recuperada se paga una sola vez, en la recuperación", que es general.
+- **Hallazgo, sin arreglar:** el umbral de 5 del 21/10 **no está** en `costoClase()`
+  (`lib/dominio/finanzas.ts`). El margen de `/owner/finanzas` sigue cobrando $250 por cada crédito y
+  sobrestima el costo hasta en $1.250 por clase. No lo toqué porque no es parte de la liquidación:
+  es una línea, si lo apruebas.
+
+### Paso C, después ✅ — 5 bordes más · commit `d3819b2`
+
+Con el tiempo que sobró, como pediste, sumé tests en vez de empezar el portal:
+
+- `sin_alumnas` cancelada el mismo día paga la base; con anticipación, $0.
+- Una especial no suma al promedio ni al piso.
+- Una clase futura del mes no cuenta para el piso.
+- La anticipación se mide con la primera fecha de registro.
+
+**43 tests en `liquidacion.test.ts`; 264 en el repo.**
+
+### Paso D ✅ — la migración, sin aplicar · commit `7e6246d`
+
+- **`20261105140000_liquidacion_profesoras.sql`. No está aplicada.**
+- **`--dry-run` contra producción:**
+
+  ```
+  Would push these migrations:
+   • 20261105140000_liquidacion_profesoras.sql
+  {"upToDate":false,"dryRun":true,"migrations":["20261105140000_liquidacion_profesoras.sql"],...}
+  ```
+
+- **La regla de pago no está en SQL.** La base entrega **insumos** (cada clase con su estado, su
+  causa, si se recuperó y cuántos créditos se consumieron) y una **huella** (md5) de esos insumos
+  más la tarifa. La pantalla calcula con `lib/dominio` y manda monto, detalle y huella.
+  `pagar_liquidacion` recalcula la huella y **rebota si cambió**: es el "el monto cambió mientras lo
+  mirabas" del PRD, sin escribir la regla dos veces. El PRD decía que se recalculaba en SQL; lo
+  cambié por esto, y está explicado en su §12.3.
+- **Qué agrega:**
+  - el estado `no_dictada` y `clases.recupera_clase_id`, con una sola recuperación por clase;
+  - la tabla `causas_de_clase`, con las cinco causas;
+  - la tabla `reasignaciones_de_clase`;
+  - la fila de Isi en `costos_profesoras` (tarifa general) y `umbral_variable = 5`;
+  - la tabla `liquidaciones_profesoras`, que solo acepta meses desde noviembre de 2026;
+  - las funciones `registrar_no_dictada`, `marcar_recuperacion`, `reasignar_clase`,
+    `pagar_liquidacion` (owner, con comprobante obligatorio y el egreso en la misma transacción) y
+    `anular_liquidacion`;
+  - los insumos para el owner, y para la profesora **solo los suyos, sin nada de las alumnas**;
+  - la clase de Pau del 3/11 clasificada como `asistencia_insuficiente`.
+- **Escenario en la base local: 29 de 29** (`node scripts/base-local/escenario-liquidacion.mjs`).
+  - **El mes de Pau en la base:** una no dictada que se recupera, una cancelada que se clasifica,
+    una que cubre Drimy y las demás dictadas.
+  - **El monto lo calcula `lib/dominio`:** Pau, **$88.500** (incluye $7.500 de incentivo, porque la
+    recuperación es su cuarta dictada); Drimy, **$18.750**.
+  - **Lo que rebota al pagar:** el mes en curso, sin comprobante, un admin, octubre, una huella
+    vieja y pagar dos veces.
+  - **El candado del mes pagado:** marcar o reasignar una clase de un mes pagado también rebota.
+  - **Anular** deja la fila y anula el egreso.
+  - **Lo que ve cada rol, preguntado con su sesión:**
+    - Pau ve sus clases y nada de Drimy, sin ninguna columna de alumnas;
+    - ve lo que se le pagó, sin comprobante;
+    - admin, profesora y alumna leen cero filas de las tablas, y anon no tiene permiso;
+    - **la causa no aparece en `clases`**, que es pública.
+  - **`metricas_demanda` deja de contar una no dictada como dictada.**
+- **Decisiones mías en la migración:**
+  - **La causa va en una tabla aparte, no en `clases`.** `clases` es pública entera
+    (`using (true)`), y un detalle como "la profe estaba enferma" no puede quedar a la vista de
+    cualquiera.
+  - **No hay `check` que obligue la causa al cancelar.** Sin leer producción no puedo clasificar
+    las que ya existen, y un `check` rompería lo que hoy cancela sin causa. En cambio, **la
+    liquidación no se puede pagar** mientras haya una sin causa: lo dice la pantalla y lo vuelve a
+    comprobar `pagar_liquidacion`.
+  - **`metricas_resumen` no la toco**, porque la redefine el bloque 3 y la última migración
+    aplicada ganaría. Sí corrijo `metricas_finanzas` y `metricas_demanda`.
+  - **`hoy_santiago()` es la única fuente del "hoy"** en el pago. Es lo que me dejó probar el pago
+    de noviembre hoy, 5/11.
+
+### Paso E ⏸ — no empezado, a propósito
+
+Lo que falta para usarlo:
+
+- la página `/owner/liquidaciones`;
+- "Mi liquidación" en el portal de la profesora;
+- el Route Handler que sube el comprobante a un bucket privado.
+
+Preferiste C y D sólidos y E mañana, y no quise dejar pantallas a medias. Todo lo que E necesita
+de la base ya está y está probado. Noviembre se paga recién en diciembre, así que no apura.
+
+**Antes de aplicar esta migración** conviene una consulta de solo lectura en producción: cuántas
+clases de parrilla de noviembre están `cancelada` sin causa. Cada una bloquea el pago de su
+profesora hasta que alguien la clasifique.
+
+---
+
+## Cruces entre ramas
+
+**Probé mergear todo junto** en una copia temporal, que después borré, en este orden:
+`pedidos-de-uso` → bloque 1 → bloque 2 → bloque 3 → bloque 4.
+
+| Rama | Resultado |
+|---|---|
+| `origin/pedidos-de-uso` | limpio |
+| `prd-0025-filtrar-personas` | limpio |
+| `prd-0026-pack-de-amigas` | limpio |
+| `prd-0024-revocar-creditos` | **un conflicto, en `app/(admin)/admin/page.tsx`**. Los bloques 1 y 3 tocan la misma consulta. Se resuelve juntando las dos: el `esOwner` del 3, la consulta con `count` y filtro del 1, y el `Promise.all` con las cinco lecturas |
+| `prd-0010-parte-3-liquidacion` | limpio |
+
+**Con todo junto y el conflicto resuelto:** 277 tests pasan, `npm run build` pasa, el lint está
+limpio, y los cuatro escenarios pasan con las tres migraciones aplicadas en orden (33, 20, 3 y 29
+pasos).
+
+**Las tres migraciones:**
+
+- **No se pisan.** Solo el bloque 3 redefine `metricas_resumen`; el bloque 4 redefine
+  `metricas_finanzas` y `metricas_demanda`, y el bloque 2 `acreditar_compra`.
+- **Se pueden aplicar por separado**: ninguna depende de otra.
+- **Si se aplican juntas, que sea en el orden de sus nombres.**
+
+**`scripts/base-local/base.mjs` es idéntico en las tres ramas que lo traen**, así que no choca.
+
+**El arreglo del arnés (commits `11defd4` y `3291cb8`):**
+
+- **El `auth.uid()` de mentira fallaba con claims vacías.** El arnés se lo había copiado a los
+  bloques 2 y 3. Ningún resultado cambió, pero quedó corregido igual en las tres ramas.
+- **Una llamada que repetía la función.** Escribir `select (f(...)).*` ejecuta la función una vez
+  por cada columna. En el bloque 2 eso llamaba a `acreditar_compra` varias veces por aprobación,
+  sin efecto porque es idempotente. Ahora la llama una vez.
+
+---
+
+## Lo que necesito de ti
+
+### Para publicar
+
+1. **Bloque 1:** mergear `prd-0025-filtrar-personas`. No toca la base.
+2. **`pedidos-de-uso` a `main`:** son solo documentos, sin conflictos, y conviene hacerlo antes del
+   bloque 4.
+3. **Migraciones, por nombre, cuando quieras:**
+   - `20261105120000_pack_de_amigas.sql` → después, mergear `prd-0026-pack-de-amigas`;
+   - `20261105130000_revocar_creditos.sql` → después, `prd-0024-revocar-creditos`, con el conflicto
+     de arriba;
+   - `20261105140000_liquidacion_profesoras.sql` → después, `prd-0010-parte-3-liquidacion`.
+
+   En los tres casos, **primero la migración y después el código.**
+4. **Staging está tres migraciones atrás de producción.** Para probar desde la página antes de
+   producción hay que ponerlo al día, y eso también lo apruebas tú.
+
+### Decisiones mías para revisar
+
+Ordenadas de más a menos importante:
+
+1. **La lectura de "cancelar temprano ahorra el sueldo"** (bloque 4): antes del día de la clase no
+   se paga; el mismo día o después, la base. Solo vale para `sin_alumnas` y
+   `asistencia_insuficiente`.
+2. **Recuperada por cualquier causa, la original paga $0** (bloque 4). Incluye
+   `sala_no_disponible`.
+3. **Anular una compra con clases vivas se rechaza, en cualquier compra** (bloque 2): primero se
+   quitan las clases con el bloque 3.
+4. **Los datos para transferir aparecen recién con la amiga validada** (bloque 2).
+5. **Límite de consultas: 5 por hora y 10 por día** (bloque 2), ajustable en `parametros`.
+6. **"Alumnas" de una clase = créditos consumidos**, y el promedio se compara sin decimales
+   (bloque 4).
+7. **La utilización del tablero descuenta lo revocado** (bloque 3).
+8. **El nombre "Pack de amigas"**, y que el correo a la amiga lleve el nombre de pila de quien
+   compró (bloque 2).
+
+### Preguntas que quedaron abiertas
+
+- **¿Se promedia con 3 cuando las clases no se dictaron por decisión de la academia?** No está
+  implementado (PRD-0010 parte 3, pregunta 8).
+- **¿"Pasa al mes siguiente" es por profesora o por mes?** No encontré la respuesta en CONTEXT;
+  tomé la propuesta del PRD.
+- **¿Se agrega el umbral de 5 al margen de `/owner/finanzas`?** Es una línea en `costoClase()`.
+
+### Hallazgos, sin arreglar
+
+- **El umbral de 5 del variable no está en `/owner/finanzas`**: el margen sobrestima el costo hasta
+  en $1.250 por clase.
+- **Las plantillas de correo de antes no escapan el nombre como HTML.** La nueva sí.
+- **No probé que PostgREST lea bien `\"` dentro de comillas** en la búsqueda del bloque 1. Así lo
+  dice su documentación, pero se confirma con sesión.
+
+---
+
+## Lo que no hice, y por qué
+
+- **Nada contra una base remota**, salvo el conteo de alumnas. Los `--dry-run` y `link` contra
+  producción leen y no escriben. El CLI quedó enlazado a staging (`ybopuahlzbjkkwumkllk`).
+- **No toqué `reservar()`**, ni CONTEXT.md, ni la sección "Estado al…" del ROADMAP.
+- **No empecé nada de lo que dejaste fuera de alcance**: inscritas de una clase, ficha de persona,
+  editar perfil, inscribir en una clase pasada.
+- **No mergeé nada a `main`.**
