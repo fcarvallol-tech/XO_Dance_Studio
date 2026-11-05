@@ -459,3 +459,104 @@ Ordenadas de más a menos importante:
 - **No empecé nada de lo que dejaste fuera de alcance**: inscritas de una clase, ficha de persona,
   editar perfil, inscribir en una clase pasada.
 - **No mergeé nada a `main`.**
+
+---
+
+## Correcciones del 05/11
+
+Sesión de la mañana. **Nada se aplicó a una base remota.** Lo único remoto fue de lectura: los
+`--dry-run` contra producción y unos conteos contra staging, sin datos de personas. El CLI quedó
+enlazado a staging.
+
+| Parte | Qué cambió | Rama | Commit |
+|---|---|---|---|
+| 1 · Liquidación | Sale el corte por anticipación. Entra `profesora_se_presento` | `prd-0010-parte-3-liquidacion` | `c206ae0` |
+| 2 · Candado de anular | Sale de la migración del pack | `prd-0026-pack-de-amigas` | `6127db4` |
+| 2 · Candado de anular | Entra en la de revocar, con su parte del PRD y su escenario | `prd-0024-revocar-creditos` | `bd7cd69` |
+| 3 · `main` | `pedidos-de-uso` | `main` | `ef2bb1e` |
+| 3 · `main` | `prd-0025-filtrar-personas`, con la nota de las 74 alumnas (`14590bb`) | `main` | `3cb80f7` |
+| 3 · `main` | Cierre: PRD-0025, changelog, "Estado al 5/11" y el pedido 8 | `main` | `c9a28fe` |
+| 4 · PRD-0027 | La clase recuperativa | `prd-0027-clase-recuperativa` | `a3d71e4` |
+
+### Parte 1 — los montos del escenario, recalculados a mano
+
+**Los montos que había no cambiaban.** Ningún caso del escenario pasaba por el corte ni por una sala
+recuperada: Pau seguía en $88.500 y Drimy en $18.750. Agregué dos clases que sí pasan por ahí, con el
+cálculo escrito antes de correrlo, y coincidió. **Escenario: 36 de 36.**
+
+| Clase de Pau | Cuenta | Monto |
+|---|---|---|
+| A1, 02/11, dictada, 16 créditos | 18.000 + 11 × 250 | $20.750 |
+| A2, 03/11, asistencia, recuperada | Se paga en A4 | $0 |
+| D, 04/11, cambio de parrilla | No paga | $0 |
+| A3, 10/11, dictada, 12 créditos | 18.000 + 7 × 250 | $19.750 |
+| A4, 20/11, dictada, 14 créditos | 18.000 + 9 × 250 | $20.250 |
+| A5, 24/11, dictada, 14 créditos | 18.000 + 9 × 250 | $20.250 |
+| **S, 01/11, sin sala, se presentó, recuperada** (nueva) | Base. Con la regla de anoche: $0 | $18.000 |
+| **T, 27/11, sin alumnas, cancelada con semanas de anticipación, no recuperada** (nueva) | Base. Con el corte: $0 | $18.000 |
+| Incentivo | 16 + 14 + 14 + 12 = 56, promedio 14 | $7.500 |
+| **Total Pau** | 81.000 + 36.000 + 7.500 | **$124.500** |
+
+**Drimy: $18.750**, sin cambios (8 créditos, 3 sobre el umbral).
+
+El mes completo de P1 en `liquidacion.test.ts` sí cambió: de $169.750 a **$187.750**, porque la
+`sin_alumnas` cancelada con anticipación ahora paga la base.
+
+Salieron 6 tests que medían anticipación y entraron 6 de `profesora_se_presento`: siguen siendo 43.
+`causa_registrada_at` salió de los insumos y de la huella, y `profesora_se_presento` entró en las
+dos: cambiarlo hace rebotar un pago que se estaba mirando.
+
+### Parte 2 — las migraciones son independientes
+
+Comprobado, no supuesto: cada una sola en su rama, y las dos juntas en los dos órdenes. **Pack 30 de
+30** (eran 33: tres pasos se fueron con el candado) y **revocar 25 de 25** (eran 20). Dicho en los dos
+PRDs.
+
+### Parte 3 — el filtro está publicado, pero la prueba que pediste no se hizo
+
+Deploy terminado a las 11:25. **No lo probé desde la página con tu sesión**: esta sesión no tenía la
+extensión de Chrome, y crear una sesión a mano para tu cuenta habría sido suplantarte.
+
+| Lo que pediste | Qué pasó | Cómo se comprobó |
+|---|---|---|
+| `cami`, `CAMI` | 200, 0 filas. **No prueba mayúsculas**: en staging no hay ninguna Cami | Filtro exacto contra staging |
+| `o"x` | 200, sin error de sintaxis: **PostgREST sí lee `\"`** | Igual |
+| `50%` | 200, 0 filas. `%` solo también da 0 de 28: no es comodín | Igual |
+| Algo que no existe | 200, 0 filas | Igual |
+| **`/admin` con una alumna** | ⏳ **Sin probar.** Solo leí el código: `requiereNivel("admin", "admin")` redirige antes de renderizar. Sin sesión, producción responde 307 a `/entrar` | `curl` y lectura |
+
+### Parte 4 — PRD-0027
+
+Tu lectura del esquema es correcta, con tres cosas que no estaban a la vista:
+
+1. **`on conflict do nothing` no duplica ni borra, pero tampoco avisa.** Una recuperativa en el día
+   regular, más allá de los 70 días generados, habría hecho desaparecer la clase regular de esa
+   fecha sin error. Se rechaza ese día de la semana.
+2. **Una recuperativa cancelada ocupaba el índice para siempre.** Ahora cuenta solo la que sigue en
+   pie.
+3. **"Tenía reserva" no se puede leer de la reserva.** Quien canceló sola se ve igual que quien
+   perdió la clase. Se distingue por el movimiento del libro.
+
+**Depende de la migración de la liquidación**, así que el `--dry-run` lista las dos:
+
+```
+Would push these migrations:
+ • 20261105140000_liquidacion_profesoras.sql
+ • 20261105150000_clase_recuperativa.sql
+```
+
+**Escenario: 24 de 24.** `npm test`: 280. `npm run build` pasa. **La pantalla compila, pero nadie la
+ha abierto**, y sus lecturas por PostgREST y el correo no están probados: eso necesita las dos
+migraciones en staging.
+
+### Para decidir
+
+1. **`CONTEXT.md` sigue diciendo "cancelar temprano ahorra la sala y el sueldo"**, ahora en `main`.
+   No lo edité porque es tuyo. ¿La saco?
+2. **¿La clase de Pau del 3/11 lleva `profesora_se_presento`?** Quedó apagado, porque CONTEXT dice
+   que esa fecha no se le paga. Pero dice también que Pau no faltó: si fue a la sala, la regla nueva
+   le pagaría la base además de la recuperación ($18.000 más).
+3. **¿La sala de la recuperación se cobra?** CONTEXT dice que sí; el ROADMAP y PRD-0010 dicen que no.
+   `/owner/finanzas` hoy la cobra.
+4. **Una recuperativa a una hora rara se dibuja corrida** hasta mergear
+   `grilla-filas-de-cinco-minutos`. Es la condición que pusiste para sacarla.
