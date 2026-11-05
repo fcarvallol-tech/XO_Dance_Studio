@@ -28,8 +28,10 @@
 -- 4. declarar_pack_amigas(): la única forma de crear una compra con invitada.
 -- 5. acreditar_compra(): el camino de los packs crea un lote por perfil, en la
 --    misma transacción. El resto de la función queda idéntico a 20260910120000.
--- 6. Un candado para anular: `deleted_at` en una compra con clases vigentes sin
---    usar se rechaza. Ver PRD-0026 §6 y la nota en el punto 6.
+--
+-- El candado para anular compras con clases vivas **no** está acá: vive en
+-- 20261105130000_revocar_creditos.sql, junto a su remedio (PRD-0024). Esta
+-- migración se puede aplicar sola y no depende de esa ni esa de esta.
 --
 -- `metricas_resumen` NO cambia: ya cuenta compras desde `compras` (una, con su
 -- monto) y vendidas desde los movimientos tipo `compra` (dos). Comprobado en
@@ -515,53 +517,7 @@ revoke all on function public.acreditar_compra(uuid, uuid, text) from public, an
 grant execute on function public.acreditar_compra(uuid, uuid, text) to service_role;
 
 -- ---------------------------------------------------------------------------
--- 6. Anular una compra: los lotes van juntos
--- ---------------------------------------------------------------------------
--- Hoy nada en el sitio anula una compra: `deleted_at` solo se escribe a mano
--- en el Table Editor, y **no toca los lotes**. Una compra anulada así deja sus
--- clases vivas y reservables, en un pack normal y en uno de amigas.
---
--- Felipe pidió que en el pack de amigas se vayan los dos lotes o ninguno. Lo
--- que no puede pasar es una anulación a medias: que alguien crea que anuló y
--- las clases sigan ahí. Así que se rechaza anular **cualquier** compra que
--- todavía tenga clases vigentes sin usar, en cualquiera de sus lotes. Para
--- anularla, primero se quitan esas clases —con la revocación de PRD-0024,
--- lote por lote y con motivo— y recién ahí se marca. Ver PRD-0026 §6.
---
--- Aplica a todas las compras, no solo al pack: el hueco era de todas.
-
-create or replace function public.compras_anular_sin_clases_vivas()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_vivas int;
-begin
-  if old.deleted_at is null and new.deleted_at is not null then
-    select coalesce(sum(cantidad_disponible), 0) into v_vivas
-    from public.creditos
-    where compra_id = new.id
-      and cantidad_disponible > 0
-      and fecha_vencimiento > now();
-
-    if v_vivas > 0 then
-      raise exception 'Esta compra todavía tiene % clases sin usar en sus lotes. Quítalas primero (PRD-0024) y después anúlala', v_vivas
-        using errcode = '22023';
-    end if;
-  end if;
-  return new;
-end;
-$$;
-
-drop trigger if exists compras_anular_sin_clases_vivas on public.compras;
-create trigger compras_anular_sin_clases_vivas
-  before update of deleted_at on public.compras
-  for each row execute function public.compras_anular_sin_clases_vivas();
-
--- ---------------------------------------------------------------------------
--- 7. Comprobaciones
+-- 6. Comprobaciones
 -- ---------------------------------------------------------------------------
 
 do $$

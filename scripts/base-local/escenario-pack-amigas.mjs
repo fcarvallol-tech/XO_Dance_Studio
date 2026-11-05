@@ -192,18 +192,8 @@ await paso("anular una compra pendiente: se puede", async () => {
   const r = (await declarar(ana, "bea@xo.test")).r;
   await db.query("update compras set deleted_at = now() where id = $1", [r.compra_id]);
 });
-await paso("anular la compra aprobada con clases sin usar: se rechaza, y no toca ningún lote", async () => {
-  await falla(db.query("update compras set deleted_at = now() where id = $1", [compraId]), /2 clases sin usar/);
-  assert.equal((await uno(db, "select sum(cantidad_disponible)::int n from creditos where compra_id = $1", [compraId])).n, 2);
-});
-await paso("con una sola de las dos usada, sigue rechazándose (no hay anulación a medias)", async () => {
-  await db.query("update creditos set cantidad_disponible = 0 where compra_id = $1 and perfil_id = $2", [compraId, ana.perfilId]);
-  await falla(db.query("update compras set deleted_at = now() where id = $1", [compraId]), /1 clases sin usar/);
-});
-await paso("con las dos usadas, se puede anular", async () => {
-  await db.query("update creditos set cantidad_disponible = 0 where compra_id = $1", [compraId]);
-  await db.query("update compras set deleted_at = now() where id = $1", [compraId]);
-});
+// Anular una compra con clases vivas: el candado vive en la migración de
+// PRD-0024 y se prueba en escenario-revocar.mjs.
 
 console.log("\n8. Bordes");
 await limpiar();

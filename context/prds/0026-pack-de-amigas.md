@@ -93,26 +93,28 @@ igual que cualquier otra.
 | Aprobar dos veces | Idempotente, como antes: siguen dos lotes, y la clave del correo de Bea es su lote, así que el correo sale una vez |
 | **Link compartible de PRD-0020** | **Funciona sin excluirlo.** `/comprar/pack-amigas` resuelve como cualquier oferta, porque toda oferta sale de un plan activo. Quien llega por el link sin sesión entra y vuelve a la misma oferta. `/admin/planes` lo lista con su link como a los demás |
 
-### Anular una compra aprobada: los dos lotes, o ninguno
+### Anular una compra aprobada
 
-**Lo que había:** nada en el sitio anula una compra. `deleted_at` solo se escribe a mano en el Table
-Editor, y **no toca ningún lote**. Una compra "anulada" así deja sus clases vivas y reservables. Pasa
-con cualquier pack, no solo con este.
+**Esta migración no agrega ningún candado.** Nada en el sitio anula una compra: `deleted_at` se
+escribe a mano en el Table Editor y no toca ningún lote, así que una compra "anulada" deja sus clases
+vivas y reservables. Pasa con cualquier pack, no solo con este, y **sigue igual después de aplicar
+esta migración sola**.
 
-**Lo que hace la migración:** **rechaza** marcar `deleted_at` en cualquier compra que todavía tenga
-clases vigentes sin usar, en cualquiera de sus lotes. El error dice cuántas son y que primero hay que
-quitarlas.
+"Los dos lotes o ninguno" lo garantiza el disparador `compras_anular_sin_clases_vivas`, que **se
+movió a PRD-0024** (Felipe, 05/11/2026). Es un candado sobre todas las compras y su remedio es la
+revocación: en esta migración, sin revocar aplicada, habría dejado a Felipe sin poder anular
+ninguna compra con créditos vivos y sin herramienta para quitarlos, que es lo que hace hoy a mano
+para corregir ingresos.
 
-- **Para anular un pack de amigas aprobado, se quitan primero las clases de los dos lotes** con la
-  revocación de PRD-0024, que agrega un movimiento negativo con motivo. Después se marca la compra.
-- **No hay estado intermedio.** Mientras quede una sola clase sin usar en cualquiera de los dos
-  lotes, la compra no se anula. Así se cumple "los dos o ninguno": la compra anulada con lotes vivos
-  ya no puede existir.
-- **Las clases que ya se usaron no se tocan.** Esas clases se bailaron.
-- Una compra **pendiente** (sin lotes) se puede anular igual que antes.
+**Con PRD-0024 aplicado**, anular un pack de amigas aprobado es: quitar las clases de los dos lotes
+con la revocación y después marcar la compra. Ver PRD-0024 §6.
 
-Lo elegí yo (§8.6.d). La alternativa era que anular quitara las clases solo. Pero eso es revocar sin
-motivo escrito, y PRD-0024 existe justo para que no pase.
+### Las migraciones son independientes
+
+`20261105120000_pack_de_amigas.sql` y `20261105130000_revocar_creditos.sql` **no dependen una de la
+otra** y se pueden aplicar en cualquier orden, o una sin la otra. Comprobado en la base local: cada
+una sola y las dos juntas, en los dos órdenes, con sus escenarios. El disparador solo lee
+`creditos.compra_id`, que existe desde PRD-0017.
 
 ## 7. Modelo de datos
 
@@ -131,7 +133,6 @@ Migración `20261105120000_pack_de_amigas.sql`.
 | `buscar_invitada(actor, correo) → uuid` | `security definer`, solo `service_role`. Rechaza el propio correo y el exceso de intentos. Si no, **registra el intento** y devuelve el perfil o null |
 | `declarar_pack_amigas(actor, plan, monto, correo, titular, nota) → jsonb` | `security definer`, solo `service_role`. Vuelve a buscar a la amiga, **y cuenta**. Crea la compra con la amiga congelada |
 | `acreditar_compra` | Copia exacta de la versión de 20260910120000. **Solo cambia el camino de los packs**: lote de quien paga con `cantidad_clases − cantidad_invitada`, lote de la amiga con `cantidad_invitada`, mismo vencimiento y dos movimientos `compra`. Sin amiga, es lo de siempre |
-| Disparador `compras_anular_sin_clases_vivas` | §6 |
 
 **Por qué no `regalar_creditos()` para la amiga:** dejaría su lote sin compra, y el tablero lo
 contaría como regalado. Es justo la separación vendidas/regaladas que Felipe pidió el 04/10. Con el
@@ -177,7 +178,7 @@ ajustar sin migración.
 | a | Nombre visible del plan | **"Pack de amigas"**: es como ya circula la promo |
 | b | Dónde va en la vitrina | **Al final** del orden, para no mover lo que ya se ve |
 | c | El límite de intentos | **5 por hora y 10 por día**, en `parametros`, §8.5 |
-| d | Anular una compra aprobada con clases vivas | **Se rechaza**, para cualquier compra. Primero se quitan las clases con PRD-0024, §6 |
+| d | Anular una compra aprobada con clases vivas | **Movida a PRD-0024** (Felipe, 05/11/2026): se rechaza para cualquier compra, pero el candado se aplica junto a la revocación. §6 |
 | e | Qué dice el correo a la amiga | **El nombre de pila de quien compró**, escapado. Sin él parece un correo cualquiera. Nada más de ella: ni correo ni apellido |
 | f | Qué dice el correo a quien compró | "Quedaste con 1 clase… La otra clase del pack ya quedó en la cuenta de tu amiga". **Sin el nombre de la amiga**, que ella ya conoce |
 | g | Validar con "Continuar" en vez de mientras escribe | **Con botón.** Validar mientras escribe gastaría un intento por letra |
@@ -195,8 +196,7 @@ ajustar sin migración.
 - [x] Aprobar dos veces no duplica nada. *Base local.*
 - [x] `metricas_resumen`: **1 compra, $16.000, 2 vendidas, 0 regaladas**, y `por_plan` muestra
       `pack-amigas` con 1 compra. *Base local, con sesión de owner.*
-- [x] Rechazar antes de aprobar: ningún lote. Anular con clases vivas, aunque sea en uno solo de los
-      dos lotes: rechazado. Con las dos usadas: se puede. *Base local.*
+- [x] Rechazar antes de aprobar: ningún lote. Anular una compra pendiente: se puede. *Base local.*
 - [x] Un pack de 2 normal sigue funcionando igual: un lote de 2. *Base local.*
 - [x] `--dry-run` contra producción: **solo** `20261105120000_pack_de_amigas.sql`.
 - [ ] **Desde la página, en staging**:
@@ -235,7 +235,7 @@ $16.000 y dos clases vendidas.
 | Fase | Qué | Estado |
 |---|---|---|
 | 1 | Migración `20261105120000_pack_de_amigas.sql` | ✅ Escrita · `--dry-run` contra producción lista solo esta · **sin aplicar** |
-| 2 | Escenario en la base local (`scripts/base-local/escenario-pack-amigas.mjs`) | ✅ **33 de 33 pasos** |
+| 2 | Escenario en la base local (`scripts/base-local/escenario-pack-amigas.mjs`) | ✅ **30 de 30 pasos** (eran 33: los tres de anular con clases vivas se fueron con el candado a `escenario-revocar.mjs`) |
 | 3 | Plan y oferta llevan `clasesParaAmiga`. Vitrina y página de la oferta muestran el aviso antes de elegir | ✅ |
 | 4 | `FormularioTransferencia`: el paso "Tu amiga", con los datos para transferir escondidos hasta validar | ✅ |
 | 5 | Acciones: `comprobarAmiga`, `declararTransferencia` con la amiga, `aprobarCompra` con dos lotes y dos correos | ✅ |
