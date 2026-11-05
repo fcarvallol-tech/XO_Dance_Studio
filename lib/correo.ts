@@ -233,6 +233,17 @@ function plantilla(titulo: string, cuerpo: string): string {
 
 const P = 'style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#f7f7f7;"';
 
+/**
+ * Texto que escribió una persona y lee otra. Los cuerpos de antes interpolan
+ * el nombre de la propia destinataria sin escapar; el del pack de amigas pone
+ * el nombre de **otra** cuenta en el correo, y ese sí se escapa.
+ */
+function escapar(texto: string): string {
+  return texto.replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Los cuerpos
 // ---------------------------------------------------------------------------
@@ -280,11 +291,19 @@ const CUERPOS: Cuerpos = {
   compraAprobada: (d) => {
     const clases = Number(d.clases ?? 0);
     const palabra = clases === 1 ? "clase" : "clases";
+    // PRD-0026: en el pack de amigas a ella le queda una parte, y lo que se
+    // llevó la amiga se nombra sin decir quién es —ya lo sabe— ni cuántas tiene.
+    const paraAmiga = Number(d.paraAmiga ?? 0);
+    const deLaAmiga =
+      paraAmiga > 0
+        ? `<p ${P}>${paraAmiga === 1 ? "La otra clase del pack ya quedó" : `Las otras ${paraAmiga} clases del pack ya quedaron`} en la cuenta de tu amiga, y le avisamos por correo.</p>`
+        : "";
     return {
       asunto: `Listo: tienes ${clases} ${palabra} para reservar`,
       html: plantilla(
         `Quedaste con ${clases} ${palabra}`,
         `<p ${P}>${d.nombre ? `${d.nombre}, confirmamos` : "Confirmamos"} tu transferencia. Ya puedes reservar.</p>
+       ${deLaAmiga}
        <p ${P}>Sirven para <strong>cualquier clase del calendario</strong>, con cualquier profe y en cualquiera de nuestras salas.</p>
        <p ${P}>Tienes hasta el <strong>${d.vence}</strong> para usarlas.</p>
        <p style="margin:24px 0 0;"><a href="${sitio()}/reservar" style="display:inline-block;background:#f7adbf;color:#1a1a1a;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;">Reservar mis clases</a></p>`,
@@ -304,6 +323,28 @@ const CUERPOS: Cuerpos = {
        <p ${P}>Sirven para <strong>cualquier clase del calendario</strong>, con cualquier profe y en cualquiera de nuestras salas.</p>
        <p ${P}>Valen hasta el <strong>${d.vence}</strong>.</p>
        <p style="margin:24px 0 0;"><a href="${sitio()}/reservar" style="display:inline-block;background:#f7adbf;color:#1a1a1a;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;">Reservar mis clases</a></p>`,
+      ),
+    };
+  },
+
+  // PRD-0026: a la amiga, cuando aterriza su clase del pack. Lleva el nombre
+  // de pila de quien la compró —sin él parece un correo cualquiera— y nada más
+  // de ella.
+  creditoDeAmiga: (d) => {
+    const clases = Number(d.clases ?? 1);
+    const palabra = clases === 1 ? "clase" : "clases";
+    // El asunto es texto plano: va sin escapar. El cuerpo es HTML: escapado.
+    const quienTexto = d.compradora ? String(d.compradora) : "Una amiga";
+    const quien = escapar(quienTexto);
+    const nombre = d.nombre ? escapar(String(d.nombre)) : null;
+    return {
+      asunto: `${quienTexto} te dejó ${clases === 1 ? "una clase" : `${clases} clases`} en XO`,
+      html: plantilla(
+        `${clases === 1 ? "Tienes una clase" : `Tienes ${clases} clases`} para bailar`,
+        `<p ${P}>${nombre ? `${nombre}, ` : ""}${quien} compró el <strong>pack de amigas</strong> y ${clases === 1 ? "una de las clases es" : `${clases} de las clases son`} para ti. Ya ${clases === 1 ? "está" : "están"} en tu cuenta.</p>
+       <p ${P}>${clases === 1 ? "Sirve" : "Sirven"} para <strong>cualquier clase del calendario</strong>, con cualquier profe y en cualquiera de nuestras salas.</p>
+       <p ${P}>${clases === 1 ? "Vale" : "Valen"} hasta el <strong>${d.vence}</strong>.</p>
+       <p style="margin:24px 0 0;"><a href="${sitio()}/reservar" style="display:inline-block;background:#f7adbf;color:#1a1a1a;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;">Reservar mi ${palabra}</a></p>`,
       ),
     };
   },
@@ -412,6 +453,8 @@ export async function avisarCompraAprobada(datos: {
   para: string;
   nombre: string | null;
   clases: number;
+  /** PRD-0026: cuántas del pack se fueron a la cuenta de la amiga. */
+  paraAmiga?: number;
   vence: string;
   compraId: string;
   perfilId?: string | null;
@@ -445,6 +488,32 @@ export async function avisarRegalo(datos: {
     para,
     datos: cuerpo,
     clave: claveDeEvento("regalo", creditoId),
+    perfilId,
+  });
+}
+
+/**
+ * A la amiga del pack (PRD-0026): su clase aterrizó. Por la cola, como todos.
+ * La clave es su lote: una compra crea un solo lote para ella, y aprobar dos
+ * veces no manda dos correos.
+ */
+export async function avisarCreditoDeAmiga(datos: {
+  para: string;
+  nombre: string | null;
+  compradora: string | null;
+  clases: number;
+  vence: string;
+  creditoId: string;
+  compraId: string;
+  perfilId: string;
+}): Promise<boolean> {
+  const { para, creditoId, compraId, perfilId, ...cuerpo } = datos;
+  return despachar({
+    plantilla: "creditoDeAmiga",
+    para,
+    datos: cuerpo,
+    clave: claveDeEvento("credito-de-amiga", creditoId),
+    compraId,
     perfilId,
   });
 }

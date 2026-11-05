@@ -58,6 +58,8 @@ export const ADMIN_DE_COMPRA = "perfiles!compras_aprobada_por_fkey";
 export const ALUMNA_DE_MOVIMIENTO = "perfiles!movimientos_credito_perfil_id_fkey";
 /** Quién lo registró: admin en un regalo o un ajuste. */
 export const ACTOR_DE_MOVIMIENTO = "perfiles!movimientos_credito_creado_por_fkey";
+/** PRD-0026: la amiga del pack. Llave con nombre fijo en 20261105120000. */
+const AMIGA_DE_COMPRA = "amiga:perfiles!compras_perfil_invitada_id_fkey";
 
 export type DatosTransferencia = {
   banco: string;
@@ -155,6 +157,8 @@ type FilaCompra = {
   perfiles?: { nombre: string | null; email: string | null } | null;
   titular_declarado?: string | null;
   nota_alumna?: string | null;
+  cantidad_invitada?: number | null;
+  amiga?: { nombre: string | null } | null;
 };
 
 function aCompra(fila: FilaCompra): Compra {
@@ -180,6 +184,10 @@ function aCompra(fila: FilaCompra): Compra {
     correoAlumna: fila.perfiles?.email ?? null,
     titularDeclarado: fila.titular_declarado ?? null,
     notaAlumna: fila.nota_alumna ?? null,
+    amiga:
+      fila.cantidad_invitada && fila.cantidad_invitada > 0
+        ? { nombre: fila.amiga?.nombre ?? null, clases: fila.cantidad_invitada }
+        : null,
   };
 }
 
@@ -190,7 +198,7 @@ function aCompra(fila: FilaCompra): Compra {
 const CAMPOS_COMPRA =
   "id, cantidad_clases, monto_clp, estado, medio_pago, declarada_at, motivo_rechazo, clase_id, planes ( nombre ), clases ( titulo, inicio )";
 const CAMPOS_COMPRA_ADMIN =
-  `id, perfil_id, cantidad_clases, monto_clp, estado, medio_pago, declarada_at, motivo_rechazo, clase_id, titular_declarado, nota_alumna, planes ( nombre ), clases ( titulo, inicio ), ${ALUMNA_DE_COMPRA} ( nombre, email )`;
+  `id, perfil_id, cantidad_clases, monto_clp, estado, medio_pago, declarada_at, motivo_rechazo, clase_id, titular_declarado, nota_alumna, cantidad_invitada, planes ( nombre ), clases ( titulo, inicio ), ${ALUMNA_DE_COMPRA} ( nombre, email ), ${AMIGA_DE_COMPRA} ( nombre )`;
 
 export async function getMisCompras(perfilId: string): Promise<Lectura<Compra[]>> {
   const supabase = await clienteServidor();
