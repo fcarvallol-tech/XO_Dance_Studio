@@ -69,6 +69,9 @@ vive desde PRD-0016.
 3. El tope de 22 se muestra siempre como contexto (por ejemplo, 14/22).
 4. No ve ningún monto, en ninguna vista: ni precios, ni lo que pagó una alumna, ni su saldo de
    clases.
+   ⚠️ **Reemplazada el 04/11/2026 por [ADR-0008](../decisions/0008-la-profesora-ve-su-liquidacion.md)**
+   (Felipe): *"No ve ningún monto **que no sea el suyo**"*. Ve su liquidación, solo la suya. La
+   regla 2 no cambia: ningún dato de contacto de una alumna, tampoco en la liquidación.
 
 ## 7. Criterios de aceptación
 
