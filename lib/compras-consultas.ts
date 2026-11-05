@@ -568,6 +568,47 @@ export async function getRegalosRecientes(limite = 30): Promise<Lectura<Regalo[]
   };
 }
 
+export type Revocacion = {
+  revocadoAt: string;
+  perfilId: string;
+  alumna: string | null;
+  cantidad: number;
+  /** Cuántos lotes tocó: una revocación puede salir de varios. */
+  lotes: number;
+  motivo: string | null;
+  autor: string | null;
+};
+
+/**
+ * Las últimas revocaciones (PRD-0024), una por fila aunque hayan tocado varios
+ * lotes. **Solo owner**: la función lo verifica adentro, y la página no la
+ * llama para nadie más. Con la sesión, como los regalos.
+ */
+export async function getRevocacionesRecientes(limite = 30): Promise<Lectura<Revocacion[]>> {
+  const supabase = await clienteServidor();
+  const { data, error } = await supabase.rpc("revocaciones_recientes", { p_limite: limite });
+  return {
+    datos: ((data ?? []) as {
+      revocado_at: string;
+      perfil_id: string;
+      alumna: string | null;
+      cantidad: number;
+      lotes: number;
+      motivo: string | null;
+      autor: string | null;
+    }[]).map((f) => ({
+      revocadoAt: f.revocado_at,
+      perfilId: f.perfil_id,
+      alumna: f.alumna,
+      cantidad: f.cantidad,
+      lotes: f.lotes,
+      motivo: f.motivo,
+      autor: f.autor,
+    })),
+    error: comoTexto(error),
+  };
+}
+
 /**
  * Cuántas clases vigentes tiene cada persona, para la tabla de Personas: es lo
  * que se mira antes de regalar. Una sola consulta para toda la tabla, no una

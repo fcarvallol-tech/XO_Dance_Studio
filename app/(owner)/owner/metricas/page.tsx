@@ -119,8 +119,11 @@ type Datos = NonNullable<Awaited<ReturnType<typeof getResumen>>["datos"]>;
 type DatosDemanda = NonNullable<Awaited<ReturnType<typeof getDemanda>>["datos"]>;
 
 function BloqueCreditos({ R }: { R: Datos }) {
+  const revocadas = R.creditos.revocadas ?? 0;
   const b = brecha({
-    otorgadas: R.creditos.otorgadas_historico,
+    // PRD-0024: una clase quitada ya no se puede tomar. Dejarla en lo otorgado
+    // haría bajar la utilización sin que nadie haya dejado de venir.
+    otorgadas: R.creditos.otorgadas_historico - (R.creditos.revocadas_historico ?? 0),
     consumidas: R.creditos.consumidas_historico,
     disponibles: R.creditos.disponibles,
     vencidas: R.creditos.vencidas_sin_usar,
@@ -171,6 +174,14 @@ function BloqueCreditos({ R }: { R: Datos }) {
             R.desde_siempre.ultimo_movimiento_at,
             "movimiento de créditos",
           )}
+        />
+        {/* PRD-0024: línea propia. Vendidas es lo que se vendió, y eso no
+            cambia porque después se quite un crédito (Felipe, 05/11/2026). */}
+        <Indicador
+          rotulo="Quitadas este mes"
+          valor={String(revocadas)}
+          denominador="clases revocadas a mano, con motivo: no se restan de las vendidas"
+          comparacion={comparar(revocadas, R.creditos_anterior.revocadas ?? 0)}
         />
         <Indicador
           rotulo="Consumidas este mes"
