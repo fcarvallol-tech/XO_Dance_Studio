@@ -76,13 +76,16 @@ function comoTexto(error: { message: string; code?: string } | null): string | n
 function nombreDeLaClase(c: {
   tipo: string;
   titulo: string | null;
+  recupera_clase_id: string | null;
   cursos: { nombre: string } | null;
 }): string {
   if (c.tipo === "especial" && c.titulo) return c.titulo;
-  return c.cursos?.nombre ?? "";
+  const curso = c.cursos?.nombre ?? "";
+  return c.recupera_clase_id ? `${curso} · Recuperativa` : curso;
 }
 
 type FilaClase = {
+  recupera_clase_id: string | null;
   id: string;
   inicio: string;
   fin: string | null;
@@ -125,7 +128,7 @@ const miProfesoraId = cache(async function miProfesoraId(): Promise<{
 // qué hora termina una clase que no dura una hora, y sin `titulo` una especial
 // aparece con el nombre de su curso en vez de su coreografía.
 const CAMPOS_CLASE =
-  "id, inicio, fin, tipo, titulo, cupo_maximo, estado, motivo_cancelacion, profesora_id, cursos ( nombre ), sedes ( nombre, comuna ), profesoras ( nombre ), horarios ( profesora_id, profesoras ( nombre ) )";
+  "id, inicio, fin, tipo, titulo, recupera_clase_id, cupo_maximo, estado, motivo_cancelacion, profesora_id, cursos ( nombre ), sedes ( nombre, comuna ), profesoras ( nombre ), horarios ( profesora_id, profesoras ( nombre ) )";
 
 /** Qué recorte de sus clases se quiere. Todo opcional; se combinan. */
 type Recorte = {
@@ -424,7 +427,7 @@ export async function getSemana(
       .select(
         // `fin`, `tipo` y `titulo` por PRD-0021. Esta consulta tiene su propia
         // lista de campos, aparte de CAMPOS_CLASE: hay que tocar las dos.
-        "id, inicio, fin, tipo, titulo, cupo_maximo, estado, profesora_id, cursos ( nombre ), profesoras ( nombre ), sedes ( nombre, comuna )",
+        "id, inicio, fin, tipo, titulo, recupera_clase_id, cupo_maximo, estado, profesora_id, cursos ( nombre ), profesoras ( nombre ), sedes ( nombre, comuna )",
       )
       .gte("inicio", desde.toISOString())
       .lt("inicio", hasta.toISOString())
@@ -439,6 +442,7 @@ export async function getSemana(
     id: string;
     inicio: string;
     fin: string | null;
+    recupera_clase_id: string | null;
     tipo: string;
     titulo: string | null;
     cupo_maximo: number;

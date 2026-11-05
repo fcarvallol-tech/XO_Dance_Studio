@@ -10,6 +10,7 @@ import {
   avisarCompraRechazada,
   avisarEspecialConfirmada,
   avisarEspecialPendiente,
+  avisarRecuperativa,
   avisarRegalo,
   avisarReserva,
   avisarTransferenciaDeclarada,
@@ -20,7 +21,7 @@ import { instanteEnSantiago } from "./dominio/periodo";
 import { montoDesdeTexto } from "./dominio/finanzas";
 import { resolverOferta } from "./ofertas-consultas";
 import { fechaLegible } from "./planes";
-import { diaEnSantiago } from "./semana";
+import { diaEnSantiago, esDiaValido } from "./semana";
 
 /**
  * Las escrituras de plata y cupo.
@@ -54,6 +55,91 @@ function comoMensaje(error: { message: string; code?: string } | null): string {
   }
   console.error("Error inesperado en una acción:", error);
   return "Algo falló de nuestro lado. Intenta de nuevo en un momento.";
+}
+
+/**
+ * Crea la recuperativa de una clase caída y les avisa a las que perdieron su
+ * lugar (PRD-0027). La clase y su liga van en una transacción, en la base. El
+ * correo va después y por la cola: si uno no sale, la clase queda creada y el
+ * correo se reintenta. **No reserva por nadie.**
+ */
+export async function crearRecuperativa(datos: {
+  originalId: string;
+  fecha: string;
+  hora: string;
+  sedeId: string;
+  profesoraId: string;
+}): Promise<Resultado & { avisadas?: number; total?: number }> {
+  const actor = await perfilActual();
+  if (!actor || !tieneNivel(actor.rol, "admin")) {
+    return { ok: false, mensaje: "No tienes permiso." };
+  }
+  if (!esDiaValido(datos.fecha) || !/^\d{2}:\d{2}$/.test(datos.hora)) {
+    return { ok: false, mensaje: "Revisa la fecha y la hora." };
+  }
+
+  const admin = clienteAdmin();
+  const { data, error } = await admin.rpc("crear_recuperativa", {
+    p_actor_user_id: actor.userId,
+    p_original_id: datos.originalId,
+    p_fecha: datos.fecha,
+    p_hora: datos.hora,
+    p_sede_id: datos.sedeId,
+    p_profesora_id: datos.profesoraId,
+  });
+  if (error) return { ok: false, mensaje: comoMensaje(error) };
+
+  const nueva = data as { id: string };
+
+  const [clases, afectadas] = await Promise.all([
+    admin
+      .from("clases")
+      .select("id, inicio, cursos ( nombre ), profesoras ( nombre ), sedes ( nombre, direccion )")
+      .in("id", [nueva.id, datos.originalId]),
+    admin.rpc("afectadas_de_clases", { p_originales: [datos.originalId] }),
+  ]);
+
+  revalidatePath("/admin/recuperativas");
+  revalidatePath("/calendario");
+  revalidatePath("/reservar");
+
+  type Fila = {
+    id: string;
+    inicio: string;
+    cursos: { nombre: string } | null;
+    profesoras: { nombre: string } | null;
+    sedes: { nombre: string; direccion: string } | null;
+  };
+  const filas = (clases.data ?? []) as unknown as Fila[];
+  const clase = filas.find((c) => c.id === nueva.id);
+  const original = filas.find((c) => c.id === datos.originalId);
+  const personas = (afectadas.data ?? []) as { perfil_id: string; email: string | null }[];
+
+  if (clases.error || afectadas.error || !clase || !original) {
+    // La clase ya existe: que no parezca que falló y se cree de nuevo.
+    console.error("Recuperativa creada, pero no se pudo leer a quién avisar");
+    return { ok: true, avisadas: 0, total: -1 };
+  }
+
+  const enviados = await Promise.all(
+    personas.map((p) =>
+      avisarRecuperativa({
+        para: p.email ?? "",
+        curso: clase.cursos?.nombre ?? "tu clase",
+        original: fechaLegible(diaEnSantiago(new Date(original.inicio))),
+        cuando: cuandoLegible(clase.inicio),
+        profesora: clase.profesoras?.nombre ?? "",
+        sede: clase.sedes?.nombre ?? "",
+        direccion: clase.sedes?.direccion ?? "",
+        claseId: clase.id,
+        perfilId: p.perfil_id,
+        inicioClase: clase.inicio,
+      }),
+    ),
+  );
+
+  revalidatePath("/admin/correos");
+  return { ok: true, avisadas: enviados.filter(Boolean).length, total: personas.length };
 }
 
 /** La alumna declara que transfirió. No mueve plata ni cupo: solo deja la fila. */

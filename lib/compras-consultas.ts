@@ -270,6 +270,7 @@ type FilaClase = {
   slug: string | null;
   titulo: string | null;
   precio_clp: number | null;
+  recupera_clase_id: string | null;
 };
 
 /** Lo de especial que necesita el calendario, o `null` en una de parrilla. */
@@ -311,7 +312,7 @@ export async function getCalendarioPublico(
   const { data, error } = await publico
     .from("clases")
     .select(
-      "id, inicio, fin, cupo_maximo, tipo, slug, titulo, precio_clp, cursos ( slug, nombre ), profesoras ( slug, nombre ), sedes ( nombre, direccion, comuna, sector )",
+      "id, inicio, fin, cupo_maximo, tipo, slug, titulo, precio_clp, recupera_clase_id, cursos ( slug, nombre ), profesoras ( slug, nombre ), sedes ( nombre, direccion, comuna, sector )",
     )
     // Una especial sin publicar no se muestra (PRD-0018). Explícito acá además
     // de en RLS: la consulta filtra igual que la política, no confía en ella.
@@ -362,6 +363,7 @@ export async function getCalendarioPublico(
       // Sin sesión no hay reserva propia que marcar.
       reservaId: null,
       especial: especialDe(c),
+      recuperativa: c.recupera_clase_id !== null,
     })),
     error: null,
   };
@@ -381,7 +383,7 @@ export async function getCalendario(
   const { data, error } = await supabase
     .from("clases")
     .select(
-      "id, inicio, fin, cupo_maximo, tipo, slug, titulo, precio_clp, cursos ( slug, nombre ), profesoras ( slug, nombre ), sedes ( nombre, direccion, comuna, sector )",
+      "id, inicio, fin, cupo_maximo, tipo, slug, titulo, precio_clp, recupera_clase_id, cursos ( slug, nombre ), profesoras ( slug, nombre ), sedes ( nombre, direccion, comuna, sector )",
     )
     // Una especial sin publicar no se muestra (PRD-0018). Explícito acá además
     // de en RLS: la consulta filtra igual que la política, no confía en ella.
@@ -452,6 +454,7 @@ export async function getCalendario(
       tomados: tomados.get(c.id) ?? 0,
       reservaId: propias.get(c.id) ?? null,
       especial: especialDe(c),
+      recuperativa: c.recupera_clase_id !== null,
     })),
     error: null,
   };

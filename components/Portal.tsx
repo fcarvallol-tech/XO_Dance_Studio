@@ -155,6 +155,7 @@ function gruposPara(rol: Rol, correosFallidos = 0, transferenciasPendientes = 0)
         },
         { href: "/admin/planes", texto: "Planes y links" },
         { href: "/admin/especiales", texto: "Clases especiales" },
+        { href: "/admin/recuperativas", texto: "Recuperativas" },
         // El número va en el enlace y no adentro de la página: una sección que
         // hay que acordarse de visitar es una sección que no se visita, y el
         // cron que reintenta ya se cayó una vez semanas sin que nadie mirara.

@@ -33,4 +33,5 @@ export const NOMBRE_PLANTILLA: Record<string, string> = {
   reserva: "Comprobante de reserva",
   especialPendiente: "Cupo tomado de una especial",
   especialConfirmada: "Especial confirmada",
+  recuperativa: "Aviso de clase recuperativa",
 };

@@ -18,7 +18,7 @@ import {
   tramosQueOcupa,
   ventanaDeHoras,
 } from "@/lib/dominio/grilla";
-import { lugaresLibres, type ClaseDelCalendario } from "@/lib/compras";
+import { lugaresLibres, tituloDeClase, type ClaseDelCalendario } from "@/lib/compras";
 import {
   diaEnSantiago,
   diasDeLaSemana,
@@ -355,7 +355,7 @@ export function GrillaCalendario({
                         className={`${ubicacion.className} border-dashed border-xo-blanco/20 bg-xo-negro`}
                       >
                         <p className="text-xs leading-tight font-semibold text-xo-blanco/70">
-                          {clase.especial ? clase.especial.titulo : clase.cursoNombre}
+                          {tituloDeClase(clase)}
                         </p>
                         <p className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] leading-tight text-xo-blanco/60">
                           <span>{rangoHorario(clase.inicio, clase.fin)}</span>
@@ -398,7 +398,7 @@ export function GrillaCalendario({
                           los lugares comparten línea y se parten solos donde la
                           columna es angosta. */}
                       <p className="text-xs leading-tight font-semibold text-xo-blanco">
-                        {especial ? especial.titulo : clase.cursoNombre}
+                        {tituloDeClase(clase)}
                       </p>
                       <p className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] leading-tight">
                         <span className="text-xo-blanco/70">
