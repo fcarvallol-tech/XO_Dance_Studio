@@ -40,6 +40,9 @@ el nombre o el correo, o una parte. Quiere encontrarla en segundos.
 5. **El total se dice siempre**, con o sin búsqueda ("74 personas registradas."), y **si la lista
    llegó al tope, un aviso aparte** con cuántas no aparecen. Nunca más una lista cortada en
    silencio. Felipe, 05/11: *"el techo de 200 es más importante que la búsqueda"*.
+   - **Hoy el aviso es prevención, no un hueco que se esté manifestando.** Son **74 alumnas**
+     (Felipe, 05/11/2026): el tope de 200 no esconde a nadie y el aviso no se va a ver hasta que
+     haya más de 200 personas.
 
 ## 4. Fuera de alcance
 
