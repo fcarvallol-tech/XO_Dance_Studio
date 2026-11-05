@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | ✅ **Aprobado por Felipe el 05/11/2026 tal como estaba escrito. Implementado en la rama `prd-0025-filtrar-personas`, sin publicar.** Falta la prueba desde la página con sesión, que esta noche no se pudo hacer sin escribir en una base remota (§12) |
+| **Estado** | ✅ **Publicado el 05/11/2026** (merge `3cb80f7`, deploy terminado a las 11:25). Sin migración. ⏳ **Falta la prueba desde la página con sesión de admin y con una alumna** (§12): la sesión que publicó no tenía navegador |
 | **Autor** | Claude, a pedido de Felipe Carvallo |
 | **Fecha** | 4 de noviembre de 2026 |
 | **Hito** | Hito 4 — Portales (administración) |
@@ -110,8 +110,7 @@ que el filtro no abra nada: una alumna en `/admin` sigue sin entrar.
       filas que vuelven de Supabase queda para la prueba con sesión.*
 - [x] `%`, `_`, `,`, `"`, `\` y paréntesis no actúan como comodín ni como sintaxis: 11 tests en
       `lib/busqueda-personas.test.ts`, y el patrón probado contra un Postgres real (PGlite).
-      ⚠️ Lo que **no** está probado es el lado de PostgREST: que lea `\"` y `\\` dentro de comillas
-      como dice su documentación. Se prueba con sesión buscando `o"x`.
+      **El lado de PostgREST quedó probado el 05/11** contra staging, con el filtro exacto (§12).
 - [ ] La página dice el total siempre, y avisa cuando la lista llegó al tope. *Código listo.*
 - [ ] Funciona sin JavaScript, a 375 px y en escritorio, y **probado desde la página** escribiendo
       en el campo, no llamando a la consulta.
@@ -146,7 +145,21 @@ Que Felipe encuentre a cualquier persona en Personas escribiendo, sin recorrer l
 **Medido en producción el 05/11/2026 a la 01:31, solo lectura:** **74 alumnas** activas
 (`rol = 'alumna' and deleted_at is null`). El tope de 200 todavía no dejaba a nadie afuera.
 
-**Lo que falta, y por qué:** probarlo desde la página con una sesión de admin. Esa noche la regla
-era no escribir en ninguna base remota, y entrar a staging crea una sesión en `auth`. Se hace al
-publicar: buscar `cami`, `CAMI`, `o"x`, `50%` y una cadena sin resultados, y abrir `/admin` con una
-alumna para comprobar que sigue sin entrar.
+**Publicado el 05/11/2026**, merge `3cb80f7`. Lo que se comprobó, y hasta dónde llega:
+
+| Qué | Resultado | Cómo |
+|---|---|---|
+| Sin sesión, `/admin` y `/admin?q=cami` | 307 a `/entrar?volver=%2Fadmin` | En producción, con `curl` |
+| `cami`, `CAMI`, `o"x`, `50%` y algo que no existe | 200, sin error de sintaxis, 0 filas | Filtro exacto de `filtroDePersonas`, solo lectura y solo conteo, contra **staging** |
+| `%`, `_` y `\` | 200 y 0 filas de 28: no actúan como comodín | Igual |
+| `a,rol.eq.owner)` | 200 y 0 filas: no inyecta otra condición | Igual |
+| `@` | 28 de 28: el filtro sí encuentra | Igual |
+
+Esto cierra la duda de que PostgREST leyera `\"` dentro de comillas. **No prueba el flujo:** en
+staging no hay nadie que se llame Cami, así que mayúsculas y resultados reales siguen sin verse.
+
+**Lo que falta, y por qué:** probarlo desde la página, con tu sesión de admin, buscando `cami`,
+`CAMI`, `o"x`, `50%` y algo que no exista, y abrir `/admin` con una alumna. La sesión que publicó no
+tenía la extensión de Chrome conectada, y crear una sesión a mano para tu cuenta habría sido
+suplantarte. **Lo de la alumna solo está leído en el código, no probado:** `requiereNivel("admin",
+"admin")` en `app/(admin)/layout.tsx` redirige a quien no tiene el nivel, antes de renderizar.
