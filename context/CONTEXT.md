@@ -407,33 +407,104 @@ cualquier otro crédito consumido: **hizo el mismo trabajo, y el costo del regal
 ella**. Es una regla de negocio, no un efecto del código. Consecuencia que hay que tener presente:
 una clase pagada con regalo **cuesta $250 y aporta $0** de ingreso, así que regalar no es gratis.
 
-### Incentivo por promedio — regla del 02/11/2026
+### Incentivo por promedio — regla del 04/11/2026, en dos tramos
 
-**Reemplaza la regla anterior del mismo día** ("4 últimas dictadas, ventana móvil, ≥ 20"). Felipe,
-02/11/2026:
+**Tercera versión en tres días. Esta reemplaza a las dos anteriores** —"4 últimas dictadas,
+ventana móvil, ≥ 20" y "4 mejores del mes, ≥ 17, $10.000"— y es la vigente. Felipe, 04/11/2026.
 
-**$10.000 extra** cuando el promedio de alumnas es **mayor o igual a 17**, sacado de **las 4
-mejores clases del mes por asistencia**, **dentro del mes calendario**.
+**Por qué cambió:** con las salas más chicas —Los Leones pasó de 22 a 16 en dos días— hay cursos
+que no pueden llegar a 17 alumnas aunque se llenen. Un incentivo inalcanzable no incentiva nada.
+Así que baja el umbral de entrada y se parte en dos tramos que se suman.
 
-1. **Las 4 mejores, no las 4 últimas.** Si la profesora dicta 5 clases del curso en el mes, se
-   **descarta la peor**. La favorece a propósito: trabajó más.
-2. **No cruza meses.** El promedio es del mes calendario; ya no hay ventana móvil que tome una
-   clase del mes anterior.
-3. **Es por curso, no por profesora.** Una profesora con dos cursos tiene dos promedios.
-4. **Solo cuentan las dictadas.** Una clase que no se dictó no entra como cero.
+| Promedio de las 4 mejores clases del mes | Incentivo |
+|---|---|
+| **≥ 14** | **$7.500** |
+| **≥ 22** | **$7.500 más, o sea $15.000 en total** |
 
-🔴 **Queda abierto, sin decidir:**
+**Los tramos se suman, no se excluyen** (Felipe, 04/11/2026): con promedio 25 cobra **$15.000**,
+no $10.000. El corte alto es **mayor o igual a 22**; el 22 exacto cobra los dos tramos.
 
-- **Qué pasa con un mes de menos de 4 clases** del curso: si se promedia lo que hay, si no
-  califica, o si se completa de otra forma.
-- **Si una profesora con dos cursos sobre el umbral cobra $10.000 o $20.000.** El enunciado dice
-  "$10.000 extra" en singular y el promedio es por curso, así que las dos lecturas son
-  defendibles.
+⚠️ **Dónde se puede llegar a cada tramo, con las capacidades de hoy:** el tramo de 22 es
+**inalcanzable en Los Leones**, que tiene 16 lugares. En **Diaguitas**, con 22, significa llenarla
+al **100%** en las cuatro mejores clases del mes. Solo en **Studio 98**, con 30, es un número
+holgado. El mismo umbral pide esfuerzos muy distintos según la sala, y eso **está sin resolver**:
+la idea de un umbral relativo a la capacidad —un porcentaje de llenado en vez de un número— queda
+anotada como la forma que probablemente corresponda, junto con el incentivo por "promedio de
+100%" que Felipe nombró y no decidió.
+
+Lo que no cambió de la versión anterior:
+
+1. **Las 4 mejores del mes, no las 4 últimas.** Con 5 clases en el mes se **descarta la peor**.
+   La favorece a propósito: trabajó más.
+2. **No cruza meses.** Es el mes calendario.
+3. **Es por curso.** Una profesora con dos cursos tiene dos promedios, **y puede ganar el
+   incentivo en los dos** (Felipe, 04/11/2026). Esto cierra la pregunta que estaba abierta.
+4. **Solo cuentan las dictadas.** Una clase no dictada no entra como cero.
+
+**Con menos de 4 clases en el mes no hay incentivo** (Felipe, 04/11/2026), salvo que recupere una
+y llegue a cuatro. ⚠️ **Caso borde declarado y no resuelto:** si las clases no se dictaron
+**por decisión de la academia**, podría promediarse con 3. Felipe lo nombró como posibilidad, no
+como regla; el PRD tiene que preguntarlo antes de implementarlo.
+
+✅ **Los dos bordes quedaron cerrados el 04/11/2026**, después de preguntarlos: el corte alto es
+**≥ 22** —se había dicho "mayor a 22" por error— y **los tramos se suman**. De paso se corrigió
+un **14 que se había escrito como 4**: con 4 se habría pagado premio por clases que pierden plata,
+porque el punto de equilibrio en Los Leones son 6 alumnas.
+
+⏸ **Dos incentivos más, nombrados y no decididos** (Felipe, 04/11/2026). No se implementan:
+
+- **Un tramo más alto**, pensado sobre todo para **Studio 98 (Manuel Montt)**, que es la sala con
+  más capacidad y la única donde un promedio muy alto es posible.
+- **Un incentivo por mantener un promedio de 100%** de ocupación. Sin conversar.
+
+### Las cinco decisiones que destraban la liquidación (Felipe, 04/11/2026)
+
+El PRD-0010 parte 3 estaba escrito desde el 20/10 y lo que faltaba no era código, eran estas
+respuestas. Quedan cerradas:
+
+1. **Las causas de "no dictada" y lo que paga cada una.** Se parte con cinco valores, y se agregan
+   más si aparecen casos que no calcen: `sala_no_disponible` **paga la base** —ella fue, el
+   problema fue de XO—; `cambio_de_parrilla` **no paga** —esa clase nunca estuvo en su semana—;
+   `ausencia_profesora` **no paga**; y `sin_alumnas` y `asistencia_insuficiente` siguen la regla
+   de la recuperación: **si se recupera, se paga una sola vez en la recuperación; si no se
+   recupera, se paga la base**, porque ella organizó su día en torno a esa clase y traer alumnas
+   es trabajo de XO. De paso eso deja el incentivo correcto para la academia: **cancelar temprano
+   ahorra la sala y el sueldo, cancelar el mismo día no.**
+2. **La tarifa de Isi es la general**: $18.000 la hora y $250 por crédito, igual que las demás.
+   Sin esto su fila quedaba sin costo y no se le podía liquidar.
+3. **Al reemplazo se le paga a quien dictó**, no a la titular que lo consiguió. El dinero sigue al
+   trabajo. Cierra la pregunta abierta desde el 21/10.
+4. **La profesora ve su liquidación en su portal**, solo la suya. Esto **cambia la regla 4 de
+   PRD-0008** —"no ve ningún monto"—, que se reescribe como "ningún monto que no sea el suyo" y
+   necesita su ADR. Sigue valiendo sin excepción lo otro: **nunca datos de contacto de una
+   alumna**.
+5. **La liquidación empieza a contar el 1 de noviembre de 2026.** Octubre se pagó a mano, está
+   cerrado fuera del sistema y **no se carga**: no hay nada que cuadrar y cargarlo solo agregaría
+   trabajo. El sistema no muestra octubre ni lo cuenta como pendiente.
+
+⏸ **Boleta de honorarios: pendiente a propósito.** Si hay retención, lo que se transfiere y lo que
+se le debe no son el mismo número, y la liquidación congela uno de los dos. Felipe lo va a ver
+**cuando se haga el Inicio de Actividades**, junto con el resto de lo tributario. Hasta entonces
+el sistema registra lo que se transfiere. Esto y lo demás que quede en el aire a mediano plazo
+van a un **PRD aparte**, no dentro de la liquidación (Felipe, 04/11/2026).
 
 **Una clase que no se dicta se tiene que recuperar** (Felipe, 02/11/2026). Esto no es solo del
 incentivo: significa que el estado "no dictada" **genera una obligación de reagendar**, no solo
 una decisión de pago. El PRD de la liquidación tiene que decir si el sistema la registra, la
 muestra como pendiente, o si eso se coordina por fuera.
+
+✅ **Y cómo se paga una clase recuperada, decidido el 03/11/2026 (Felipe): se paga una sola vez,
+en la recuperación.** La clase que no se dictó **no se paga**; la que la recupera sí, como
+cualquier otra. No se pagan las dos.
+
+Salió de un caso real: el **martes 03/11** la Reggaeton Femme de Pau en Los Leones no se dictó
+porque muchas alumnas no alcanzaron a llegar en el primer día de uso del sitio. Pau no faltó, y
+aun así esa fecha no se le paga: se le paga el día que la recupere. **Con la sala pasa lo mismo**
+—no cobran la hora perdida, la cobran cuando se recupere—, así que ni el costo de sala ni el
+sueldo se duplican.
+
+🔴 **Lo que sigue abierto es el otro caso: una clase que no se dicta y NO se recupera.** Esta
+regla no lo responde, y el PRD-0010 parte 3 tiene que preguntarlo por separado.
 
 ⚠️ **Teens se calcula sobre otra base.** Ver más abajo: allá el variable va por inscripción
 mensual, no por crédito. Son dos ramas de negocio distintas y el pago sigue a cada una.

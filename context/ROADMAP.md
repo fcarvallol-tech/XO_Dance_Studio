@@ -141,6 +141,31 @@ en pausa por decisión suya.
 - Que un cron que falla en silencio se vea en pantalla, igual que se hizo con los correos. El de
   generación de clases ya se cayó dos veces por una variable de entorno.
 
+### 📋 Pedidos de Felipe mientras usa el sitio
+
+> **Esta lista se acumula, no se trabaja de a uno.** Son ajustes que Felipe va encontrando al
+> operar la academia con la página ya en producción. **No se implementan cuando se anotan**: se
+> juntan acá hasta que haya suficiente para un PRD propio, y él dice cuándo. Anotar algo acá no
+> es aprobarlo.
+>
+> Abierta el 03/11/2026, el día que el sitio empezó a usarse de verdad.
+
+| # | Qué pidió | Por qué, y qué hay hoy | Fecha |
+|---|---|---|---|
+| 1 | **El owner tiene que poder ver quiénes se inscribieron a una clase** | Hoy **no puede**. `inscritas_de_clase` exige `dicta_la_clase(p_clase_id)` y **no tiene excepción para `admin` ni para `owner`**: Felipe ve el contador —"3 de 18 inscritas"— pero no los nombres, y solo la profesora que dicta esa clase ve la lista. Peor: **el portal de administración no tiene reservas en ninguna parte** —tiene compras, correos, planes, solicitudes y leads—, así que quien aprueba las transferencias y contesta los mensajes no tiene dónde mirar cuando una alumna escribe "transferí y no sé si quedé". ⚠️ Al resolverlo, respetar la regla dura de PRD-0008: **nombres sí, datos de contacto nunca** —ni RUT, ni correo, ni teléfono, ni datos del apoderado— | 03/11/2026 |
+| 2 | **Buscar por nombre en el listado de personas** | `/admin` ("Personas y roles") lista sin filtro. Con una academia chica se ve entera; con cien alumnas, no. Felipe quiere un buscador por nombre | 03/11/2026 |
+| 3 | **Ficha de cada persona, con sus reservas** | Hoy `/admin` es **una tabla plana y no clickeable**: nombre, correo, rol, profesora asignada y saldo de clases, más el botón de regalar créditos. **No existe ninguna ficha de persona.** No se puede abrir a una alumna y ver qué reservó, qué compró ni a qué clases fue. Felipe lo pidió para poder responder cuando alguien escribe preguntando por lo suyo | 03/11/2026 |
+| 4 | **Que la alumna pueda editar su perfil** | Hoy `/mi-perfil` es **solo lectura**: muestra nombre, correo y rol, sin un campo editable. El nombre se escribe una vez al registrarse y queda así para siempre. Una alumna lo anotó mal el 03/11 y no tuvo cómo corregirlo, y tampoco hay quién se lo corrija desde administración. Decidir de paso **qué más puede editar** —y qué no debería poder, como el correo, que es su forma de entrar— | 03/11/2026 |
+| 5 | **Revocar créditos** 🔴 **pedido para ahora** | Para dos casos reales: **regaló de más** y se corrige, o **la alumna fue a clase y se le olvidó reservar**, así que el crédito corresponde que se consuma —y además eso cuenta para el variable de la profesora—. **No se borra nada**: el libro `movimientos_credito` no se edita nunca, así que revocar es **agregar un movimiento negativo con motivo escrito**, el espejo exacto de `regalar_creditos` (PRD-0023). Decidido el 04/11: **solo el owner**, no admin; y **se descuenta del lote que vence primero**, que es además el orden en que ya se consumen | 04/11/2026 |
+| 6 | **Filtrar el listado de personas, por nombre o correo** 🔴 **subido a ahora** | Es el pedido 2, que estaba "para más adelante". El 04/11 Felipe dijo que ya está buscando a mano en un listado grande todos los días | 04/11/2026 |
+| 7 | **Pack de amigas** 🔴 **la promo ya salió** | Comprar 2 créditos por **$16.000** —uno para ti y uno para tu amiga—. El precio **ya existe**: el pack de 2 cuesta exactamente eso. Lo que no existe es que **los dos créditos caigan en dos cuentas distintas**. Decidido el 04/11 que va por la vía simple: créditos normales en dos cuentas, **no** créditos atados a una clase. ⚠️ **Se anunció antes de existir y hay gente preguntando**: hasta que esté, se atiende a mano con `regalar_creditos` más la revocación del pedido 5 | 04/11/2026 |
+
+> **Los tres son el mismo hueco visto desde tres ángulos**, y conviene resolverlos juntos y no
+> de a parches: **el portal de administración no tiene reservas en ninguna parte.** El 1 las pide
+> por clase, el 3 por persona, y el 2 es el filtro de la pantalla donde empieza el 3. Cuando esto
+> se convierta en PRD, el alcance es *"administración puede ver y responder por las reservas"*, no
+> tres pantallas sueltas.
+
 ---
 
 ## Principio de secuenciación
