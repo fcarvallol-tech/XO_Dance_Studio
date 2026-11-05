@@ -161,4 +161,43 @@ await paso("revocadas es línea propia; vendidas, regaladas y consumidas no camb
   console.log("      después:", JSON.stringify({ vendidas: c(despues).vendidas, regaladas: c(despues).regaladas, revocadas: c(despues).revocadas, vigentes_regaladas: c(despues).vigentes_regaladas, conciliacion: despues.conciliacion }));
 });
 
+console.log("\n8. Anular una compra: primero se quitan sus clases");
+// Una compra con dos lotes en dos cuentas, como deja el pack de amigas, armada a
+// mano para que este escenario no dependa de esa migración.
+const cami = await persona(db, "cami@xo.test", "Cami");
+const dani = await persona(db, "dani@xo.test", "Dani");
+const plan = await uno(db, "select id from planes where activo order by orden limit 1");
+const compra = await uno(db, "insert into compras (perfil_id, plan_id, cantidad_clases, monto_clp) values ($1, $2, 2, 16000) returning id", [cami.perfilId, plan.id]);
+for (const quien of [cami, dani]) {
+  const c = await uno(db, `insert into creditos (perfil_id, compra_id, cantidad_inicial, cantidad_disponible, fecha_vencimiento)
+    values ($1, $2, 1, 1, now() + interval '30 days') returning id`, [quien.perfilId, compra.id]);
+  await db.query(`insert into movimientos_credito (perfil_id, credito_id, tipo, cantidad, saldo_resultante, motivo, creado_por)
+    values ($1, $2, 'compra', 1, 1, 'semilla', $3)`, [quien.perfilId, c.id, owner.perfilId]);
+}
+const anular = (id) => db.query("update compras set deleted_at = now() where id = $1", [id]);
+await paso("anular una compra pendiente, sin lotes: se puede", async () => {
+  const c = await uno(db, "insert into compras (perfil_id, plan_id, cantidad_clases, monto_clp) values ($1, $2, 2, 16000) returning id", [cami.perfilId, plan.id]);
+  await anular(c.id);
+});
+await paso("anular con clases sin usar: se rechaza, y no toca ningún lote", async () => {
+  await falla(anular(compra.id), /2 clases sin usar/);
+  assert.equal((await uno(db, "select sum(cantidad_disponible)::int n from creditos where compra_id = $1", [compra.id])).n, 2);
+});
+await paso("quitada la clase de un lote, sigue rechazándose (no hay anulación a medias)", async () => {
+  await revocar(cami, 1, "Corrección de ingreso, primera mitad");
+  await falla(anular(compra.id), /1 clases sin usar/);
+});
+await paso("quitadas las dos con la revocación, se anula, y libro = lotes", async () => {
+  await revocar(dani, 1, "Corrección de ingreso, segunda mitad");
+  await anular(compra.id);
+  await coherente(cami);
+  await coherente(dani);
+});
+await paso("una compra con un lote vencido sin usar se puede anular: esa clase ya no sirve", async () => {
+  const c = await uno(db, "insert into compras (perfil_id, plan_id, cantidad_clases, monto_clp) values ($1, $2, 2, 16000) returning id", [cami.perfilId, plan.id]);
+  await db.query(`insert into creditos (perfil_id, compra_id, cantidad_inicial, cantidad_disponible, fecha_vencimiento)
+    values ($1, $2, 1, 1, now() - interval '1 day')`, [cami.perfilId, c.id]);
+  await anular(c.id);
+});
+
 resumen();

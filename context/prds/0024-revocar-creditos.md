@@ -96,6 +96,38 @@ pagó a una alumna**: tiene que quedar a quién, cuánto, de qué lote, por qué
 | Quien llama es admin, profesora o alumna | Rechaza: `42501`. No llega a escribir |
 | Doble clic o reenvío del formulario | Rechaza una revocación idéntica en los últimos 2 minutos (§8.3) |
 | Perfil que no existe o borrado | Rechaza: `P0002` |
+| **Se anula una compra (`deleted_at`) que todavía tiene clases vigentes sin usar** | **Rechaza**, en cualquier compra. Ver abajo |
+
+### Anular una compra: primero se quitan sus clases
+
+**Lo que había:** nada en el sitio anula una compra. `deleted_at` solo se escribe a mano en el Table
+Editor, y **no toca ningún lote**. Una compra "anulada" así deja sus clases vivas y reservables.
+
+**Lo que hace la migración:** el disparador `compras_anular_sin_clases_vivas` **rechaza** marcar
+`deleted_at` en cualquier compra que todavía tenga clases vigentes sin usar, en cualquiera de sus
+lotes. El error dice cuántas son y que primero hay que quitarlas.
+
+- **Para anular una compra aprobada, se quitan primero sus clases** con esta revocación, que deja
+  movimiento y motivo. Después se marca la compra.
+- **En un pack de amigas son dos lotes en dos cuentas:** se quita la clase de cada uno. Mientras
+  quede una sola viva, la compra no se anula, así que "los dos o ninguno" se cumple sin estado
+  intermedio.
+- **Las clases que ya se usaron no se tocan.** Esas clases se bailaron.
+- **Un lote vencido sin usar no bloquea:** esa clase ya no se puede tomar.
+- Una compra **pendiente** (sin lotes) se puede anular igual que antes.
+
+**Nació en PRD-0026 y se movió acá** (Felipe, 05/11/2026). Es un candado sobre todas las compras y su
+remedio es esta revocación: en la migración del pack, sin esta aplicada, habría dejado a Felipe sin
+poder anular una compra con créditos vivos y sin herramienta para quitarlos. La alternativa, que
+anular quitara las clases solo, es revocar sin motivo escrito.
+
+### Las migraciones son independientes
+
+`20261105130000_revocar_creditos.sql` y `20261105120000_pack_de_amigas.sql` **no dependen una de la
+otra** y se pueden aplicar en cualquier orden, o una sin la otra. Comprobado en la base local: cada
+una sola y las dos juntas, en los dos órdenes, con sus escenarios. El disparador solo lee
+`creditos.compra_id`, que existe desde PRD-0017, y por eso su escenario arma a mano la compra con dos
+lotes en vez de usar el pack.
 
 ## 7. Modelo de datos
 
@@ -196,7 +228,7 @@ puede escribir varias filas (una por lote), el candado compara la **suma** de lo
 ## 9. Criterios de aceptación
 
 **Escenario antes del dry-run** (pedido de Felipe). Corrió en la **base local con todas las
-migraciones** (`scripts/base-local/escenario-revocar.mjs`, **20 de 20**), con una alumna sembrada
+migraciones** (`scripts/base-local/escenario-revocar.mjs`, **25 de 25**), con una alumna sembrada
 con dos lotes vigentes que vencen en fechas distintas y uno vencido:
 
 - [x] **Saldo de sobra**: se quitan 3 de 5. Baja primero el lote que vence antes (2→0), después el
@@ -216,6 +248,9 @@ con dos lotes vigentes que vencen en fechas distintas y uno vencido:
   - La alumna ve sus movimientos de revocación, **pero no el motivo**. Otra alumna no los ve.
 - [x] `metricas_resumen` antes y después: vendidas, regaladas, consumidas e ingresos quedan iguales;
       `revocadas` sube en 5; el pasivo regalado baja en 5; el libro concilia.
+- [x] Anular una compra con clases sin usar se rechaza y no toca lotes; con una de las dos quitada,
+      sigue rechazado; con las dos quitadas, se anula y libro = lotes. Pendiente sin lotes, o con un
+      lote vencido: se anula.
 - [x] `--dry-run` contra producción: **solo** `20261105130000_revocar_creditos.sql`.
 - [ ] **Concurrencia con `reservar()`**, con dos conexiones. *La base local es de una sola
       conexión: queda para staging.*
@@ -242,8 +277,8 @@ reserva— pase por SQL a mano.
 
 | Fase | Qué | Estado |
 |---|---|---|
-| 1 | Migración `20261105130000_revocar_creditos.sql`: tipo `revocacion`, `revocar_creditos`, `revocaciones_recientes`, `metricas_resumen` con `revocadas` | ✅ Escrita · `--dry-run` contra producción lista solo esta · **sin aplicar** |
-| 2 | Escenario en la base local | ✅ **20 de 20** |
+| 1 | Migración `20261105130000_revocar_creditos.sql`: tipo `revocacion`, `revocar_creditos`, `revocaciones_recientes`, `metricas_resumen` con `revocadas`, candado `compras_anular_sin_clases_vivas` (viene de PRD-0026) | ✅ Escrita · `--dry-run` contra producción lista solo esta · **sin aplicar** |
+| 2 | Escenario en la base local | ✅ **25 de 25** |
 | 3 | Acción `revocarCreditos` (owner) y botón **Quitar** en Personas, solo para el owner, con su diálogo | ✅ |
 | 4 | "Clases quitadas recientes" en Personas, solo owner | ✅ |
 | 5 | "Quitadas este mes" en `/owner/metricas`, con la utilización neta de lo revocado | ✅ |
@@ -262,7 +297,7 @@ reserva— pase por SQL a mano.
 
 **Cruce con PRD-0026 (pack de amigas):**
 
-- Las dos migraciones se aplicaron juntas y en orden en la base local, y los dos escenarios pasan.
+- Las dos migraciones son independientes (§6), y juntas los dos escenarios pasan.
 - **Para anular un pack de amigas aprobado**, se quita la clase de cada lote con
   `revocar_creditos` y después se marca `deleted_at`. Mientras quede una clase viva en cualquiera de
   los dos lotes, la anulación se rechaza. Probado de punta a punta.
