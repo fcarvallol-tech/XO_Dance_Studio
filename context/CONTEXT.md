@@ -414,12 +414,23 @@ ventana móvil, ≥ 20" y "4 mejores del mes, ≥ 17, $10.000"— y es la vigent
 
 **Por qué cambió:** con las salas más chicas —Los Leones pasó de 22 a 16 en dos días— hay cursos
 que no pueden llegar a 17 alumnas aunque se llenen. Un incentivo inalcanzable no incentiva nada.
-Así que baja el umbral y baja el monto, y se parte en dos tramos.
+Así que baja el umbral de entrada y se parte en dos tramos que se suman.
 
 | Promedio de las 4 mejores clases del mes | Incentivo |
 |---|---|
 | **≥ 14** | **$7.500** |
-| **> 22** | **$10.000** |
+| **≥ 22** | **$7.500 más, o sea $15.000 en total** |
+
+**Los tramos se suman, no se excluyen** (Felipe, 04/11/2026): con promedio 25 cobra **$15.000**,
+no $10.000. El corte alto es **mayor o igual a 22**; el 22 exacto cobra los dos tramos.
+
+⚠️ **Dónde se puede llegar a cada tramo, con las capacidades de hoy:** el tramo de 22 es
+**inalcanzable en Los Leones**, que tiene 16 lugares. En **Diaguitas**, con 22, significa llenarla
+al **100%** en las cuatro mejores clases del mes. Solo en **Studio 98**, con 30, es un número
+holgado. El mismo umbral pide esfuerzos muy distintos según la sala, y eso **está sin resolver**:
+la idea de un umbral relativo a la capacidad —un porcentaje de llenado en vez de un número— queda
+anotada como la forma que probablemente corresponda, junto con el incentivo por "promedio de
+100%" que Felipe nombró y no decidió.
 
 Lo que no cambió de la versión anterior:
 
@@ -435,14 +446,10 @@ y llegue a cuatro. ⚠️ **Caso borde declarado y no resuelto:** si las clases 
 **por decisión de la academia**, podría promediarse con 3. Felipe lo nombró como posibilidad, no
 como regla; el PRD tiene que preguntarlo antes de implementarlo.
 
-🔴 **Dos cosas que el PRD tiene que preguntar antes de escribir el cálculo**, porque la frase las
-deja ambiguas y un borde mal leído le cambia el sueldo a alguien:
-
-- **El tramo alto dice "mayor a 22", el bajo dice "mayor o igual a 14".** ¿Es a propósito que uno
-  incluya su número y el otro no? Con 22 exactas, ¿cobra $7.500 o $10.000? Ya pasó dos veces en
-  este proyecto que un borde quedara al revés de lo que se quería.
-- **¿Los tramos son excluyentes?** Se entiende que sí —con promedio 25 cobra $10.000, no
-  $17.500—, pero conviene que esté escrito.
+✅ **Los dos bordes quedaron cerrados el 04/11/2026**, después de preguntarlos: el corte alto es
+**≥ 22** —se había dicho "mayor a 22" por error— y **los tramos se suman**. De paso se corrigió
+un **14 que se había escrito como 4**: con 4 se habría pagado premio por clases que pierden plata,
+porque el punto de equilibrio en Los Leones son 6 alumnas.
 
 ⏸ **Dos incentivos más, nombrados y no decididos** (Felipe, 04/11/2026). No se implementan:
 
