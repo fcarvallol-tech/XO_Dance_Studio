@@ -90,8 +90,11 @@ export type ClaseLiquidable = {
   tipo: "parrilla" | "especial";
   estado: EstadoClase;
   causa: Causa | null;
-  /** Cuándo se registró la cancelación o la no dictada. */
-  causaRegistradaAt: string | null;
+  /**
+   * Si la profesora llegó a la clase y el viaje se perdió. Se marca al
+   * clasificarla (`causas_de_clase.profesora_se_presento`), apagado por defecto.
+   */
+  profesoraSePresento: boolean;
   /** Si tiene una recuperación vigente: una clase con `recupera_clase_id` a esta, no cancelada. */
   recuperada: boolean;
   /** Reservas con crédito y sin devolver (el mismo hecho que atribuye ingreso). */
@@ -197,43 +200,36 @@ export function variableDeClase(creditos: number, tarifa: Tarifa): number {
 }
 
 /**
- * Si se canceló **antes del día de la clase**, en Santiago. «Lectura» de
- * "cancelar temprano ahorra la sala y el sueldo, cancelar el mismo día no"
- * (Felipe, 04/11/2026). Sin fecha de registro no se puede saber: no es
- * anticipada, y se paga la base.
- */
-export function canceladaConAnticipacion(clase: Pick<ClaseLiquidable, "inicio" | "causaRegistradaAt">): boolean {
-  if (!clase.causaRegistradaAt) return false;
-  return diaEnSantiago(new Date(clase.causaRegistradaAt)) < diaEnSantiago(new Date(clase.inicio));
-}
-
-/**
  * Qué paga una clase que no se dictó (CONTEXT.md §5.b, decisión 1 del
- * 04/11/2026, y la regla del 03/11/2026):
+ * 04/11/2026, la regla del 03/11/2026 y las correcciones del 05/11/2026):
  *
- * - **Recuperada, por la causa que sea: nada.** Se paga una sola vez, en la
- *   recuperación, que es una clase dictada más.
- * - `sala_no_disponible`: la base. Ella fue; el problema fue de XO.
- * - `cambio_de_parrilla`: nada. Esa clase nunca estuvo en su semana.
- * - `ausencia_profesora`: nada.
- * - `sin_alumnas` y `asistencia_insuficiente`: la base, porque organizó su día
- *   en torno a esa clase y traer alumnas es trabajo de XO. **Salvo que se haya
- *   cancelado con anticipación**: cancelar temprano ahorra el sueldo.
+ * - **Si la profesora se presentó: la base**, por la causa que sea y aunque se
+ *   haya recuperado. Lo que paga es que fue y el viaje se perdió, no la causa.
+ * - Si no, **recuperada, por la causa que sea: nada.** Se paga una sola vez, en
+ *   la recuperación, que es una clase dictada más.
+ * - Si no, sin recuperar:
+ *   - `sala_no_disponible`: la base. El problema fue de XO.
+ *   - `cambio_de_parrilla`: nada. Esa clase nunca estuvo en su semana.
+ *   - `ausencia_profesora`: nada.
+ *   - `sin_alumnas` y `asistencia_insuficiente`: la base, porque organizó su día
+ *     en torno a esa clase y traer alumnas es trabajo de XO.
+ *
+ * No hay reloj: cuándo se canceló no cambia nada (Felipe, 05/11/2026).
  */
 export function efectoDeCausa(
   causa: Causa,
-  contexto: { recuperada: boolean; conAnticipacion: boolean },
+  contexto: { recuperada: boolean; profesoraSePresento: boolean },
 ): Efecto {
+  if (contexto.profesoraSePresento) return "base";
   if (contexto.recuperada) return "nada";
   switch (causa) {
     case "sala_no_disponible":
+    case "sin_alumnas":
+    case "asistencia_insuficiente":
       return "base";
     case "cambio_de_parrilla":
     case "ausencia_profesora":
       return "nada";
-    case "sin_alumnas":
-    case "asistencia_insuficiente":
-      return contexto.conAnticipacion ? "nada" : "base";
   }
 }
 
@@ -289,16 +285,19 @@ export function lineaDeClase(clase: ClaseLiquidable, tarifa: Tarifa, ahora: Date
     return linea("sin_causa", 0, 0, "Falta decir por qué no se dictó. Hasta entonces no se puede pagar el mes.");
   }
 
-  const conAnticipacion = canceladaConAnticipacion(clase);
-  const efecto = efectoDeCausa(clase.causa, { recuperada: clase.recuperada, conAnticipacion });
+  const efecto = efectoDeCausa(clase.causa, {
+    recuperada: clase.recuperada,
+    profesoraSePresento: clase.profesoraSePresento,
+  });
   const porque = NOMBRE_CAUSA[clase.causa];
-  const explicacion = clase.recuperada
-    ? `No se dictó (${porque}) y se recuperó: se paga una sola vez, en la recuperación.`
-    : efecto === "base"
-      ? `No se dictó (${porque}): se paga la base, sin variable.`
-      : conAnticipacion &&
-          (clase.causa === "sin_alumnas" || clase.causa === "asistencia_insuficiente")
-        ? `Se canceló con anticipación (${porque}): no se paga.`
+  const explicacion = clase.profesoraSePresento
+    ? clase.recuperada
+      ? `No se dictó (${porque}), pero la profesora se presentó: se paga la base, además de la recuperación.`
+      : `No se dictó (${porque}), pero la profesora se presentó: se paga la base, sin variable.`
+    : clase.recuperada
+      ? `No se dictó (${porque}) y se recuperó: se paga una sola vez, en la recuperación.`
+      : efecto === "base"
+        ? `No se dictó (${porque}): se paga la base, sin variable.`
         : `No se dictó (${porque}): no se paga.`;
 
   // Sin variable aunque haya tenido reservas: al no dictarse, los créditos

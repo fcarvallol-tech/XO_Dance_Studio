@@ -19,7 +19,6 @@ import {
   PRIMER_MES_LIQUIDABLE,
   TARIFA_GENERAL as T,
   baseDeClase,
-  canceladaConAnticipacion,
   efectoDeCausa,
   incentivoDeCurso,
   lineaDeClase,
@@ -48,14 +47,14 @@ function clase(dia: string, extra: Partial<ClaseLiquidable> = {}): ClaseLiquidab
     tipo: "parrilla",
     estado: "programada",
     causa: null,
-    causaRegistradaAt: null,
+    profesoraSePresento: false,
     recuperada: false,
     creditosConsumidos: 0,
     ...extra,
   };
 }
 const noDictada = (dia: string, causa: Causa, extra: Partial<ClaseLiquidable> = {}) =>
-  clase(dia, { estado: "no_dictada", causa, causaRegistradaAt: `${dia}T20:00:00-03:00`, ...extra });
+  clase(dia, { estado: "no_dictada", causa, ...extra });
 
 // ---------------------------------------------------------------------------
 // Las constantes son las de CONTEXT.md, no otras
@@ -113,8 +112,10 @@ test("base: una hora $18.000; hora y media $27.000, redondeada al peso", () => {
 // Las causas y la recuperación
 // ---------------------------------------------------------------------------
 
+const TODAS: readonly Causa[] = ["sala_no_disponible", "cambio_de_parrilla", "ausencia_profesora", "sin_alumnas", "asistencia_insuficiente"];
+
 test("causas sin recuperar: sala → base; parrilla y ausencia → nada; sin alumnas y asistencia → base", () => {
-  const ctx = { recuperada: false, conAnticipacion: false };
+  const ctx = { recuperada: false, profesoraSePresento: false };
   assert.equal(efectoDeCausa("sala_no_disponible", ctx), "base");
   assert.equal(efectoDeCausa("cambio_de_parrilla", ctx), "nada");
   assert.equal(efectoDeCausa("ausencia_profesora", ctx), "nada");
@@ -122,33 +123,68 @@ test("causas sin recuperar: sala → base; parrilla y ausencia → nada; sin alu
   assert.equal(efectoDeCausa("asistencia_insuficiente", ctx), "base");
 });
 
-test("recuperada, por cualquier causa: nada en la original (se paga una vez, en la recuperación)", () => {
-  for (const causa of ["sala_no_disponible", "cambio_de_parrilla", "ausencia_profesora", "sin_alumnas", "asistencia_insuficiente"] as const) {
-    assert.equal(efectoDeCausa(causa, { recuperada: true, conAnticipacion: false }), "nada", causa);
+test("recuperada y sin presentarse, por cualquier causa: nada en la original (se paga una vez, en la recuperación)", () => {
+  for (const causa of TODAS) {
+    assert.equal(efectoDeCausa(causa, { recuperada: true, profesoraSePresento: false }), "nada", causa);
   }
 });
 
-test("cancelar con anticipación ahorra el sueldo solo en sin_alumnas y asistencia_insuficiente", () => {
-  const ctx = { recuperada: false, conAnticipacion: true };
-  assert.equal(efectoDeCausa("sin_alumnas", ctx), "nada");
-  assert.equal(efectoDeCausa("asistencia_insuficiente", ctx), "nada");
-  // La sala que falla sigue siendo problema de XO, avise cuando avise.
-  assert.equal(efectoDeCausa("sala_no_disponible", ctx), "base");
+test("se presentó: la base en las cinco causas, sin recuperar", () => {
+  for (const causa of TODAS) {
+    assert.equal(efectoDeCausa(causa, { recuperada: false, profesoraSePresento: true }), "base", causa);
+  }
 });
 
-test("anticipación: el día anterior en Santiago sí; el mismo día o después, no; sin fecha, no", () => {
-  const inicio = "2026-11-03T18:00:00-03:00";
-  assert.equal(canceladaConAnticipacion({ inicio, causaRegistradaAt: "2026-11-02T23:00:00-03:00" }), true);
-  assert.equal(canceladaConAnticipacion({ inicio, causaRegistradaAt: "2026-11-03T09:00:00-03:00" }), false);
-  assert.equal(canceladaConAnticipacion({ inicio, causaRegistradaAt: "2026-11-03T20:00:00-03:00" }), false);
-  assert.equal(canceladaConAnticipacion({ inicio, causaRegistradaAt: null }), false);
+test("se presentó: la base en las cinco causas, aunque se haya recuperado", () => {
+  for (const causa of TODAS) {
+    assert.equal(efectoDeCausa(causa, { recuperada: true, profesoraSePresento: true }), "base", causa);
+  }
 });
 
-test("anticipación: se cuenta en Santiago, no en UTC (las 22:00 del 2 son el 3 en UTC)", () => {
-  assert.equal(
-    canceladaConAnticipacion({ inicio: "2026-11-03T18:00:00-03:00", causaRegistradaAt: "2026-11-03T01:00:00Z" }),
-    true,
-  );
+test("sala sin disponibilidad: decide si ella fue, no si se recuperó", () => {
+  const sala = noDictada("2026-11-12", "sala_no_disponible", { recuperada: true });
+  // Le avisamos a tiempo y no fue: se paga una sola vez, en la recuperación.
+  assert.equal(lineaDeClase(sala, T, DIC_1).totalClp, 0);
+  // Llegó y no había sala: se le paga la base, y la recuperación aparte.
+  const fue = lineaDeClase({ ...sala, profesoraSePresento: true }, T, DIC_1);
+  assert.deepEqual([fue.baseClp, fue.variableClp, fue.totalClp], [18_000, 0, 18_000]);
+  assert.match(fue.explicacion, /se presentó/);
+  assert.match(fue.explicacion, /además de la recuperación/);
+});
+
+test("se presentó, en una de 90 minutos: la base escala con la duración y el variable sigue en cero", () => {
+  const c = noDictada("2026-11-12", "ausencia_profesora", {
+    fin: "2026-11-12T20:30:00-03:00",
+    creditosConsumidos: 12,
+    profesoraSePresento: true,
+  });
+  assert.deepEqual([lineaDeClase(c, T, DIC_1).baseClp, lineaDeClase(c, T, DIC_1).variableClp], [27_000, 0]);
+});
+
+test("se presentó no la vuelve dictada: no suma al piso ni al promedio del incentivo", () => {
+  const r = liquidar({
+    profesoraId: P1, mes: "2026-11", tarifa: T, ahora: DIC_1,
+    clases: [
+      clase("2026-11-03", { creditosConsumidos: 20 }),
+      clase("2026-11-10", { creditosConsumidos: 20 }),
+      clase("2026-11-17", { creditosConsumidos: 20 }),
+      noDictada("2026-11-24", "sala_no_disponible", { profesoraSePresento: true, creditosConsumidos: 20 }),
+    ],
+  });
+  assert.equal(r.incentivos[0].dictadas, 3);
+  assert.equal(r.incentivoClp, 0);
+  assert.equal(r.baseClp, 72_000);
+});
+
+test("la original con la profesora presente y su recuperación: se pagan las dos, y el total lo dice", () => {
+  const r = liquidar({
+    profesoraId: P1, mes: "2026-11", tarifa: T, ahora: DIC_1,
+    clases: [
+      noDictada("2026-11-12", "sala_no_disponible", { recuperada: true, profesoraSePresento: true }), // 18.000
+      clase("2026-11-19", { creditosConsumidos: 8 }),                                                  // 18.000 + 750
+    ],
+  });
+  assert.equal(r.totalClp, 36_750);
 });
 
 test("una no dictada no paga variable aunque haya tenido reservas", () => {
@@ -333,7 +369,7 @@ test("reemplazo: la clase se le paga a quien dictó, no a la titular", () => {
 // El mes completo, calculado a mano
 // ---------------------------------------------------------------------------
 
-test("un mes completo de P1: $169.750, línea por línea", () => {
+test("un mes completo de P1: $187.750, línea por línea", () => {
   const r = liquidar({
     profesoraId: P1,
     mes: "2026-11",
@@ -346,12 +382,12 @@ test("un mes completo de P1: $169.750, línea por línea", () => {
       noDictada("2026-11-17", "asistencia_insuficiente", { cursoId: "reggaeton", recuperada: true }), // 0
       clase("2026-11-20", { cursoId: "reggaeton", creditosConsumidos: 14 }), // 20.250
       clase("2026-11-24", { cursoId: "reggaeton", creditosConsumidos: 14 }), // 20.250 → incentivo 7.500
-      // Heels: dos dictadas, una sin sala, una por cambio de parrilla, una cancelada con anticipación.
+      // Heels: dos dictadas, una sin sala, una por cambio de parrilla, una sin alumnas no recuperada.
       clase("2026-11-05", { cursoId: "heels", creditosConsumidos: 3 }),      // 18.000
       clase("2026-11-12", { cursoId: "heels", creditosConsumidos: 5 }),      // 18.000
       noDictada("2026-11-19", "sala_no_disponible", { cursoId: "heels", estado: "cancelada" }), // 18.000
       noDictada("2026-11-26", "cambio_de_parrilla", { cursoId: "heels", estado: "cancelada" }), // 0
-      clase("2026-11-28", { cursoId: "heels", estado: "cancelada", causa: "sin_alumnas", causaRegistradaAt: "2026-11-25T10:00:00-03:00" }), // 0
+      clase("2026-11-28", { cursoId: "heels", estado: "cancelada", causa: "sin_alumnas" }), // 18.000
       // Una de 90 minutos.
       clase("2026-11-07", { cursoId: "intensivo", fin: "2026-11-07T20:30:00-03:00", creditosConsumidos: 6 }), // 27.250
       // Lo que no entra: una especial, una del mes siguiente, una de otra profesora.
@@ -361,10 +397,10 @@ test("un mes completo de P1: $169.750, línea por línea", () => {
     ],
   });
 
-  assert.equal(r.baseClp, 72_000 + 54_000 + 27_000);           // 153.000
+  assert.equal(r.baseClp, 72_000 + 72_000 + 27_000);           // 171.000
   assert.equal(r.variableClp, 2_750 + 1_750 + 2_250 + 2_250 + 250); // 9.250
   assert.equal(r.incentivoClp, 7_500);
-  assert.equal(r.totalClp, 169_750);
+  assert.equal(r.totalClp, 187_750);
   assert.equal(r.especiales, 1);
   assert.equal(r.lineas.length, 12); // 11 de parrilla del mes + la especial
   assert.deepEqual(r.bloqueos, []);
@@ -413,18 +449,6 @@ test("el mes termina a medianoche de Santiago, no de UTC", () => {
 // Bordes que se agregaron al final de la noche
 // ---------------------------------------------------------------------------
 
-test("sin_alumnas cancelada el mismo día y no recuperada: la base (organizó su día en torno a esa clase)", () => {
-  const c = clase("2026-11-12", { estado: "cancelada", causa: "sin_alumnas", causaRegistradaAt: "2026-11-12T10:00:00-03:00" });
-  assert.equal(lineaDeClase(c, T, DIC_1).totalClp, 18_000);
-});
-
-test("sin_alumnas cancelada con anticipación: $0, y lo explica", () => {
-  const c = clase("2026-11-12", { estado: "cancelada", causa: "sin_alumnas", causaRegistradaAt: "2026-11-10T10:00:00-03:00" });
-  const l = lineaDeClase(c, T, DIC_1);
-  assert.equal(l.totalClp, 0);
-  assert.match(l.explicacion, /con anticipación/);
-});
-
 test("una especial no suma al promedio ni al piso del incentivo", () => {
   const r = liquidar({
     profesoraId: P1, mes: "2026-11", tarifa: T, ahora: DIC_1,
@@ -448,11 +472,4 @@ test("una futura del mes no cuenta para el piso: el incentivo se decide con el m
   assert.equal(r.incentivos[0].dictadas, 3);
   assert.equal(r.incentivoClp, 0);
   assert.ok(r.bloqueos.some((b) => b.tipo === "mes_en_curso"));
-});
-
-test("cambiar la causa no mueve la fecha de registro: la anticipación se mide con la primera", () => {
-  // La base conserva registrada_at al cambiar la causa (registrar_no_dictada);
-  // acá se fija que la regla depende de esa fecha y no de la de hoy.
-  const temprano = clase("2026-11-12", { estado: "cancelada", causa: "asistencia_insuficiente", causaRegistradaAt: "2026-11-11T09:00:00-03:00" });
-  assert.equal(canceladaConAnticipacion(temprano), true);
 });

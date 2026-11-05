@@ -262,28 +262,47 @@ versión en tres días, y **reemplaza a las dos anteriores**.
 
 ### 6.6 Las clases que no se dictaron, y su recuperación
 
-De "Las cinco decisiones…", punto 1, y de la regla del 03/11:
+De "Las cinco decisiones…", punto 1, de la regla del 03/11 y de las dos correcciones de Felipe del
+05/11.
 
-| Causa | Si **no** se recupera | Si se recupera |
+**Primero se pregunta si ella fue.** `causas_de_clase.profesora_se_presento`, apagado por defecto,
+se marca al clasificar la clase:
+
+- **Prendido → paga la base, sin variable, por la causa que sea y aunque se haya recuperado.** El
+  hecho que paga es que fue y el viaje se perdió. La recuperación se paga aparte, como cualquier
+  dictada.
+- **Apagado → la tabla de abajo.**
+
+| Causa, con el campo apagado | Si **no** se recupera | Si se recupera |
 |---|---|---|
-| `sala_no_disponible` | **Base**, sin variable: ella fue, el problema fue de XO | **Nada en la original**: se paga una sola vez, en la recuperación |
+| `sala_no_disponible` | **Base**, sin variable: el problema fue de XO | **Nada en la original**: se paga una sola vez, en la recuperación |
 | `cambio_de_parrilla` | **Nada**: esa clase nunca estuvo en su semana | Nada en la original |
 | `ausencia_profesora` | **Nada** | Nada en la original |
-| `sin_alumnas` | **Base**, salvo que se haya **cancelado con anticipación** (ver abajo) | Nada en la original |
+| `sin_alumnas` | **Base**: organizó su día en torno a esa clase y traer alumnas es trabajo de XO | Nada en la original |
 | `asistencia_insuficiente` | Igual que `sin_alumnas` | Nada en la original |
 
+- **No hay reloj.** Cuándo se canceló no cambia el pago, en ninguna causa. El corte "con
+  anticipación" de la noche del 05/11 se borró entero: resolvía un caso que no existe, porque si se
+  cancela se cancela el mismo día y siempre se recupera, y le quitaba el sueldo a la profesora en el
+  único caso en que la regla decía pagarle (Felipe, 05/11/2026). La frase "cancelar temprano ahorra
+  la sala y el sueldo" contradice la regla, y la que vale es la regla.
+- **La sala que falla:** lo normal es saberlo con anticipación y avisarle primero a ella, así que no
+  va y se recupera: paga una sola vez. Cuando llega y no hay sala, por una irresponsabilidad
+  nuestra, se prende el campo y se le paga la base, se recupere o no.
+- **Con el campo prendido una clase no pasa a ser dictada**: no suma al piso ni al promedio del
+  incentivo, y no paga variable.
+- **Por qué en `causas_de_clase` y no en `clases`:** por lo mismo que la causa, §12.3 punto 2. La
+  profesora sí lo ve en las suyas, porque calcula lo mismo que el owner.
+- **Se pasa cada vez que se clasifica:** `registrar_no_dictada` lo recibe como parámetro, y
+  reclasificar sin prenderlo lo apaga. Entra en la huella: cambiarlo hace rebotar un pago que se
+  estaba mirando.
 - **La recuperación se paga como cualquier clase dictada**: base más variable, en el mes en que se
-  dicta. Así ni el sueldo ni la sala se pagan dos veces.
+  dicta.
 - **"Recuperada"** quiere decir que existe una clase marcada como su recuperación
   (`clases.recupera_clase_id`) que no está cancelada ni no dictada.
-- **"Cancelar temprano ahorra la sala y el sueldo, cancelar el mismo día no"**: es la frase con que
-  Felipe explicó la regla. La traduje así (§12.3): para `sin_alumnas` y `asistencia_insuficiente`,
-  si la clase se **canceló antes del día de la clase** en `America/Santiago`, no se paga. Si se
-  canceló el mismo día o después, o quedó `no_dictada`, se paga la base. Para las otras tres causas
-  la anticipación no cambia nada.
-- **El caso del 03/11**: la Reggaeton Femme de Pau en Los Leones queda `asistencia_insuficiente`.
-  Se canceló después de la hora y se va a recuperar, así que no paga en noviembre y se paga la
-  recuperación. Si no se recuperara, paga la base.
+- **El caso del 03/11**: la Reggaeton Femme de Pau en Los Leones queda `asistencia_insuficiente`,
+  con el campo **apagado**, porque `CONTEXT.md` dice que esa fecha no se le paga. Se va a recuperar,
+  así que no paga en noviembre y se paga la recuperación. Si no se recuperara, paga la base.
 
 ## 7. El estado `no_dictada` y su causa
 
@@ -669,10 +688,15 @@ Más una tercera, P3, **sin fila en `costos_profesoras`**: "Sin costo cargado", 
 |---|---|---|---|
 | A | §13 contestado desde `CONTEXT.md`; §6.5 incentivo y §6.6 causas | ✅ | `03a30ed` |
 | B | ADR-0008: la profesora ve su liquidación | ✅ | `1c442c9` |
-| C | `lib/dominio/liquidacion.ts`, **43 tests** (38 + 5 bordes agregados al final), prueba de mutación | ✅ | `1ac78c7` y el siguiente |
-| D | Migración `20261105140000_liquidacion_profesoras.sql`: escrita, `--dry-run` contra producción lista **solo esa**, **sin aplicar**. Escenario en base local: **29 de 29** | ✅ | ver el log de la rama |
+| C | `lib/dominio/liquidacion.ts`, prueba de mutación. **43 tests** tras las correcciones del 05/11: salen los 6 que medían anticipación y entran 6 de `profesora_se_presento` | ✅ | `1ac78c7` y siguientes |
+| D | Migración `20261105140000_liquidacion_profesoras.sql`: escrita, `--dry-run` contra producción lista **solo esa**, **sin aplicar**. Escenario en base local: **36 de 36** | ✅ | ver el log de la rama |
 | E | `/owner/liquidaciones`, "Mi liquidación" en el portal, el Route Handler del comprobante | ⏸ No empezado, a propósito | — |
 | — | Aviso de diferencia y ajustes (§8.6) | ⏸ Fase 7, como estaba | — |
+
+**Correcciones de Felipe del 05/11/2026, ya aplicadas:** se borró el corte por anticipación y se
+agregó `profesora_se_presento` (§6.6). Salieron `canceladaConAnticipacion()` y
+`causa_registrada_at` de los insumos y la huella; `causas_de_clase.registrada_at` queda solo como
+registro.
 
 **Dónde la implementación se separó del borrador, y por qué:**
 
@@ -705,8 +729,8 @@ Más una tercera, P3, **sin fila en `costos_profesoras`**: "Sin costo cargado", 
 6. **`hoy_santiago()`**: una sola fuente para "¿terminó el mes?" y para la fecha del egreso. Permite
    probar el pago de un mes cerrado sin esperar a que se cierre.
 7. **La clase de Pau del 03/11 queda clasificada** en la misma migración como
-   `asistencia_insuficiente`, con la fecha de su cancelación (después de la hora). En una base sin
-   esa clase no hace nada.
+   `asistencia_insuficiente`, con `profesora_se_presento` apagado. En una base sin esa clase no hace
+   nada.
 
 **Lo que no se puede saber sin producción**, y conviene correr en solo lectura antes de aplicar:
 cuántas clases de parrilla de noviembre están `cancelada` sin causa. Esas bloquean el pago de su

@@ -113,6 +113,10 @@ create table if not exists public.causas_de_clase (
   -- Null solo cuando la registró una migración (no hay sesión que atribuir).
   registrada_por uuid references public.perfiles (id),
   registrada_at timestamptz not null default now(),
+  -- Si la profesora llegó y el viaje se perdió (Felipe, 05/11/2026). Prendido
+  -- paga la base, por cualquier causa y aunque se recupere. Vive acá y no en
+  -- `clases` por lo mismo que la causa: `clases` es pública entera.
+  profesora_se_presento boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   deleted_at timestamptz
@@ -347,7 +351,7 @@ returns table (
   tipo text,
   estado text,
   causa text,
-  causa_registrada_at timestamptz,
+  profesora_se_presento boolean,
   recuperada boolean,
   recupera_clase_id uuid,
   creditos_consumidos int
@@ -360,7 +364,7 @@ as $$
   select cl.id, cl.profesora_id, cl.curso_id,
          coalesce(cl.titulo, cu.nombre), se.nombre,
          cl.inicio, cl.fin, cl.tipo, cl.estado,
-         ca.causa, ca.registrada_at,
+         ca.causa, coalesce(ca.profesora_se_presento, false),
          exists (
            select 1 from public.clases r
            where r.recupera_clase_id = cl.id
@@ -391,7 +395,7 @@ grant execute on function public.mes_pagado(uuid, timestamptz) to service_role;
 /**
  * La huella de los insumos de una profesora en un mes, con su tarifa. Cambia
  * si cambia cualquier cosa que mueva el monto: una clase, su estado, su causa,
- * sus créditos, una recuperación o la tarifa.
+ * si la profesora se presentó, sus créditos, una recuperación o la tarifa.
  */
 create or replace function public.huella_del_mes(p_profesora_id uuid, p_mes date)
 returns text
@@ -404,7 +408,7 @@ as $$
     coalesce((
       select string_agg(
         concat_ws('|', i.clase_id, i.inicio, i.fin, i.tipo, i.estado, i.causa,
-                  i.causa_registrada_at, i.recuperada, i.creditos_consumidos),
+                  i.profesora_se_presento, i.recuperada, i.creditos_consumidos),
         ',' order by i.clase_id)
       from public.insumos_del_mes(p_mes) i
       where i.profesora_id = p_profesora_id
@@ -424,7 +428,7 @@ create or replace function public.insumos_liquidacion(p_mes date)
 returns table (
   clase_id uuid, profesora_id uuid, curso_id uuid, curso text, sede text,
   inicio timestamptz, fin timestamptz, tipo text, estado text, causa text,
-  causa_registrada_at timestamptz, recuperada boolean, recupera_clase_id uuid,
+  profesora_se_presento boolean, recuperada boolean, recupera_clase_id uuid,
   creditos_consumidos int
 )
 language plpgsql
@@ -475,7 +479,7 @@ create or replace function public.mis_insumos_liquidacion(p_mes date)
 returns table (
   clase_id uuid, curso_id uuid, curso text, sede text,
   inicio timestamptz, fin timestamptz, tipo text, estado text, causa text,
-  causa_registrada_at timestamptz, recuperada boolean, creditos_consumidos int
+  profesora_se_presento boolean, recuperada boolean, creditos_consumidos int
 )
 language plpgsql
 stable
@@ -490,7 +494,7 @@ begin
   end if;
   return query
   select i.clase_id, i.curso_id, i.curso, i.sede, i.inicio, i.fin, i.tipo, i.estado,
-         i.causa, i.causa_registrada_at, i.recuperada, i.creditos_consumidos
+         i.causa, i.profesora_se_presento, i.recuperada, i.creditos_consumidos
   from public.insumos_del_mes(p_mes) i
   where i.profesora_id = v_profesora;
 end;
@@ -539,6 +543,8 @@ grant execute on function public.mis_liquidaciones() to authenticated, service_r
  * - `cancelada` o `no_dictada` → solo se registra o se cambia la causa. Así se
  *   clasifican también las cancelaciones, que deciden igual si se paga.
  * - Una futura no se "no dicta": se cancela.
+ * - `p_profesora_se_presento` se pasa cada vez, apagado por defecto: reclasificar
+ *   sin prenderlo lo apaga. Lo que decide cuánto paga es lib/dominio.
  * - Si el mes de esa clase ya se le pagó a esa profesora, rebota: lo pagado no
  *   se mueve por la puerta de atrás (§8.6).
  */
@@ -546,7 +552,8 @@ create or replace function public.registrar_no_dictada(
   p_actor_user_id uuid,
   p_clase_id uuid,
   p_causa text,
-  p_detalle text
+  p_detalle text,
+  p_profesora_se_presento boolean default false
 )
 returns public.causas_de_clase
 language plpgsql
@@ -587,14 +594,14 @@ begin
     update public.clases set estado = 'no_dictada' where id = v_clase.id;
   end if;
 
-  insert into public.causas_de_clase (clase_id, causa, detalle, registrada_por, registrada_at)
-  values (v_clase.id, p_causa, btrim(p_detalle), v_actor.id, now())
+  insert into public.causas_de_clase
+    (clase_id, causa, detalle, registrada_por, registrada_at, profesora_se_presento)
+  values (v_clase.id, p_causa, btrim(p_detalle), v_actor.id, now(),
+          coalesce(p_profesora_se_presento, false))
   on conflict (clase_id) do update
     set causa = excluded.causa, detalle = excluded.detalle,
         registrada_por = excluded.registrada_por,
-        -- La fecha de registro decide si fue "con anticipación": cambiar la
-        -- causa no la mueve.
-        registrada_at = public.causas_de_clase.registrada_at,
+        profesora_se_presento = excluded.profesora_se_presento,
         deleted_at = null
   returning * into v_fila;
 
@@ -704,8 +711,8 @@ begin
 end;
 $$;
 
-revoke all on function public.registrar_no_dictada(uuid, uuid, text, text) from public, anon, authenticated;
-grant execute on function public.registrar_no_dictada(uuid, uuid, text, text) to service_role;
+revoke all on function public.registrar_no_dictada(uuid, uuid, text, text, boolean) from public, anon, authenticated;
+grant execute on function public.registrar_no_dictada(uuid, uuid, text, text, boolean) to service_role;
 revoke all on function public.marcar_recuperacion(uuid, uuid, uuid) from public, anon, authenticated;
 grant execute on function public.marcar_recuperacion(uuid, uuid, uuid) to service_role;
 revoke all on function public.reasignar_clase(uuid, uuid, uuid) from public, anon, authenticated;
@@ -871,9 +878,9 @@ grant execute on function public.anular_liquidacion(uuid, uuid, text) to service
 -- ---------------------------------------------------------------------------
 -- La Reggaeton Femme de Pau en Los Leones, 18:00, cancelada por
 -- 20261103210000. No se dictó porque no llegaron alumnas suficientes, Pau no
--- faltó, y se va a recuperar (CONTEXT.md, 03/11/2026). La fecha de registro es
--- la de la cancelación —después de la hora—, así que no cuenta como "con
--- anticipación": si no se recupera, paga la base.
+-- faltó, y se va a recuperar (CONTEXT.md, 03/11/2026). Si no se recupera, paga
+-- la base. `profesora_se_presento` queda en su valor por defecto, apagado:
+-- CONTEXT.md dice que esa fecha no se le paga, se le paga el día que la recupere.
 --
 -- En una base sin esa clase (staging, la base local) no hace nada.
 
@@ -1234,7 +1241,7 @@ begin
 
   -- Lo que mueve plata, solo por service_role.
   if has_function_privilege('authenticated', 'public.pagar_liquidacion(uuid, uuid, date, int, jsonb, text, text)', 'execute')
-     or has_function_privilege('authenticated', 'public.registrar_no_dictada(uuid, uuid, text, text)', 'execute')
+     or has_function_privilege('authenticated', 'public.registrar_no_dictada(uuid, uuid, text, text, boolean)', 'execute')
      or has_function_privilege('authenticated', 'public.reasignar_clase(uuid, uuid, uuid)', 'execute')
      or has_function_privilege('authenticated', 'public.insumos_del_mes(date)', 'execute')
      or has_function_privilege('anon', 'public.mis_insumos_liquidacion(date)', 'execute')

@@ -74,10 +74,12 @@ const A3 = await clase("2026-11-10"); await reservar(A3, 12);
 const A4 = await clase("2026-11-20"); await reservar(A4, 14); // será la recuperación de A2
 const A5 = await clase("2026-11-24"); await reservar(A5, 14);
 const C = await clase("2026-11-26"); await reservar(C, 8);   // la va a dictar Drimy
+const S = await clase("2026-11-01"); await reservar(S, 7);   // Pau llega y no hay sala; A3 la recupera
+const T = await clase("2026-11-27"); await reservar(T, 3);   // se cancela con semanas de anticipación
 
 const sv = (sql, args) => servidor(db, (tx) => uno(tx, sql, args));
-const registrar = (actor, claseId, causa, detalle = "Lo que pasó, con detalle") =>
-  sv("select * from public.registrar_no_dictada($1, $2, $3, $4)", [actor.userId, claseId, causa, detalle]);
+const registrar = (actor, claseId, causa, detalle = "Lo que pasó, con detalle", seP = false) =>
+  sv("select * from public.registrar_no_dictada($1, $2, $3, $4, $5)", [actor.userId, claseId, causa, detalle, seP]);
 
 /** Lo que haría la pantalla del owner: insumos + tarifa → lib/dominio. */
 async function calcular(profesoraId, ahora = new Date("2026-12-02T12:00:00-03:00")) {
@@ -92,7 +94,7 @@ async function calcular(profesoraId, ahora = new Date("2026-12-02T12:00:00-03:00
       id: i.clase_id, profesoraId: i.profesora_id, cursoId: i.curso_id,
       inicio: new Date(i.inicio).toISOString(), fin: i.fin ? new Date(i.fin).toISOString() : null,
       tipo: i.tipo, estado: i.estado, causa: i.causa,
-      causaRegistradaAt: i.causa_registrada_at ? new Date(i.causa_registrada_at).toISOString() : null,
+      profesoraSePresento: i.profesora_se_presento,
       recuperada: i.recuperada, creditosConsumidos: i.creditos_consumidos,
     })),
   });
@@ -136,6 +138,25 @@ await paso("clasificar D como cambio de parrilla: sigue cancelada, ahora con cau
   assert.equal((await uno(db, "select estado from clases where id = $1", [D])).estado, "cancelada");
   assert.deepEqual((await calcular(PAU)).bloqueos, []);
 });
+await paso("S (01/11) sin sala y Pau se presentó: el campo queda prendido", async () => {
+  await registrar(admin, S, "sala_no_disponible", "Llegó y la sala estaba ocupada", true);
+  assert.equal((await uno(db, "select profesora_se_presento p from causas_de_clase where clase_id = $1", [S])).p, true);
+});
+await paso("reclasificar sin prenderlo lo apaga, y volver a prenderlo funciona", async () => {
+  await registrar(admin, S, "sala_no_disponible", "Llegó y la sala estaba ocupada");
+  assert.equal((await uno(db, "select profesora_se_presento p from causas_de_clase where clase_id = $1", [S])).p, false);
+  await registrar(admin, S, "sala_no_disponible", "Llegó y la sala estaba ocupada", true);
+});
+await paso("el campo está apagado por defecto (A2 y D no lo traen)", async () => {
+  const r = await filas(db, "select profesora_se_presento p from causas_de_clase where clase_id = any($1)", [[A2, D]]);
+  assert.deepEqual(r.map((x) => x.p), [false, false]);
+});
+await paso("T (27/11) cancelada con tres semanas de anticipación, sin alumnas: queda con causa", async () => {
+  await db.query("update clases set estado = 'cancelada' where id = $1", [T]);
+  await registrar(admin, T, "sin_alumnas", "Se canceló con semanas de anticipación");
+  assert.equal((await uno(db, "select estado from clases where id = $1", [T])).estado, "cancelada");
+  await libroCuadra();
+});
 await paso("una no dictada no vuelve a programada", async () => {
   await falla(db.query("update clases set estado = 'programada' where id = $1", [A2]), /no vuelve a programada/);
 });
@@ -145,6 +166,11 @@ await paso("A4 (20/11) es la recuperación de A2: A2 queda recuperada", async ()
   await sv("select id from public.marcar_recuperacion($1, $2, $3)", [admin.userId, A4, A2]);
   const i = await como(db, owner, (tx) => uno(tx, "select recuperada from public.insumos_liquidacion('2026-11-01') where clase_id = $1", [A2]));
   assert.equal(i.recuperada, true);
+});
+await paso("A3 (10/11) es la recuperación de S: S queda recuperada, con Pau presente", async () => {
+  await sv("select id from public.marcar_recuperacion($1, $2, $3)", [admin.userId, A3, S]);
+  const i = await como(db, owner, (tx) => uno(tx, "select recuperada, profesora_se_presento from public.insumos_liquidacion('2026-11-01') where clase_id = $1", [S]));
+  assert.deepEqual([i.recuperada, i.profesora_se_presento], [true, true]);
 });
 await paso("una clase se recupera una sola vez", async () => {
   await falla(sv("select id from public.marcar_recuperacion($1, $2, $3)", [admin.userId, A5, A2]), /duplicate key|unique/i);
@@ -157,14 +183,25 @@ await paso("C (26/11) la dicta Drimy: pasa a ella y queda el registro", async ()
 
 console.log("\n4. El monto, calculado con lib/dominio sobre los insumos de la base");
 let liqPau;
-await paso("Pau: $88.500 = 20.750 + 0 + 0 + 19.750 + 20.250 + 20.250 + incentivo 7.500", async () => {
+// A mano, Pau (tarifa $18.000 la hora, $250 por crédito desde el sexto):
+//   A1 02/11 dictada, 16 créditos ............ 18.000 + 11 × 250 = 20.750
+//   A2 03/11 asistencia, recuperada .......... 0 (se paga en A4)
+//   D  04/11 cambio de parrilla .............. 0
+//   A3 10/11 dictada, 12 (recupera a S) ...... 18.000 +  7 × 250 = 19.750
+//   A4 20/11 dictada, 14 (recupera a A2) ..... 18.000 +  9 × 250 = 20.250
+//   A5 24/11 dictada, 14 ..................... 18.000 +  9 × 250 = 20.250
+//   S  01/11 sin sala, se presentó, recuperada 18.000 (antes del 05/11: 0)
+//   T  27/11 sin alumnas, avisada, no recup. . 18.000 (antes del 05/11: 0)
+//   Incentivo: 16 + 14 + 14 + 12 = 56 → promedio 14 → 7.500
+//   Total: 81.000 + 36.000 + 7.500 = 124.500
+await paso("Pau: $124.500 = 20.750 + 0 + 0 + 19.750 + 20.250 + 20.250 + 18.000 + 18.000 + incentivo 7.500", async () => {
   liqPau = await calcular(PAU);
   const porClase = Object.fromEntries(liqPau.lineas.map((l) => [l.claseId, l.totalClp]));
-  assert.deepEqual([porClase[A1], porClase[A2], porClase[D], porClase[A3], porClase[A4], porClase[A5]],
-    [20_750, 0, 0, 19_750, 20_250, 20_250]);
+  assert.deepEqual([porClase[A1], porClase[A2], porClase[D], porClase[A3], porClase[A4], porClase[A5], porClase[S], porClase[T]],
+    [20_750, 0, 0, 19_750, 20_250, 20_250, 18_000, 18_000]);
   assert.equal(porClase[C], undefined, "la de Drimy no está en la de Pau");
   assert.equal(liqPau.incentivoClp, 7_500);
-  assert.equal(liqPau.totalClp, 88_500);
+  assert.equal(liqPau.totalClp, 124_500);
 });
 await paso("Drimy: $18.750 por la clase que cubrió (8 créditos → 3 sobre el umbral)", async () => {
   const r = await calcular(DRIMY);
@@ -174,15 +211,15 @@ await paso("Drimy: $18.750 por la clase que cubrió (8 créditos → 3 sobre el 
 
 console.log("\n5. Pagar");
 await paso("con el mes en curso (hoy real, 05/11) rebota", async () => {
-  await falla(pagar(owner, PAU, 88_500, await huella(PAU)), /todavía no termina/);
+  await falla(pagar(owner, PAU, 124_500, await huella(PAU)), /todavía no termina/);
 });
 // Desde acá, "hoy" es el 2 de diciembre.
 await db.exec("create or replace function public.hoy_santiago() returns date language sql stable as $$ select date '2026-12-02' $$");
 await paso("sin comprobante rebota", async () => {
-  await falla(pagar(owner, PAU, 88_500, await huella(PAU), "  "), /comprobante/);
+  await falla(pagar(owner, PAU, 124_500, await huella(PAU), "  "), /comprobante/);
 });
 await paso("admin no puede pagar; una sesión no llama la función", async () => {
-  await falla(pagar(admin, PAU, 88_500, await huella(PAU)), /Solo el owner/);
+  await falla(pagar(admin, PAU, 124_500, await huella(PAU)), /Solo el owner/);
   await falla(como(db, owner, (tx) => tx.query("select public.pagar_liquidacion($1, $2, '2026-11-01', 1, '{}', 'x', 'y')", [owner.userId, PAU])), /permission denied/);
 });
 await paso("octubre no se paga: se pagó a mano", async () => {
@@ -194,20 +231,28 @@ await paso("si algo cambió desde que se miró (la huella), rebota", async () =>
   // Una reserva más en A5, de una alumna que no estaba (reservar() usa las primeras).
   const extra = alumnas[15];
   await db.query("insert into reservas (perfil_id, clase_id, credito_id) values ($1, $2, $3)", [extra.perfilId, A5, extra.creditoId]);
-  await falla(pagar(owner, PAU, 88_500, vieja), /cambió mientras lo mirabas/);
+  await falla(pagar(owner, PAU, 124_500, vieja), /cambió mientras lo mirabas/);
   // Se deshace para seguir con los montos de arriba.
   await db.query("delete from reservas where perfil_id = $1 and clase_id = $2", [extra.perfilId, A5]);
 });
 let pagoId;
-await paso("pagar a Pau: liquidación de $88.500 con su huella y comprobante, y un egreso igual", async () => {
-  const r = await pagar(owner, PAU, 88_500, await huella(PAU));
+await paso("prender o apagar profesora_se_presento mueve la huella: el pago viejo rebota", async () => {
+  const vieja = await huella(PAU);
+  await registrar(admin, D, "cambio_de_parrilla", "El horario se movió al jueves", true);
+  assert.notEqual(await huella(PAU), vieja);
+  await falla(pagar(owner, PAU, 124_500, vieja), /cambió mientras lo mirabas/);
+  await registrar(admin, D, "cambio_de_parrilla", "El horario se movió al jueves", false);
+  assert.equal(await huella(PAU), vieja);
+});
+await paso("pagar a Pau: liquidación de $124.500 con su huella y comprobante, y un egreso igual", async () => {
+  const r = await pagar(owner, PAU, 124_500, await huella(PAU));
   pagoId = r.id;
-  assert.equal(r.monto_clp, 88_500);
+  assert.equal(r.monto_clp, 124_500);
   const e = await uno(db, "select categoria, monto_clp, comprobante_path, fecha::text from egresos where id = $1", [r.egreso_id]);
-  assert.deepEqual([e.categoria, e.monto_clp, e.comprobante_path, e.fecha], ["sueldo_profesora", 88_500, "liquidaciones/x.png", "2026-12-02"]);
+  assert.deepEqual([e.categoria, e.monto_clp, e.comprobante_path, e.fecha], ["sueldo_profesora", 124_500, "liquidaciones/x.png", "2026-12-02"]);
 });
 await paso("pagar dos veces el mismo mes rebota", async () => {
-  await falla(pagar(owner, PAU, 88_500, await huella(PAU)), /ya está pagado/);
+  await falla(pagar(owner, PAU, 124_500, await huella(PAU)), /ya está pagado/);
 });
 await paso("con el mes pagado, marcar una clase o reasignarla rebota (va como ajuste)", async () => {
   await falla(registrar(admin, A1, "ausencia_profesora"), /ya se le pagó/);
@@ -218,15 +263,19 @@ console.log("\n6. Lo que ve cada una (ADR-0008)");
 await paso("Pau ve sus clases del mes y ninguna de otra, sin columnas de alumnas", async () => {
   const r = await como(db, pau, (tx) => filas(tx, "select * from public.mis_insumos_liquidacion('2026-11-01')"));
   const ids = r.map((x) => x.clase_id);
-  assert.deepEqual(new Set(ids), new Set([A1, A2, D, A3, A4, A5]));
+  assert.deepEqual(new Set(ids), new Set([A1, A2, D, A3, A4, A5, S, T]));
   assert.ok(!ids.includes(C));
   const columnas = Object.keys(r[0]);
   assert.ok(!columnas.some((c) => /perfil|nombre|correo|email|rut|telefono|apoderado|monto|precio|costo/.test(c)), columnas.join(","));
 });
+await paso("Pau ve profesora_se_presento de las suyas: lo necesita para calcular lo mismo que el owner", async () => {
+  const r = await como(db, pau, (tx) => uno(tx, "select profesora_se_presento p from public.mis_insumos_liquidacion('2026-11-01') where clase_id = $1", [S]));
+  assert.equal(r.p, true);
+});
 await paso("Pau ve lo que se le pagó, sin comprobante ni quién pagó", async () => {
   const r = await como(db, pau, (tx) => filas(tx, "select * from public.mis_liquidaciones()"));
   assert.equal(r.length, 1);
-  assert.equal(r[0].monto_clp, 88_500);
+  assert.equal(r[0].monto_clp, 124_500);
   assert.ok(!("comprobante_path" in r[0]) && !("pagada_por" in r[0]) && !("egreso_id" in r[0]));
 });
 await paso("Drimy ve solo la clase que cubrió, y nada pagado", async () => {
@@ -267,8 +316,8 @@ await paso("anular el pago: queda con deleted_at, anula el egreso y el mes vuelv
 
 console.log("\n8. Las métricas dejan de contar una no dictada como dictada");
 await paso("metricas_demanda: una pasada en pie es dictada; una no_dictada, no", async () => {
-  const Z = await clase("2026-11-01"); // pasada y programada
-  const m = (await como(db, owner, (tx) => uno(tx, "select public.metricas_demanda('2026-11-01', '2026-12-01') m"))).m;
+  const Z = await clase("2026-10-31"); // pasada y programada
+  const m = (await como(db, owner, (tx) => uno(tx, "select public.metricas_demanda('2026-10-31', '2026-12-01') m"))).m;
   const porId = Object.fromEntries(m.por_clase.map((c) => [c.clase_id, c.dictada]));
   assert.equal(porId[Z], true);
   assert.equal(porId[A2], false);
