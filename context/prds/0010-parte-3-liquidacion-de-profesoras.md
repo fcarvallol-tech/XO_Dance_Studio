@@ -663,6 +663,55 @@ Más una tercera, P3, **sin fila en `costos_profesoras`**: "Sin costo cargado", 
 | 6 | Portal de la profesora (§9) | No: puede entrar después del primer pago |
 | 7 | Aviso de diferencia y ajustes (§8.6) | No: no pueden hacer falta antes de noviembre |
 
+### 12.3 Implementación, 05/11/2026 (rama `prd-0010-parte-3-liquidacion`)
+
+| Paso | Qué | Estado | Commit |
+|---|---|---|---|
+| A | §13 contestado desde `CONTEXT.md`; §6.5 incentivo y §6.6 causas | ✅ | `03a30ed` |
+| B | ADR-0008: la profesora ve su liquidación | ✅ | `1c442c9` |
+| C | `lib/dominio/liquidacion.ts`, **38 tests**, prueba de mutación | ✅ | `1ac78c7` |
+| D | Migración `20261105140000_liquidacion_profesoras.sql`: escrita, `--dry-run` contra producción lista **solo esa**, **sin aplicar**. Escenario en base local: **29 de 29** | ✅ | ver el log de la rama |
+| E | `/owner/liquidaciones`, "Mi liquidación" en el portal, el Route Handler del comprobante | ⏸ No empezado, a propósito | — |
+| — | Aviso de diferencia y ajustes (§8.6) | ⏸ Fase 7, como estaba | — |
+
+**Dónde la implementación se separó del borrador, y por qué:**
+
+1. **La regla de pago vive solo en `lib/dominio`.** El borrador decía que `pagar_liquidacion`
+   "vuelve a calcular el monto adentro, con el mismo SQL que la pantalla" (§8.3). Eso habría puesto
+   la regla en SQL y en TypeScript, y solo una de las dos con tests. Quedó así:
+   - la base entrega **insumos** y una **huella** (md5) de esos insumos más la tarifa;
+   - la pantalla calcula con `liquidar()` y manda monto, detalle y huella;
+   - `pagar_liquidacion` recalcula la huella y **rebota si cambió**.
+
+   Es la misma garantía —nunca se congela un número distinto del que se miró—, sin duplicar la
+   regla.
+2. **La causa vive en `causas_de_clase`, no en `clases`** (§7.3 la ponía en `clases`). `clases` es
+   pública entera desde 20260904120000 (`using (true)`), y un detalle como "la profe estaba
+   enferma" no puede quedar a la vista de cualquiera. `causas_de_clase` la leen solo admin y owner.
+   El reemplazo, por lo mismo, queda en `reasignaciones_de_clase` y no en columnas de `clases`.
+3. **No hay `check` que obligue la causa al cancelar.** El borrador lo pedía, con el backfill de
+   todas las canceladas.
+   - Sin leer producción no se pueden clasificar las que ya existen.
+   - Un `check` nuevo rompería cualquier flujo que hoy cancela sin causa.
+
+   En cambio, **la liquidación no se puede pagar** mientras haya una cancelada o no dictada sin causa
+   (`textoDeBloqueo`, y `pagar_liquidacion` lo vuelve a comprobar). El efecto que importa —no pagar
+   sin clasificar— es el mismo.
+4. **`registrar_no_dictada` también clasifica canceladas.** Una cancelación también decide si se
+   paga, así que la misma función le pone causa a una `cancelada` sin cambiarle el estado.
+5. **`metricas_resumen` no se tocó.** La migración de PRD-0024 (20261105130000) también la
+   redefine, y la que se aplique última ganaría. Solo usa "dictada" para `ultima_clase_at`.
+   `metricas_finanzas` y `metricas_demanda` sí pasan a `estado = 'programada'`.
+6. **`hoy_santiago()`**: una sola fuente para "¿terminó el mes?" y para la fecha del egreso. Permite
+   probar el pago de un mes cerrado sin esperar a que se cierre.
+7. **La clase de Pau del 03/11 queda clasificada** en la misma migración como
+   `asistencia_insuficiente`, con la fecha de su cancelación (después de la hora). En una base sin
+   esa clase no hace nada.
+
+**Lo que no se puede saber sin producción**, y conviene correr en solo lectura antes de aplicar:
+cuántas clases de parrilla de noviembre están `cancelada` sin causa. Esas bloquean el pago de su
+profesora hasta que alguien las clasifique.
+
 ## 13. Preguntas para Felipe — contestadas el 04/11/2026
 
 Las respuestas salen de `CONTEXT.md` §5.b ("Las cinco decisiones que destraban la liquidación" e
