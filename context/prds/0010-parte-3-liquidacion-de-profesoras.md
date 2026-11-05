@@ -669,7 +669,7 @@ Más una tercera, P3, **sin fila en `costos_profesoras`**: "Sin costo cargado", 
 |---|---|---|---|
 | A | §13 contestado desde `CONTEXT.md`; §6.5 incentivo y §6.6 causas | ✅ | `03a30ed` |
 | B | ADR-0008: la profesora ve su liquidación | ✅ | `1c442c9` |
-| C | `lib/dominio/liquidacion.ts`, **38 tests**, prueba de mutación | ✅ | `1ac78c7` |
+| C | `lib/dominio/liquidacion.ts`, **43 tests** (38 + 5 bordes agregados al final), prueba de mutación | ✅ | `1ac78c7` y el siguiente |
 | D | Migración `20261105140000_liquidacion_profesoras.sql`: escrita, `--dry-run` contra producción lista **solo esa**, **sin aplicar**. Escenario en base local: **29 de 29** | ✅ | ver el log de la rama |
 | E | `/owner/liquidaciones`, "Mi liquidación" en el portal, el Route Handler del comprobante | ⏸ No empezado, a propósito | — |
 | — | Aviso de diferencia y ajustes (§8.6) | ⏸ Fase 7, como estaba | — |

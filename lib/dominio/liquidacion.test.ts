@@ -408,3 +408,51 @@ test("el mes termina a medianoche de Santiago, no de UTC", () => {
   assert.equal(mesTerminado("2026-11", new Date("2026-11-30T23:30:00-03:00")), false);
   assert.equal(mesTerminado("2026-11", new Date("2026-12-01T00:30:00-03:00")), true);
 });
+
+// ---------------------------------------------------------------------------
+// Bordes que se agregaron al final de la noche
+// ---------------------------------------------------------------------------
+
+test("sin_alumnas cancelada el mismo día y no recuperada: la base (organizó su día en torno a esa clase)", () => {
+  const c = clase("2026-11-12", { estado: "cancelada", causa: "sin_alumnas", causaRegistradaAt: "2026-11-12T10:00:00-03:00" });
+  assert.equal(lineaDeClase(c, T, DIC_1).totalClp, 18_000);
+});
+
+test("sin_alumnas cancelada con anticipación: $0, y lo explica", () => {
+  const c = clase("2026-11-12", { estado: "cancelada", causa: "sin_alumnas", causaRegistradaAt: "2026-11-10T10:00:00-03:00" });
+  const l = lineaDeClase(c, T, DIC_1);
+  assert.equal(l.totalClp, 0);
+  assert.match(l.explicacion, /con anticipación/);
+});
+
+test("una especial no suma al promedio ni al piso del incentivo", () => {
+  const r = liquidar({
+    profesoraId: P1, mes: "2026-11", tarifa: T, ahora: DIC_1,
+    clases: [
+      clase("2026-11-03", { creditosConsumidos: 20 }),
+      clase("2026-11-10", { creditosConsumidos: 20 }),
+      clase("2026-11-17", { creditosConsumidos: 20 }),
+      clase("2026-11-24", { tipo: "especial", creditosConsumidos: 30 }),
+    ],
+  });
+  assert.equal(r.incentivos[0].dictadas, 3);
+  assert.equal(r.incentivoClp, 0);
+  assert.equal(r.especiales, 1);
+});
+
+test("una futura del mes no cuenta para el piso: el incentivo se decide con el mes cerrado", () => {
+  const r = liquidar({
+    profesoraId: P1, mes: "2026-11", tarifa: T, ahora: new Date("2026-11-20T12:00:00-03:00"),
+    clases: ["03", "10", "17", "24"].map((d) => clase(`2026-11-${d}`, { creditosConsumidos: 22 })),
+  });
+  assert.equal(r.incentivos[0].dictadas, 3);
+  assert.equal(r.incentivoClp, 0);
+  assert.ok(r.bloqueos.some((b) => b.tipo === "mes_en_curso"));
+});
+
+test("cambiar la causa no mueve la fecha de registro: la anticipación se mide con la primera", () => {
+  // La base conserva registrada_at al cambiar la causa (registrar_no_dictada);
+  // acá se fija que la regla depende de esa fecha y no de la de hoy.
+  const temprano = clase("2026-11-12", { estado: "cancelada", causa: "asistencia_insuficiente", causaRegistradaAt: "2026-11-11T09:00:00-03:00" });
+  assert.equal(canceladaConAnticipacion(temprano), true);
+});
