@@ -2,16 +2,31 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | **Borrador** (20/10/2026). Sin SQL ni código hasta que Felipe cierre las preguntas de §13 |
+| **Estado** | **En desarrollo** (05/11/2026). Las siete preguntas de §13 están contestadas (Felipe, 04/11/2026, en `CONTEXT.md` §5.b). Pasos A–D en la rama `prd-0010-parte-3-liquidacion`: §13 cerrado, ADR-0008, funciones puras con tests y migración escrita **sin aplicar**. El portal (paso E) no está empezado. Ver §12.3 |
 | **Autor** | Claude, a pedido de Felipe |
 | **Fecha** | 20 de octubre de 2026 |
 | **Hito** | Hito 5 |
-| **Plazo duro** | **1 de noviembre de 2026**: se le paga a las cinco profesoras por octubre, que es el primer mes que vive entero en el sistema (`CONTEXT.md` §5.b, "Puesta en marcha") |
+| **Plazo** | ~~1 de noviembre, por octubre~~. **La liquidación arranca el 1 de noviembre de 2026** (Felipe, 04/11): octubre se pagó a mano, está cerrado fuera del sistema y **no se carga**. El primer mes liquidable es noviembre, que se paga a comienzos de diciembre |
 | **PRDs relacionados** | PRD-0010 §3.10–12, §7.1, §8.5 y §17 · PRD-0008 (portal de profesora) · PRD-0018 (especiales) · PRD-0021 · PRD-0023 (regalos) |
 
 > **De dónde sale.** PRD-0010 §3 enunció la parte 3 en tres líneas y §8.5 dejó escritas las reglas
 > de pago del 07–08/09/2026. Este documento la desarrolla. Donde §8.5 sigue valiendo se cita y no
 > se repite; donde los datos reales la contradicen, se dice y se pregunta (§13).
+>
+> ✅ **Actualizado el 05/11/2026 con las respuestas de Felipe del 04/11.** La fuente es
+> `CONTEXT.md` §5.b: "Incentivo por promedio — regla del 04/11/2026, en dos tramos" y "Las cinco
+> decisiones que destraban la liquidación". **Esas secciones viven hoy en la rama
+> `pedidos-de-uso` y no en `main`.** Donde este PRD y esas secciones digan cosas distintas, mandan
+> ellas. Los cambios de fondo respecto del borrador del 20/10:
+>
+> - **Se arranca en noviembre, no en octubre.** Nada intenta importar octubre.
+> - **El variable tiene umbral**: `máx(0, créditos − 5) × $250`, por clase (Felipe, 21/10). §6.1
+>   decía $250 por cada crédito.
+> - **Las causas son cinco**: `sala_no_disponible`, `cambio_de_parrilla`, `ausencia_profesora`,
+>   `sin_alumnas` y `asistencia_insuficiente`. §7.2 proponía tres.
+> - **Una clase recuperada se paga una sola vez, en la recuperación** (Felipe, 03/11).
+> - **Hay un incentivo por promedio**, en dos tramos que se suman (§6.5), que el borrador no tenía.
+> - **La profesora ve su liquidación**: ADR-0008, que reemplaza la regla 4 de PRD-0008.
 
 ---
 
@@ -147,8 +162,12 @@ el comprobante (§9).
 De `CONTEXT.md` §5.b y PRD-0010 §8.5, sin agregar nada:
 
 - **Base: $18.000 por hora** de clase.
-- **Variable: $250 por crédito consumido y no devuelto** en esa clase. Una reserva con crédito y
-  `credito_devuelto = false`, fuera de `pendiente_pago`, `expirada` y `liberada`. Es **el mismo
+- **Variable: $250 por crédito consumido y no devuelto, a partir del sexto** (Felipe, 21/10/2026):
+  `máx(0, créditos − 5) × $250`, clase por clase, sin prorratear ni arrastrar. 15 alumnas son
+  $2.500. Créditos consumidos son **reservas** con crédito y Una reserva con crédito y
+  `credito_devuelto = false`, fuera de `pendiente_pago`, `expirada` y `liberada`. ⚠️ **El umbral
+  todavía no está en `costoClase()` de `lib/dominio/finanzas.ts`**, que calcula el margen de
+  `/owner/finanzas`: hoy ese margen cobra $250 por cada crédito. Es **el mismo
   predicado** que atribuye ingreso (§7.1.3) y que ya usa `metricas_finanzas` (§17.4.3): se reutiliza,
   no se reescribe.
 - **El crédito regalado se paga igual** (Felipe, 04/10/2026).
@@ -201,6 +220,70 @@ puede calcular.**
 No se resuelve poniéndole $0: la liquidación muestra *"Sin costo cargado"*, sin botón, igual que
 `/owner/finanzas` muestra "sin costo cargado" en el margen. La migración de esta parte le agrega la
 fila con la regla general —$18.000 y $250— **si Felipe confirma que es su tarifa** (pregunta 3).
+
+### 6.5 El incentivo por promedio (Felipe, 04/11/2026)
+
+De `CONTEXT.md` §5.b, "Incentivo por promedio — regla del 04/11/2026, en dos tramos". Es la tercera
+versión en tres días, y **reemplaza a las dos anteriores**.
+
+| Promedio de las 4 mejores clases del mes, por curso | Incentivo |
+|---|---|
+| **≥ 14** | **$7.500** |
+| **≥ 22** | **$7.500 más: $15.000 en total** |
+
+1. **Las 4 mejores del mes, no las 4 últimas.** Con 5 clases en el mes se descarta la peor.
+2. **Mes calendario**, en `America/Santiago`. No cruza meses.
+3. **Por curso.** Una profesora con dos cursos tiene dos promedios **y puede ganar en los dos**.
+4. **Solo cuentan las dictadas.** Una no dictada no entra como cero.
+5. **Los tramos se suman.** El 22 exacto cobra los dos.
+6. **Con menos de 4 dictadas en el mes, no hay incentivo**, salvo que recupere una y llegue a cuatro.
+   La recuperación es una clase dictada más del mes en que se dicta.
+
+**Lo que tuve que leer yo**, porque la regla no lo dice (§12.3):
+
+- **"Alumnas" de una clase = créditos consumidos en ella**, el mismo número del variable. No hay
+  registro de asistencia, y es el único conteo que ya existe.
+- **El promedio se compara sin decimales**: suma de las 4 mejores ≥ 14 × 4 = 56. Así 13,75 no
+  llega y 14,00 sí, sin redondeos.
+- **La clase cuenta para quien la dictó** (`clases.profesora_id`), como el pago. Un reemplazo
+  suma al promedio de la reemplazante en ese curso, no al de la titular.
+- **Las especiales no entran**: se pagan con otra regla (§4.1).
+
+⏸ **No implementado, a propósito:**
+
+- **Promediar con 3 cuando las clases no se dictaron por decisión de la academia.** Felipe lo nombró
+  como posibilidad, no como regla, y `CONTEXT.md` dice que el PRD lo pregunte antes de
+  implementarlo. Queda en §13 como pregunta nueva.
+- **El tramo más alto para Studio 98 y el incentivo por 100% de ocupación.** Están nombrados y no
+  decididos.
+- ⚠️ **El tramo de 22 es inalcanzable en Los Leones**, que tiene 16 lugares, y en Diaguitas pide el
+  100%. `CONTEXT.md` lo marca como **sin resolver**: un umbral relativo a la capacidad
+  probablemente corresponda. El código sigue la regla vigente y no lo corrige.
+
+### 6.6 Las clases que no se dictaron, y su recuperación
+
+De "Las cinco decisiones…", punto 1, y de la regla del 03/11:
+
+| Causa | Si **no** se recupera | Si se recupera |
+|---|---|---|
+| `sala_no_disponible` | **Base**, sin variable: ella fue, el problema fue de XO | **Nada en la original**: se paga una sola vez, en la recuperación |
+| `cambio_de_parrilla` | **Nada**: esa clase nunca estuvo en su semana | Nada en la original |
+| `ausencia_profesora` | **Nada** | Nada en la original |
+| `sin_alumnas` | **Base**, salvo que se haya **cancelado con anticipación** (ver abajo) | Nada en la original |
+| `asistencia_insuficiente` | Igual que `sin_alumnas` | Nada en la original |
+
+- **La recuperación se paga como cualquier clase dictada**: base más variable, en el mes en que se
+  dicta. Así ni el sueldo ni la sala se pagan dos veces.
+- **"Recuperada"** quiere decir que existe una clase marcada como su recuperación
+  (`clases.recupera_clase_id`) que no está cancelada ni no dictada.
+- **"Cancelar temprano ahorra la sala y el sueldo, cancelar el mismo día no"**: es la frase con que
+  Felipe explicó la regla. La traduje así (§12.3): para `sin_alumnas` y `asistencia_insuficiente`,
+  si la clase se **canceló antes del día de la clase** en `America/Santiago`, no se paga. Si se
+  canceló el mismo día o después, o quedó `no_dictada`, se paga la base. Para las otras tres causas
+  la anticipación no cambia nada.
+- **El caso del 03/11**: la Reggaeton Femme de Pau en Los Leones queda `asistencia_insuficiente`.
+  Se canceló después de la hora y se va a recuperar, así que no paga en noviembre y se paga la
+  recuperación. Si no se recuperara, paga la base.
 
 ## 7. El estado `no_dictada` y su causa
 
@@ -580,28 +663,42 @@ Más una tercera, P3, **sin fila en `costos_profesoras`**: "Sin costo cargado", 
 | 6 | Portal de la profesora (§9) | No: puede entrar después del primer pago |
 | 7 | Aviso de diferencia y ajustes (§8.6) | No: no pueden hacer falta antes de noviembre |
 
-## 13. Preguntas abiertas para Felipe
+## 13. Preguntas para Felipe — contestadas el 04/11/2026
 
-1. **¿Una clase de parrilla sin ninguna reserva se paga?** Hoy, por §8.5.e y §8.5.a, se presume
-   dictada y paga $18.000 de base. Si la profesora fue y no llegó nadie, probablemente sí. Si nadie
-   reservó y ella no fue, no. **El sistema no puede distinguir esos dos casos**, porque no hay
-   asistencia. Opciones: (a) se paga siempre, (b) no se paga nunca, (c) se paga salvo que alguien
-   la marque no dictada con una causa `sin_alumnas` que no paga. Es la pregunta más cara: la
-   consulta de §7.6 dice cuántas hubo en octubre.
-2. **¿Se paga la base cuando XO cancela por reorganizar la parrilla?** La regla dice que una causa
-   de XO paga la base. Propongo distinguir `sala_no_disponible` (paga) de `cambio_de_parrilla` (no
-   paga), por el caso de Teens. ¿De acuerdo? Y, aunque no haya ningún caso en el repo, ¿dejo
-   `ausencia_profesora` para que la regla de "causa suya, nada" se pueda expresar?
-3. **¿La tarifa de Isi es la general, $18.000 la hora y $250 por crédito?** Sin esa confirmación su
-   fila queda sin costo y no se le puede pagar octubre desde el sistema.
-4. **"Al apretar Pagado, la vista pasa al mes siguiente": ¿para esa profesora o para el mes?** Si
-   la página entera saltara a noviembre al pagarle a la primera, las otras cuatro de octubre quedarían
-   fuera de vista. Propongo: la página muestra el **mes más antiguo con algo pendiente**; la
-   profesora pagada sale de esa lista, y **cuando se paga la última, pasa sola al mes siguiente**.
-5. **¿La profesora ve su liquidación?** Contradice la regla 4 de PRD-0008 ("no ve ningún monto").
-   Propongo que sí, solo la suya y con lo de §9.2, incluido el mes en curso. Si se aprueba, la regla
-   4 de PRD-0008 se reescribe como "no ve ningún monto **que no sea el suyo**", con un ADR.
-6. **¿Hubo clases especiales en octubre?** Si las hubo, se pagan a mano ese mes (§4.1) y conviene
-   saber cuántas para que el aviso de la liquidación no sorprenda.
-7. **¿Se les paga contra boleta de honorarios?** Si hay retención, "lo que se transfiere" y "lo que
-   se le debe" no son el mismo número, y esta liquidación registra el primero. Cambia qué se congela.
+Las respuestas salen de `CONTEXT.md` §5.b ("Las cinco decisiones que destraban la liquidación" e
+"Incentivo por promedio… en dos tramos"). **No las reconstruí de este PRD ni de la conversación.**
+
+1. **¿Una clase de parrilla sin reservas se paga?** ✅ **Sí, la base**, como dictada, salvo que se
+   marque no dictada.
+   - Si se marca `sin_alumnas`, sigue la regla de la recuperación: si se recupera, se paga una sola
+     vez en la recuperación; si no, la base.
+   - Razón de Felipe: *"ella organizó su día en torno a esa clase y traer alumnas es trabajo de
+     XO"*. Es la opción (c) con un matiz: `sin_alumnas` no recuperada **sí** paga la base. §6.6.
+2. **¿Se paga la base cuando XO reorganiza la parrilla?** ✅ **No.**
+   - `cambio_de_parrilla` no paga: esa clase nunca estuvo en su semana.
+   - `sala_no_disponible` paga la base. `ausencia_profesora` queda y no paga.
+   - Se suman `sin_alumnas` y `asistencia_insuficiente`. **Cinco valores**, y se agregan más si
+     aparecen casos que no calcen.
+3. **¿La tarifa de Isi es la general?** ✅ **Sí**: $18.000 la hora y $250 por crédito. La
+   migración le agrega su fila a `costos_profesoras`.
+4. **¿"Pasa al mes siguiente" es por profesora o por mes?** ⚠️ **No encontré la respuesta en
+   `CONTEXT.md`.** Tomé la propuesta: la página muestra el mes más antiguo con algo pendiente, la
+   profesora pagada sale de esa lista, y cuando se paga la última pasa sola al mes siguiente. Es
+   pantalla (paso E), no cambia el modelo.
+5. **¿La profesora ve su liquidación?** ✅ **Sí, solo la suya.** La regla 4 de PRD-0008 se reescribe
+   como "ningún monto que no sea el suyo": **ADR-0008**. Sigue valiendo sin excepción: **nunca
+   datos de contacto de una alumna**.
+6. **¿Hubo especiales en octubre?** ✅ **Ya no importa**: octubre se pagó a mano y no se carga. Las
+   especiales siguen fuera de alcance (§4.1); la liquidación de noviembre dice cuántas hubo para
+   pagarlas aparte.
+7. **¿Boleta de honorarios?** ✅ **Pendiente a propósito**, hasta el Inicio de Actividades. Mientras
+   tanto **el sistema registra lo que se transfiere**. Lo tributario va a un PRD aparte, no acá.
+
+**Y una que se suma, del incentivo:**
+
+8. 🔴 **¿Se promedia con 3 cuando las clases no se dictaron por decisión de la academia?** Felipe
+   lo nombró como posibilidad, no como regla. **No está implementado**: con menos de 4 dictadas no
+   hay incentivo, sin excepción. Si se aprueba, son una condición y un test en `incentivoDeCurso()`.
+
+**Lo que quedó sin decidir y no bloquea:** el tramo alto para Studio 98, el incentivo por 100% de
+ocupación y el umbral relativo a la capacidad (§6.5).
