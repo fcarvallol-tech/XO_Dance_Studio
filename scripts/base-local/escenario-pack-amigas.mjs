@@ -17,7 +17,7 @@ const declarar = (quien, correo, monto = 16000) => servidor(db, (tx) =>
   uno(tx, "select public.declarar_pack_amigas($1, 'pack-amigas', $2, $3, null, null) as r",
     [quien.userId, monto, correo]));
 const acreditar = (compraId) => servidor(db, (tx) =>
-  uno(tx, "select (public.acreditar_compra($1, $2, null)).*", [compraId, admin.userId]));
+  uno(tx, "select * from public.acreditar_compra($1, $2, null)", [compraId, admin.userId]));
 
 console.log("\n1. El plan");
 await paso("pack-amigas: 2 clases, $16.000, 30 días, activo, 1 para la amiga", async () => {
