@@ -560,3 +560,123 @@ migraciones en staging.
    `/owner/finanzas` hoy la cobra.
 4. **Una recuperativa a una hora rara se dibuja corrida** hasta mergear
    `grilla-filas-de-cinco-minutos`. Es la condición que pusiste para sacarla.
+
+---
+
+## Staging y correcciones del 06/11
+
+**Nada a producción.** Nada se mergeó a `main`. El CLI quedó enlazado a **staging**
+(`ybopuahlzbjkkwumkllk`, `xo-dance-studio-staging`). `.env.local` también apunta a staging.
+
+| Parte | Qué cambió | Rama | Commit |
+|---|---|---|---|
+| 2 · Bandera | `profesora_se_presento` solo cambia el pago en `sala_no_disponible` | `prd-0010-parte-3-liquidacion` | `0f94f3f` |
+| 3 · Documentos | CONTEXT, ROADMAP y PRD-0010 | `documentos-06-11` | `e885190`, `6aeaa04` |
+| 4 · PRD-0027 | Selector de categoría y "otra sala" | `prd-0027-clase-recuperativa` | `3edcd64`, `d8720d3` |
+| 5 · Integración | Las cuatro ramas juntas, solo para staging | `staging-06-11` | `3db1757` |
+
+**Liquidación:** 44 tests. Comprobé que los dos tests nuevos fallan con la regla vieja. El escenario
+pasó a 37 de 37, y los montos no cambian: **Pau $124.500 y Drimy $18.750**, porque la única clase con
+el campo prendido era de sala. La clase de Pau del 3/11 queda apagada.
+
+**`/owner/finanzas` está del lado correcto, y no se tocó código.** Costea las clases dictadas por
+`sedes.costo_hora_clp`: una cancelada no suma sala y la recuperación sí.
+
+**`documentos-06-11` no está en `main`:** un merge a `main` publica, y dijiste nada a producción.
+`CONTEXT.md` en `main` sigue con la frase vieja hasta que lo apruebes.
+
+### Lo que se aplicó a staging, en orden
+
+Todos los `--dry-run` coincidieron con lo esperado. Las ramas de revocar y pack necesitaron
+`--include-all`, porque sus timestamps son anteriores a lo ya aplicado. **Ninguna función se redefine
+en dos migraciones**, así que el orden no cambia el resultado. `migration list`: 45, ninguna pendiente.
+
+| Desde | `--dry-run` y lo aplicado |
+|---|---|
+| `main` (`c9a28fe`) | `20261103210000_clase_pau_3_nov_no_dictada` · `20261103211000_capacidad_los_leones_16` · `20261104120000_fin_preventa_noviembre` |
+| `staging-06-11` (`0b6abb4`), liquidación | `20261105140000_liquidacion_profesoras` |
+| `staging-06-11` (`81dcd79`), recuperativa | `20261105150000_clase_recuperativa` · `20261106120000_salas_ocasionales` |
+| `staging-06-11` (`b1cbf10`), revocar | `20261105130000_revocar_creditos` |
+| `staging-06-11` (`e0245e6`), pack | `20261105120000_pack_de_amigas` |
+
+**La clase de Pau del 3/11: no-op en staging por diferencia de datos.** Ahí no tenía reservas
+confirmadas. La clase quedó cancelada, y su única reserva, ya cancelada antes, no se movió: el lote
+siguió en 4 y los movimientos en 2.
+
+### Devolver créditos, por el camino real
+
+`scripts/verificar-devolucion-navegador.mjs`. Dos alumnas inventadas recibieron créditos con
+`regalar_creditos`, completaron su perfil y reservaron desde la página la Reggaeton Femme del 12/11,
+19:30. La clase se canceló con el mismo `update` de la clase de Pau.
+
+Los dos créditos volvieron a su lote original, vigentes, con el libro igual a los lotes y el motivo
+"La academia canceló la clase".
+
+### Lo que abrí y lo que vi
+
+| Pantalla | Qué vi |
+|---|---|
+| **Pack de amigas** | ✅ El aviso se ve en `/comprar` y en el plan. Con un correo sin cuenta no deja seguir ni muestra a dónde transferir. Con uno que existe, sí. Al aprobar: dos lotes con el mismo `compra_id`, uno por cuenta, y dos movimientos `compra` |
+| **Revocar** | ✅ Más de lo que hay: el botón no se habilita y la base rechaza. Menos (1 de 4) y exacto (3 de 3): bajan, y el libro cuadra. Owner ve el botón y admin no |
+| **Anular con créditos vivos** | ✅ Rechaza: "Esta compra todavía tiene 2 clases sin usar en sus lotes". ⚠️ **No hay botón de anular**: lo probé con el `update` a mano que usas hoy |
+| **Liquidación** | ⚠️ **No se pudo abrir: no hay pantalla**, porque el paso E no se construyó. Corrí `liquidar()` con los insumos de staging y sesión de owner. La del 3/11 paga $0 con "se paga una sola vez, en la recuperación", y las recuperativas cuentan como dictadas. La base no tiene las clases del escenario, así que **los montos del escenario solo se comprobaron en la base local** |
+| **Recuperativa, sala existente** | ✅ Sin campos de marketing. El choque del mismo día sale en palabras y no crea nada. Queda `parrilla`, mismo `horario_id`, ligada, sin título ni slug, cupo 22 |
+| **Recuperativa, "otra sala"** | ✅ Sin capacidad no deja guardar. "Barros Borgoño 71 of. 101" ofreció Studio 98. Sala nueva de 12: cupo 12 |
+| **Calendario y `/nosotros`** | ✅ Salen con el nombre del curso, sin "recuperativa" y sin costo. La sala arrendada no sale en `/nosotros` |
+| **Correo** | ⚠️ Quedaron las dos filas en la cola, solo para las dos afectadas. Ver el hallazgo 4 |
+| **Reservar** | ✅ Una afectada y otra alumna reservaron la clase: cupo por orden de llegada. Entré directo a `/reservar/<id>`, no desde un correo real |
+| **`/owner/finanzas`** | ✅ Abre con las cuatro ramas |
+
+### Lo que ve cada rol
+
+`scripts/verificar-roles-06-11.mjs`, con la sesión de cada una, en una transacción revertida. Staging
+no tiene perfil de profesora: lo convertí dentro de esa transacción.
+
+- **Nadie con sesión lee `sedes.costo_hora_clp`**, ni owner. La API con `anon` responde 401.
+- **Causas:** alumna y profesora, 0 filas. Admin y owner, 1. `anon`, sin permiso.
+- **Costos y egresos:** solo owner. **Insumos y huellas:** solo owner. **`mis_insumos_liquidacion`:**
+  solo las clases de la profesora.
+- **La amiga** ve su lote y no la compra.
+- **Ninguna sesión ejecuta** `crear_recuperativa`, `crear_sala_ocasional`, `afectadas_de_clases`,
+  `revocar_creditos`, `registrar_no_dictada` ni `direccion_comparable`.
+- `buscar_invitada` la pregunté con la firma equivocada, así que esa fila de la tabla no vale. Sus
+  grants los leí en la migración: solo `service_role`. **No lo pregunté con sesión.**
+
+### Qué falló
+
+Nada de esto se arregló.
+
+1. 🔴 **El costo al lado del precio no aparece en una recuperativa (4.5.d).** Las 132 clases de
+   parrilla de staging tienen `fin` nulo, así que no hay duración con qué calcularlo. Error mío del
+   06/11: lo supuse sin mirar los datos. En la especial sí debería aparecer: **eso no lo abrí**.
+2. 🔴 **La liquidación no tiene pantalla** y el pago del 1/12 la necesita.
+3. **Una hora rara se dibuja corrida**, comprobado: la de las 14:50 sale en la fila de las 15:00, con
+   el texto correcto. Sale arreglado con `grilla-filas-de-cinco-minutos`, que no mergeé.
+4. **El correo no se probó de punta a punta.** Las cuentas `.invalid` quedan `descartado` en la cola,
+   sin pasar por Resend, y la pantalla dice "Salieron 0 de 2; el resto se reintenta", que para ellas
+   no es cierto.
+5. **Publicar el código antes que las migraciones rompe el build:** `/nosotros` y
+   `/profesoras/[slug]` filtran por `sedes.ocasional`. Lo vi en el build de la rama antes de aplicar
+   a staging. Los previews de Vercel de `prd-0027-clase-recuperativa` pueden fallar por lo mismo.
+6. **"Por recuperar" trae cancelaciones de cambios de horario**, sin causa: 4 en staging. Hasta
+   clasificarlas se ofrecen, y en producción van a ser más.
+7. **La sala ocasional se lee por la API:** nombre y dirección, no el costo. Es necesario para decir
+   dónde es la clase, pero conviene que lo sepas. También sale en "Dónde es cada clase" aunque la
+   clase sea de otra semana.
+8. **Dos conflictos al integrar:** `app/(admin)/admin/page.tsx` y `lib/acciones.ts`, resueltos solo en
+   `staging-06-11`. Van a volver al mergear a `main`.
+9. **Sin explicar:** una recarga de `/admin` no llegó a `networkidle` en 30 segundos, una vez. No lo
+   investigué.
+
+### Lo que quedó en staging
+
+Dos alumnas inventadas (`alumna.uno` y `alumna.dos@ejemplo.invalid`), la Reggaeton Femme del 12/11
+cancelada, dos recuperativas (18/11 15:00 y 21/11 14:50), "Sala de prueba", una compra del pack de
+amigas de `ana` y `bea`, dos reservas en la del 21/11, y `emi` con saldo 0. La del 12/11 quedó sin
+causa, así que la liquidación de Pau en staging aparece bloqueada por eso.
+
+### Para decidir
+
+1. **¿Mergeo `documentos-06-11` a `main`?** Son solo documentos, pero publica.
+2. **¿Cómo se resuelve la duración de la parrilla?** Una hora fija por defecto, o llenar `fin`.
+3. **¿Empiezo el paso E de la liquidación?** Es lo que queda en el camino del 1/12.
