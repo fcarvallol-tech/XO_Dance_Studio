@@ -2,7 +2,7 @@
 // comparación por dirección, que no se liste como sede y que el costo no salga.
 // node scripts/base-local/escenario-salas.mjs   (ver base.mjs para instalar PGlite)
 import { base } from "./base.mjs";
-import { paso, resumen, assert, persona, como, servidor, falla, uno, filas } from "./util.mjs";
+import { paso, resumen, assert, persona, como, servidor, falla, uno } from "./util.mjs";
 
 const db = await base();
 const owner = await persona(db, "owner@xo.test", "Felipe", "owner");
