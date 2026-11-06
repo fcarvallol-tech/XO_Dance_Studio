@@ -164,7 +164,7 @@ lugares, el margen depende de cuál lea cada pantalla: es la incoherencia que ob
 | `getCatalogoCompleto` → admin | **No**: mismo filtro |
 | `getOpcionesEspecial` → el selector de sala de esta pantalla | **Sí**, marcada "(arrendada)": es como se reutiliza y se evita duplicarla |
 | `finanzas-consultas` → el formulario de egresos | **Sí**, a propósito: el arriendo es un egreso de esa sala. Solo admin y owner |
-| `/calendario`, "Dónde es cada clase" | **Sí, solo mientras tenga una clase**: sale de las clases de la semana, y quien reserva necesita saber dónde es |
+| `/calendario`, "Dónde es cada clase" | **Sí, mientras tenga una clase en lo que trae el calendario**, no solo en la semana a la vista: comprobado en staging. Quien reserva necesita saber dónde es |
 
 ⚠️ **Eso significa que la fila de una ocasional es pública por la API**: nombre y dirección, igual que
 la dirección de la clase en el calendario. RLS no la filtra, porque la clase necesita leerla. Lo
@@ -253,9 +253,22 @@ alumnas del 3/11 tengan fecha antes de que venza su crédito, el 03/12.
 | 5 | `nombreDeLaClase` en el portal de la profesora. **`tituloDeClase()` y "· Recuperativa" en los calendarios de la alumna salieron el 06/11**: contradecían §3.7 | ✅ |
 | 6 | Selector de categoría en `/admin/especiales/nueva`: `categorias-clase.ts`, `FormularioClase`, `FormularioRecuperativa` | ✅ Compila · ⏳ sin abrir |
 | 7 | "Otra sala": migración `20261106120000_salas_ocasionales.sql`, `SelectorSala`, escenario 19 de 19 | ✅ Escrita · **sin aplicar en producción** |
-| 8 | Prueba desde la página en staging | ⏳ Necesita las migraciones |
+| 8 | Prueba desde la página en staging, 06/11 | ✅ con los hallazgos de §12.1 |
 
 **Lo que encontró el escenario:** `v_viva is not null` sobre una fila es verdadero solo si **todas**
 sus columnas están llenas, y una clase de parrilla tiene `titulo` nulo. La revisión de "ya tiene
 recuperativa" no se disparaba nunca y lo frenaba el índice, con un mensaje sin la fecha. Quedó
 `v_viva.id is not null`.
+
+### 12.1 Hallazgos de staging, 06/11/2026 (sin arreglar, a propósito)
+
+- 🔴 **El costo al lado del precio no aparece en una recuperativa.** Las 132 clases de parrilla de
+  staging tienen `fin` nulo, así que `duracionMin` llega `null` y la decisión §7.5.d no se cumple
+  ahí. En la especial sí aparece. También significa que "dura lo que duraba la original" hoy es un
+  `fin` nulo.
+- **Una hora rara se dibuja corrida**, comprobado: la de las 14:50 sale en la fila de las 15:00, con
+  el texto correcto. Se arregla con `grilla-filas-de-cinco-minutos`.
+- **"Por recuperar" trae cancelaciones de cambios de horario**, sin causa, hasta que alguien las
+  clasifique como `cambio_de_parrilla`.
+- **El correo no se probó de punta a punta:** las cuentas de prueba son `.invalid` y la cola las deja
+  `descartado`, y la pantalla dice "se reintenta", que para ellas no es cierto.
