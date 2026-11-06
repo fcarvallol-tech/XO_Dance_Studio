@@ -1,8 +1,25 @@
 # ROADMAP.md — XO Dance Studio
 
 > Qué se construye, en qué orden y por qué.
-> Última actualización: **5 de noviembre de 2026**.
+> Última actualización: **6 de noviembre de 2026**.
 > ⚠️ Replanificado tras el cambio a modelo de paquetes y reservas.
+
+---
+
+## Estado al 6 de noviembre de 2026
+
+**Último deploy:** sin cambios, `3cb80f7` del 05/11. **Nada a producción el 6/11.**
+
+| Qué | Estado |
+|---|---|
+| **Staging al día** | ✅ Las tres de `main` y las de las cuatro ramas aplicadas: 45 migraciones, ninguna pendiente. Producción sigue sin ellas |
+| **Liquidación (PRD-0010 parte 3)** | ⏸ Sin publicar. `profesora_se_presento` solo paga en `sala_no_disponible`. 🔴 **Falta el paso E: no hay pantalla**, y el plazo del 1/12 depende de ella |
+| **Recuperativa, categoría y "otra sala" (PRD-0027)** | ⏸ Sin publicar. Probado desde la página en staging. Hallazgos en su §12.1 |
+| **Revocar (PRD-0024) y pack de amigas (PRD-0026)** | ⏸ Sin publicar. Probados desde la página en staging |
+
+**Pendiente:** decidir el orden de publicación y mergear `grilla-filas-de-cinco-minutos`. Las ramas
+se integraron en `staging-06-11`, con dos conflictos resueltos ahí. Detalle en
+`context/informe-noche-05-11-2026.md`.
 
 ---
 
@@ -354,6 +371,7 @@ Modelo profesor-cliente: comisiones, rentabilidad por profesora, marca personal.
 
 | Fecha | Cambio |
 |---|---|
+| 6 nov 2026 | **Staging al día con las cuatro ramas, probadas desde la página.** Decisiones de Felipe: `profesora_se_presento` solo paga en `sala_no_disponible`, la recuperación no es opcional, la sala de la recuperación se cobra y el cupo de la recuperativa es por orden de llegada. PRD-0027 suma el selector de categoría y "otra sala". Nada a producción |
 | 5 nov 2026 | **PRD-0025 en producción: Personas se filtra por nombre o correo y dice siempre el total** (`3cb80f7`), sin migración. `pedidos-de-uso` a `main` (`ef2bb1e`), solo documentos. Falta la prueba desde la página con sesión de admin y con una alumna. Se anota el pedido 8: el umbral de 5 no está en `/owner/finanzas` |
 | 4 nov 2026 | **Preventa revertida, lote vencido descartado y ramas en orden.** (1) `20261104120000_fin_preventa_noviembre.sql` pasó de `supabase/pendientes/` a `migrations/` y se aplicó con aprobación de Felipe por nombre; el dry-run listó esa sola. Terminó sin abortar, así que los cuatro precios de lista coinciden con los que la migración comprueba. En el sitio publicado, `/comprar` y los cuatro `/comprar/<oferta>` muestran $8.500, $16.000, $28.000 y $48.000 sin tachado ni plazo; `/comprar/pack-8` siguió mostrando la preventa unos minutos pasada la medianoche, hasta que su caché de una hora se renovó. (2) **Consulta de solo lectura**, aprobada para eso y nada más, por la API de administración: las 2 reservas de la clase de Pau del 3/11 están canceladas con el crédito devuelto, y los dos lotes vencen el 03/12: **ninguno volvió vencido**. Cierra lo que el `db push` del 3/11 no mostró. (3) `pau-3-nov-y-leones-16` mergeada a `main`: hasta ahora `main` tenía dos migraciones menos que producción. De `rescate-20-octubre` se trajo **solo** `0010-parte-3-liquidacion-de-profesoras.md`; el resto choca con `main` y se queda en la rama. La CLI quedó vinculada de vuelta a staging |
 | 3 nov 2026 (noche, 2) | **Clase de Pau del 3/11 cancelada y Los Leones a 16, en producción.** Felipe aprobó por nombre `20261103210000_clase_pau_3_nov_no_dictada.sql` y `20261103211000_capacidad_los_leones_16.sql`; el dry-run listó esas dos y nada más. (1) La Reggaeton Femme de Pau de las 18:00 **no se dictó porque muchas alumnas no alcanzaron a llegar**. Se canceló después de la hora con motivo "Cancelada" a secas, como pidió Felipe —primero se había escrito una explicación—. El disparador `clases_al_cancelar` no mira la fecha, así que actúa sobre una clase pasada, pero solo devuelve las reservas `confirmada`: la migración aborta si hay alguna en `asistio`/`no_asistio` y comprueba que reservas devueltas, créditos y movimientos coincidan. **Terminó sin abortar**, y el calendario público daba 2 reservas: volvieron **2 créditos**. Probada antes en staging dentro de transacciones revertidas: 3 confirmadas sembradas, 3 lotes de 3 a 4, 3 movimientos `cancelacion`, el aviso de lote vencido, idempotencia y el aborto con `no_asistio`. ⚠️ **`supabase db push` no imprime los `NOTICE` de la migración**, así que el número exacto y el aviso de lote vencido no se vieron en producción: para la próxima, lo que haya que leer al aplicar va en una consulta aparte, no en un `raise notice`. Queda **pendiente de clasificar para el pago** en PRD-0010 parte 3 (rama `rescate-20-octubre`): Pau no faltó y esa causa no existe en el modelo. (2) **Los Leones de 18 a 16** por reclamos de sala llena, con el cupo de las clases futuras; antes se contó lo reservado en cada una (máximo 9) y la migración aborta si alguna pasa de 16. El calendario público tardó ~17 minutos en mostrarlo: la página revalida cada 10 minutos y el webhook de revalidación sigue sin existir. CONTEXT.md anota los dos cambios en dos días y corrige **Studio 98, que figuraba con 35 en cuatro lugares** cuando es 30 desde el 2/11. La CLI quedó vinculada **de vuelta a staging** |
