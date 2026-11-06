@@ -91,8 +91,9 @@ export type ClaseLiquidable = {
   estado: EstadoClase;
   causa: Causa | null;
   /**
-   * Si la profesora llegó a la clase y el viaje se perdió. Se marca al
-   * clasificarla (`causas_de_clase.profesora_se_presento`), apagado por defecto.
+   * Si la profesora llegó a la clase. Se marca al clasificarla
+   * (`causas_de_clase.profesora_se_presento`), apagado por defecto. El dato se
+   * guarda en las cinco causas, pero solo cambia el pago en `sala_no_disponible`.
    */
   profesoraSePresento: boolean;
   /** Si tiene una recuperación vigente: una clase con `recupera_clase_id` a esta, no cancelada. */
@@ -203,8 +204,12 @@ export function variableDeClase(creditos: number, tarifa: Tarifa): number {
  * Qué paga una clase que no se dictó (CONTEXT.md §5.b, decisión 1 del
  * 04/11/2026, la regla del 03/11/2026 y las correcciones del 05/11/2026):
  *
- * - **Si la profesora se presentó: la base**, por la causa que sea y aunque se
- *   haya recuperado. Lo que paga es que fue y el viaje se perdió, no la causa.
+ * - **`sala_no_disponible` y la profesora se presentó: la base**, aunque se haya
+ *   recuperado. Lo que paga el viaje perdido es que el problema fue de XO y ella
+ *   no podía saberlo. En las otras causas el campo no cambia nada: en
+ *   `sin_alumnas` y `asistencia_insuficiente` ella sí sabía que iba a dar clase,
+ *   lo que falló fue la demanda, y eso se resuelve con la recuperación
+ *   (Felipe, 06/11/2026).
  * - Si no, **recuperada, por la causa que sea: nada.** Se paga una sola vez, en
  *   la recuperación, que es una clase dictada más.
  * - Si no, sin recuperar:
@@ -220,7 +225,7 @@ export function efectoDeCausa(
   causa: Causa,
   contexto: { recuperada: boolean; profesoraSePresento: boolean },
 ): Efecto {
-  if (contexto.profesoraSePresento) return "base";
+  if (causa === "sala_no_disponible" && contexto.profesoraSePresento) return "base";
   if (contexto.recuperada) return "nada";
   switch (causa) {
     case "sala_no_disponible":
@@ -290,7 +295,8 @@ export function lineaDeClase(clase: ClaseLiquidable, tarifa: Tarifa, ahora: Date
     profesoraSePresento: clase.profesoraSePresento,
   });
   const porque = NOMBRE_CAUSA[clase.causa];
-  const explicacion = clase.profesoraSePresento
+  const viajePerdido = clase.causa === "sala_no_disponible" && clase.profesoraSePresento;
+  const explicacion = viajePerdido
     ? clase.recuperada
       ? `No se dictó (${porque}), pero la profesora se presentó: se paga la base, además de la recuperación.`
       : `No se dictó (${porque}), pero la profesora se presentó: se paga la base, sin variable.`

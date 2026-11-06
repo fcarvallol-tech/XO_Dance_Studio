@@ -129,16 +129,29 @@ test("recuperada y sin presentarse, por cualquier causa: nada en la original (se
   }
 });
 
-test("se presentó: la base en las cinco causas, sin recuperar", () => {
-  for (const causa of TODAS) {
-    assert.equal(efectoDeCausa(causa, { recuperada: false, profesoraSePresento: true }), "base", causa);
+test("se presentó, en sala_no_disponible: la base, se recupere o no", () => {
+  assert.equal(efectoDeCausa("sala_no_disponible", { recuperada: false, profesoraSePresento: true }), "base");
+  assert.equal(efectoDeCausa("sala_no_disponible", { recuperada: true, profesoraSePresento: true }), "base");
+});
+
+test("se presentó, en las otras cuatro causas: el campo no cambia el pago", () => {
+  for (const causa of TODAS.filter((c) => c !== "sala_no_disponible")) {
+    for (const recuperada of [false, true]) {
+      assert.equal(
+        efectoDeCausa(causa, { recuperada, profesoraSePresento: true }),
+        efectoDeCausa(causa, { recuperada, profesoraSePresento: false }),
+        `${causa}, recuperada: ${recuperada}`,
+      );
+    }
   }
 });
 
-test("se presentó: la base en las cinco causas, aunque se haya recuperado", () => {
-  for (const causa of TODAS) {
-    assert.equal(efectoDeCausa(causa, { recuperada: true, profesoraSePresento: true }), "base", causa);
-  }
+test("Pau del 03/11 con el campo prendido por error: sigue pagando una sola vez", () => {
+  const pau = noDictada("2026-11-03", "asistencia_insuficiente", { estado: "cancelada", recuperada: true, profesoraSePresento: true });
+  const l = lineaDeClase(pau, T, DIC_1);
+  assert.equal(l.totalClp, 0);
+  assert.match(l.explicacion, /una sola vez, en la recuperación/);
+  assert.doesNotMatch(l.explicacion, /se presentó/);
 });
 
 test("sala sin disponibilidad: decide si ella fue, no si se recuperó", () => {
@@ -153,7 +166,7 @@ test("sala sin disponibilidad: decide si ella fue, no si se recuperó", () => {
 });
 
 test("se presentó, en una de 90 minutos: la base escala con la duración y el variable sigue en cero", () => {
-  const c = noDictada("2026-11-12", "ausencia_profesora", {
+  const c = noDictada("2026-11-12", "sala_no_disponible", {
     fin: "2026-11-12T20:30:00-03:00",
     creditosConsumidos: 12,
     profesoraSePresento: true,
