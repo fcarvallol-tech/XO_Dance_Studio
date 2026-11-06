@@ -648,7 +648,8 @@ Nada de esto se arregló.
 
 1. 🔴 **El costo al lado del precio no aparece en una recuperativa (4.5.d).** Las 132 clases de
    parrilla de staging tienen `fin` nulo, así que no hay duración con qué calcularlo. Error mío del
-   06/11: lo supuse sin mirar los datos. En la especial sí debería aparecer: **eso no lo abrí**.
+   06/11: lo supuse sin mirar los datos. En la especial sí aparece: "Esta clase, de 60 minutos,
+   costaría $15.000".
 2. 🔴 **La liquidación no tiene pantalla** y el pago del 1/12 la necesita.
 3. **Una hora rara se dibuja corrida**, comprobado: la de las 14:50 sale en la fila de las 15:00, con
    el texto correcto. Sale arreglado con `grilla-filas-de-cinco-minutos`, que no mergeé.
@@ -665,7 +666,10 @@ Nada de esto se arregló.
    clase sea de otra semana.
 8. **Dos conflictos al integrar:** `app/(admin)/admin/page.tsx` y `lib/acciones.ts`, resueltos solo en
    `staging-06-11`. Van a volver al mergear a `main`.
-9. **Sin explicar:** una recarga de `/admin` no llegó a `networkidle` en 30 segundos, una vez. No lo
+9. **`/calendario` tarda hasta 10 minutos en mostrar una reserva.** Con dos reservas seguía diciendo
+   22 lugares, y pasado el plazo dijo 20. Es la caché de la página, que reservar no refresca. Ya es
+   así en `main`, y el cupo real lo valida la base.
+10. **Sin explicar:** una recarga de `/admin` no llegó a `networkidle` en 30 segundos, una vez. No lo
    investigué.
 
 ### Lo que quedó en staging
