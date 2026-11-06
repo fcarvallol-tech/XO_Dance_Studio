@@ -161,10 +161,19 @@ export async function getEspecialAdmin(id: string): Promise<Lectura<EspecialAdmi
   };
 }
 
+/** Una sala para elegir. **Sin costo**: `costo_hora_clp` no sale de la base. */
+export type SalaElegible = {
+  id: string;
+  nombre: string;
+  comuna: string;
+  capacidad: number;
+  ocasional: boolean;
+};
+
 export type OpcionesEspecial = {
   cursos: { id: string; nombre: string }[];
   profesoras: { id: string; nombre: string }[];
-  sedes: { id: string; nombre: string; comuna: string }[];
+  sedes: SalaElegible[];
   /** El valor con el que nace el formulario. `null` si nadie lo cargó. */
   precioDefault: number | null;
 };
@@ -179,7 +188,7 @@ export async function getOpcionesEspecial(): Promise<OpcionesEspecial> {
   const [cursos, profesoras, sedes, parametro] = await Promise.all([
     supabase.from("cursos").select("id, nombre, slug").eq("activo", true).order("orden"),
     supabase.from("profesoras").select("id, nombre").eq("activa", true).order("orden"),
-    supabase.from("sedes").select("id, nombre, comuna").eq("activa", true).order("orden"),
+    supabase.from("sedes").select("id, nombre, comuna, capacidad, ocasional").eq("activa", true).order("orden"),
     supabase.from("parametros").select("valor").eq("clave", "especial_precio_default_clp").maybeSingle(),
   ]);
 
@@ -190,7 +199,7 @@ export async function getOpcionesEspecial(): Promise<OpcionesEspecial> {
       .filter((c) => c.slug !== "teens")
       .map((c) => ({ id: c.id, nombre: c.nombre })),
     profesoras: (profesoras.data ?? []) as { id: string; nombre: string }[],
-    sedes: (sedes.data ?? []) as { id: string; nombre: string; comuna: string }[],
+    sedes: (sedes.data ?? []) as SalaElegible[],
     precioDefault: Number.isFinite(valor) ? valor : null,
   };
 }

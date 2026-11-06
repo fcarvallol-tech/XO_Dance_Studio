@@ -10,7 +10,8 @@ import {
 } from "@/lib/acciones";
 import { codigoDeReel } from "@/lib/dominio/especiales";
 import { clp } from "@/lib/planes";
-import type { EspecialAdmin, OpcionesEspecial } from "@/lib/especiales-admin";
+import { SelectorSala } from "@/components/SelectorSala";
+import type { EspecialAdmin, OpcionesEspecial, SalaElegible } from "@/lib/especiales-admin";
 
 /**
  * Crear y editar una clase especial.
@@ -41,6 +42,18 @@ export function FormularioEspecial({
   );
   const [subiendo, setSubiendo] = useState(false);
   const archivo = useRef<HTMLInputElement>(null);
+  const [salas, setSalas] = useState<SalaElegible[]>(opciones.sedes);
+  const [sedeId, setSedeId] = useState(especial?.sedeId ?? "");
+  const [duracion, setDuracion] = useState(String(especial?.duracionMin ?? 60));
+  // El cupo nace de la sala (PRD-0021): cambiar de sala lo vuelve a su capacidad.
+  const [cupo, setCupo] = useState(especial ? String(especial.cupoMaximo) : "");
+  const capacidad = salas.find((s) => s.id === sedeId)?.capacidad;
+
+  function elegirSala(id: string, entre: SalaElegible[] = salas) {
+    setSedeId(id);
+    const elegida = entre.find((s) => s.id === id);
+    setCupo(elegida ? String(elegida.capacidad) : "");
+  }
 
   const reelValido = reel.trim() === "" || codigoDeReel(reel) !== null;
   const precio = especial?.precioClp ?? opciones.precioDefault;
@@ -141,7 +154,7 @@ export function FormularioEspecial({
           />
         </Campo>
 
-        <div className="grid gap-6 sm:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2">
           <Campo etiqueta="Estilo" requerido>
             <select
               name="curso_id"
@@ -173,17 +186,22 @@ export function FormularioEspecial({
               ))}
             </select>
           </Campo>
+        </div>
 
-          <Campo etiqueta="Sede" requerido>
-            <select name="sede_id" required defaultValue={especial?.sedeId ?? ""} className={ENTRADA}>
-              <option value="">Elige</option>
-              {opciones.sedes.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.nombre}
-                </option>
-              ))}
-            </select>
-          </Campo>
+        <div>
+          <p className="xo-eyebrow mb-2 text-xo-gris">Sala *</p>
+          <input type="hidden" name="sede_id" value={sedeId} />
+          <SelectorSala
+            salas={salas}
+            valor={sedeId}
+            duracionMin={Number(duracion) || null}
+            onCambio={(id) => elegirSala(id)}
+            onSalaNueva={(nueva) => {
+              const todas = salas.some((s) => s.id === nueva.id) ? salas : [...salas, nueva];
+              setSalas(todas);
+              elegirSala(nueva.id, todas);
+            }}
+          />
         </div>
 
         <div className="grid gap-6 sm:grid-cols-3">
@@ -204,7 +222,8 @@ export function FormularioEspecial({
               min={30}
               max={180}
               step={15}
-              defaultValue={especial?.duracionMin ?? 60}
+              value={duracion}
+              onChange={(e) => setDuracion(e.target.value)}
               className={ENTRADA}
             />
           </Campo>
@@ -214,10 +233,14 @@ export function FormularioEspecial({
               type="number"
               name="cupo_maximo"
               min={1}
-              max={22}
-              defaultValue={especial?.cupoMaximo ?? 22}
+              max={capacidad}
+              value={cupo}
+              onChange={(e) => setCupo(e.target.value)}
               className={ENTRADA}
             />
+            <p className="mt-2 text-sm text-xo-gris">
+              {capacidad !== undefined ? `Hasta ${capacidad}, lo que mide la sala.` : "Sale de la sala."}
+            </p>
           </Campo>
         </div>
 
@@ -261,7 +284,7 @@ export function FormularioEspecial({
               type="number"
               name="minimo_alumnas"
               min={0}
-              max={22}
+              max={capacidad}
               defaultValue={especial?.minimoAlumnas ?? ""}
               className={ENTRADA}
             />
@@ -312,7 +335,7 @@ export function FormularioEspecial({
 
         <button
           type="submit"
-          disabled={enviando || !reelValido}
+          disabled={enviando || !reelValido || sedeId === ""}
           className="xo-eyebrow rounded-full bg-xo-rosa px-6 py-3.5 text-xo-negro transition-opacity hover:opacity-80 disabled:opacity-40"
         >
           {enviando ? "Guardando…" : especial ? "Guardar cambios" : "Guardar borrador"}

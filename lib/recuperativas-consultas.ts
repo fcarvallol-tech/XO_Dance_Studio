@@ -21,6 +21,8 @@ export type ClasePorRecuperar = {
   sede: string;
   sedeId: string;
   causa: Causa | null;
+  /** Lo que duraba: la recuperativa dura lo mismo. `null` si la clase no tenía fin. */
+  duracionMin: number | null;
   afectadas: number;
   conCreditoVencido: number;
 };
@@ -38,13 +40,12 @@ export type RecuperativaProgramada = {
 export type DatosRecuperativas = {
   porRecuperar: ClasePorRecuperar[];
   programadas: RecuperativaProgramada[];
-  sedes: { id: string; nombre: string; capacidad: number }[];
-  profesoras: { id: string; nombre: string }[];
 };
 
 type FilaCaida = {
   id: string;
   inicio: string;
+  fin: string | null;
   sede_id: string;
   profesora_id: string;
   cursos: { nombre: string } | null;
@@ -69,11 +70,11 @@ export async function getRecuperativas(): Promise<Lectura<DatosRecuperativas>> {
   const ahora = new Date();
   const desde = new Date(ahora.getTime() - DIAS_HACIA_ATRAS * 24 * 60 * 60 * 1000);
 
-  const [caidas, vivas, sedes, profesoras] = await Promise.all([
+  const [caidas, vivas] = await Promise.all([
     supabase
       .from("clases")
       .select(
-        "id, inicio, sede_id, profesora_id, cursos ( nombre ), profesoras ( nombre ), sedes ( nombre ), causas_de_clase ( causa, deleted_at )",
+        "id, inicio, fin, sede_id, profesora_id, cursos ( nombre ), profesoras ( nombre ), sedes ( nombre ), causas_de_clase ( causa, deleted_at )",
       )
       .eq("tipo", "parrilla")
       .in("estado", ["cancelada", "no_dictada"])
@@ -90,13 +91,10 @@ export async function getRecuperativas(): Promise<Lectura<DatosRecuperativas>> {
       .eq("estado", "programada")
       .gte("inicio", desde.toISOString())
       .order("inicio"),
-    supabase.from("sedes").select("id, nombre, capacidad").eq("activa", true).order("orden"),
-    supabase.from("profesoras").select("id, nombre").eq("activa", true).order("orden"),
   ]);
 
-  const fallo =
-    comoTexto(caidas.error) ?? comoTexto(vivas.error) ?? comoTexto(sedes.error) ?? comoTexto(profesoras.error);
-  const vacio = { porRecuperar: [], programadas: [], sedes: [], profesoras: [] };
+  const fallo = comoTexto(caidas.error) ?? comoTexto(vivas.error);
+  const vacio = { porRecuperar: [], programadas: [] };
   if (fallo) return { datos: vacio, error: fallo };
 
   const filasVivas = (vivas.data ?? []) as unknown as FilaViva[];
@@ -130,6 +128,7 @@ export async function getRecuperativas(): Promise<Lectura<DatosRecuperativas>> {
         sede: c.sedes?.nombre ?? "",
         sedeId: c.sede_id,
         causa: c.causa,
+        duracionMin: c.fin ? Math.round((new Date(c.fin).getTime() - new Date(c.inicio).getTime()) / 60000) : null,
         afectadas: porClase.get(c.id)?.length ?? 0,
         conCreditoVencido: conCreditoVencido(porClase.get(c.id) ?? [], ahora),
       })),
@@ -142,8 +141,6 @@ export async function getRecuperativas(): Promise<Lectura<DatosRecuperativas>> {
         cupoMaximo: v.cupo_maximo,
         originalInicio: v.original?.inicio ?? null,
       })),
-      sedes: (sedes.data ?? []) as DatosRecuperativas["sedes"],
-      profesoras: (profesoras.data ?? []) as DatosRecuperativas["profesoras"],
     },
     error: null,
   };

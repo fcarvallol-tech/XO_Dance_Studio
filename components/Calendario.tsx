@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { cancelarReserva, reservarClase } from "@/lib/acciones";
-import { diaLegible, lugaresLibres, tituloDeClase, type ClaseDelCalendario } from "@/lib/compras";
+import { diaLegible, lugaresLibres, type ClaseDelCalendario } from "@/lib/compras";
 import { clp } from "@/lib/planes";
 import { rangoHorario } from "@/lib/dominio/horarios";
 import {
@@ -174,7 +174,7 @@ export function Calendario({
           <>
             <p className="xo-eyebrow text-xo-gris">{diaLegible(abierta.inicio)}</p>
             <h2 id="titulo-clase" className="mt-2 font-display text-3xl leading-none text-xo-negro">
-              {tituloDeClase(abierta)}
+              {abierta.especial ? abierta.especial.titulo : abierta.cursoNombre}
             </h2>
 
             <dl className="mt-6 divide-y divide-xo-negro/10 border-y border-xo-negro/10 text-sm">
@@ -255,7 +255,7 @@ function BloqueAlumna({
         className={`${ubicacion.className} border-dashed border-xo-negro/30 bg-xo-blanco`}
       >
         <p className="text-xs leading-tight font-semibold text-xo-gris">
-          {tituloDeClase(clase)}
+          {clase.especial ? clase.especial.titulo : clase.cursoNombre}
         </p>
         <p className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] leading-tight text-xo-gris">
           <span>{rangoHorario(clase.inicio, clase.fin)}</span>
@@ -290,7 +290,7 @@ function BloqueAlumna({
       className={`${ubicacion.className} text-left transition-colors ${c.caja}`}
     >
       <p className={`text-xs leading-tight font-semibold ${c.texto}`}>
-        {tituloDeClase(clase)}
+        {clase.especial ? clase.especial.titulo : clase.cursoNombre}
       </p>
       <p className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] leading-tight">
         <span className={c.sub}>{rangoHorario(clase.inicio, clase.fin)}</span>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { TituloPortal } from "@/components/Portal";
 import { ErrorDeLectura } from "@/components/ErrorDeLectura";
-import { CrearRecuperativa } from "@/components/CrearRecuperativa";
 import { requiereNivel } from "@/lib/sesion";
 import { cuandoLegible } from "@/lib/compras";
 import { NOMBRE_CAUSA } from "@/lib/dominio/liquidacion";
@@ -25,7 +25,7 @@ function avisoDeCreacion(avisadas: string | undefined, total: string | undefined
   return `La recuperativa quedó creada. Salieron ${a} de ${t} correos; el resto queda en Correos y se reintenta.`;
 }
 
-/** Elegir una clase que no se dictó y ponerle fecha a su recuperación (PRD-0027). */
+/** Lo que falta por recuperar y lo ya programado. Se crea en /admin/especiales/nueva (PRD-0027). */
 export default async function Recuperativas({
   searchParams,
 }: {
@@ -33,7 +33,7 @@ export default async function Recuperativas({
 }) {
   await requiereNivel("admin", "admin");
   const [{ avisadas, total }, lectura] = await Promise.all([searchParams, getRecuperativas()]);
-  const { porRecuperar, programadas, sedes, profesoras } = lectura.datos;
+  const { porRecuperar, programadas } = lectura.datos;
   const aviso = avisoDeCreacion(avisadas, total);
 
   return (
@@ -41,7 +41,7 @@ export default async function Recuperativas({
       <TituloPortal
         eyebrow="Administración"
         titulo="Clases recuperativas"
-        bajada="Una clase que no se dictó se recupera. Es una clase normal, con créditos, que sale en el calendario marcada como recuperativa. A las que tenían reserva les llega un correo y reservan solas."
+        bajada="Una clase que no se dictó se recupera. Para la alumna es una clase más: sale en el calendario con el nombre del curso y el cupo es por orden de llegada. A las que tenían reserva les llega un correo, porque el calendario no se las va a señalar."
       />
 
       {aviso ? (
@@ -71,7 +71,12 @@ export default async function Recuperativas({
                       {clase.afectadas === 1 ? "1 alumna con reserva" : `${clase.afectadas} alumnas con reserva`}
                     </p>
                   </div>
-                  <CrearRecuperativa clase={clase} sedes={sedes} profesoras={profesoras} />
+                  <Link
+                    href={`/admin/especiales/nueva?categoria=recuperativa&clase=${clase.id}`}
+                    className="xo-eyebrow rounded-full border border-xo-negro/20 px-4 py-2 text-xo-negro transition-colors hover:border-xo-negro/50"
+                  >
+                    Ponerle fecha
+                  </Link>
                 </li>
               ))}
             </ul>

@@ -1,25 +1,35 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { TituloPortal } from "@/components/Portal";
-import { FormularioEspecial } from "@/components/FormularioEspecial";
+import { ErrorDeLectura } from "@/components/ErrorDeLectura";
+import { FormularioClase } from "@/components/FormularioClase";
 import { requiereNivel } from "@/lib/sesion";
 import { getOpcionesEspecial } from "@/lib/especiales-admin";
+import { getRecuperativas } from "@/lib/recuperativas-consultas";
 
 export const metadata: Metadata = {
-  title: "Nueva clase especial — XO Dance Studio",
+  title: "Nueva clase — XO Dance Studio",
   robots: { index: false, follow: false },
 };
 
-export default async function NuevaEspecial() {
+export default async function NuevaClase({
+  searchParams,
+}: {
+  searchParams: Promise<{ categoria?: string; clase?: string }>;
+}) {
   const perfil = await requiereNivel("admin", "admin");
-  const opciones = await getOpcionesEspecial();
+  const [{ categoria, clase }, opciones, recuperativas] = await Promise.all([
+    searchParams,
+    getOpcionesEspecial(),
+    getRecuperativas(),
+  ]);
 
   return (
     <>
       <TituloPortal
-        eyebrow="Clases especiales"
+        eyebrow="Clases"
         titulo="Nueva"
-        bajada="Se guarda como borrador. Después le subes la portada, miras la vista previa y recién ahí la publicas."
+        bajada="La categoría define con qué paga la alumna y cómo cobra la profesora."
       />
 
       <Link
@@ -29,8 +39,12 @@ export default async function NuevaEspecial() {
         ← Todas
       </Link>
 
-      <FormularioEspecial
-        especial={null}
+      <ErrorDeLectura que="las clases por recuperar" error={recuperativas.error} />
+
+      <FormularioClase
+        categoriaInicial={categoria}
+        claseInicial={clase}
+        porRecuperar={recuperativas.datos.porRecuperar}
         opciones={opciones}
         esOwner={perfil.rol === "owner"}
       />

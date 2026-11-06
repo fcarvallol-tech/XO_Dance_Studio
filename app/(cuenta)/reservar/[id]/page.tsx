@@ -6,7 +6,7 @@ import { ErrorDeLectura } from "@/components/ErrorDeLectura";
 import { ReservarClase } from "@/components/ReservarClase";
 import { requiereSesion } from "@/lib/sesion";
 import { getCalendario, getSaldo } from "@/lib/compras-consultas";
-import { cuandoLegible, tituloDeClase } from "@/lib/compras";
+import { cuandoLegible } from "@/lib/compras";
 import { esPasada } from "@/lib/dominio/grilla";
 
 type Props = { params: Promise<{ id: string }> };
@@ -58,7 +58,7 @@ export default async function ReservarUna({ params }: Props) {
     <>
       <TituloPortal
         eyebrow="Reservar"
-        titulo={tituloDeClase(clase)}
+        titulo={clase.cursoNombre}
         bajada={`${cuandoLegible(clase.inicio)} · con ${clase.profesoraNombre} · ${clase.sedeDireccion}, ${clase.sedeComuna}`}
       />
 

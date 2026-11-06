@@ -360,7 +360,7 @@ const CUERPOS: Cuerpos = {
       `<p ${P}>La clase de <strong>${d.curso}</strong> del ${d.original} no se hizo, y la vamos a recuperar.</p>
        <p ${P}>${d.cuando}</p>
        <p ${P}>Con ${d.profesora}<br>${d.sede}<br>${d.direccion}</p>
-       <p ${P}>Tu clase ya está de vuelta en tu cuenta. No te reservamos el lugar: si te acomoda, entra y resérvalo.</p>
+       <p ${P}>Tu clase ya está de vuelta en tu cuenta. No te reservamos el lugar y los cupos son por orden de llegada: si te acomoda, entra y resérvalo.</p>
        <p style="margin:24px 0 0;"><a href="${sitio()}/reservar/${d.claseId}" style="display:inline-block;background:#f7adbf;color:#1a1a1a;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;">Reservar mi lugar</a></p>`,
     ),
   }),

@@ -66,11 +66,6 @@ export type ClaseDelCalendario = {
    * reserva.
    */
   especial: { slug: string; titulo: string; precioClp: number | null } | null;
-  /**
-   * Si recupera una clase que no se dictó (PRD-0027). Se reserva como cualquiera,
-   * con créditos; lo único distinto es que hay que poder reconocerla.
-   */
-  recuperativa: boolean;
 };
 
 export type ReservaPropia = {
@@ -100,13 +95,6 @@ export const NOMBRE_ESTADO: Record<EstadoCompra, string> = {
   expirada: "Venció sin confirmar",
   por_reembolsar: "Hay que devolver la plata",
 };
-
-export function tituloDeClase(
-  clase: Pick<ClaseDelCalendario, "especial" | "cursoNombre" | "recuperativa">,
-): string {
-  if (clase.especial) return clase.especial.titulo;
-  return clase.recuperativa ? `${clase.cursoNombre} · Recuperativa` : clase.cursoNombre;
-}
 
 export function lugaresLibres(clase: ClaseDelCalendario): number {
   return Math.max(0, clase.cupoMaximo - clase.tomados);

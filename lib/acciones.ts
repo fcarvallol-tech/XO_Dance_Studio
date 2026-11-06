@@ -22,6 +22,7 @@ import { montoDesdeTexto } from "./dominio/finanzas";
 import { resolverOferta } from "./ofertas-consultas";
 import { fechaLegible } from "./planes";
 import { diaEnSantiago, esDiaValido } from "./semana";
+import type { SalaCreada } from "./dominio/salas";
 
 /**
  * Las escrituras de plata y cupo.
@@ -140,6 +141,41 @@ export async function crearRecuperativa(datos: {
 
   revalidatePath("/admin/correos");
   return { ok: true, avisadas: enviados.filter(Boolean).length, total: personas.length };
+}
+
+/**
+ * Crea una sala arrendada para una clase (PRD-0027 §7.5). Si la dirección ya
+ * existe no crea: devuelve esa con `creada: false`, para ofrecerla. El costo
+ * entra y no vuelve a salir.
+ */
+export async function crearSalaOcasional(datos: {
+  nombre: string;
+  direccion: string;
+  comuna: string;
+  capacidad: number;
+  costoHoraClp: number;
+  esOtra: boolean;
+}): Promise<Resultado & { sala?: SalaCreada }> {
+  const actor = await perfilActual();
+  if (!actor || !tieneNivel(actor.rol, "admin")) {
+    return { ok: false, mensaje: "No tienes permiso." };
+  }
+
+  const { data, error } = await clienteAdmin()
+    .rpc("crear_sala_ocasional", {
+      p_actor_user_id: actor.userId,
+      p_nombre: datos.nombre,
+      p_direccion: datos.direccion,
+      p_comuna: datos.comuna,
+      p_capacidad: datos.capacidad,
+      p_costo_hora_clp: datos.costoHoraClp,
+      p_es_otra: datos.esOtra,
+    })
+    .single();
+  if (error) return { ok: false, mensaje: comoMensaje(error) };
+
+  revalidatePath("/admin/especiales/nueva");
+  return { ok: true, sala: data as SalaCreada };
 }
 
 /** La alumna declara que transfirió. No mueve plata ni cupo: solo deja la fila. */
