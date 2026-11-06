@@ -85,7 +85,7 @@ test("caducaAt: el pendiente de una especial caduca con el cupo, no con la clase
 
 test("caducaAt: los comprobantes de clase caducan cuando la clase empieza", () => {
   const inicio = utc("2026-10-15T12:30:00");
-  for (const plantilla of ["reserva", "especialConfirmada"] as const) {
+  for (const plantilla of ["reserva", "especialConfirmada", "recuperativa"] as const) {
     assert.equal(
       caducaAt(plantilla, { expiraAt: null, inicioClase: inicio, encoladoAt: AHORA })?.toISOString(),
       inicio.toISOString(),

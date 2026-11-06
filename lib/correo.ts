@@ -352,6 +352,18 @@ const CUERPOS: Cuerpos = {
        <p style="margin:20px 0 0;font-size:13px;color:#f7f7f7;opacity:.6;">Si no puedes ir, avísanos: el cupo se libera para otra persona. La devolución del dinero la vemos caso a caso por WhatsApp.</p>`,
     ),
   }),
+
+  recuperativa: (d) => ({
+    asunto: `Ya hay fecha para recuperar ${d.curso}: ${d.cuando}`,
+    html: plantilla(
+      "Ya hay fecha para tu clase",
+      `<p ${P}>La clase de <strong>${d.curso}</strong> del ${d.original} no se hizo, y la vamos a recuperar.</p>
+       <p ${P}>${d.cuando}</p>
+       <p ${P}>Con ${d.profesora}<br>${d.sede}<br>${d.direccion}</p>
+       <p ${P}>Tu clase ya está de vuelta en tu cuenta. No te reservamos el lugar y los cupos son por orden de llegada: si te acomoda, entra y resérvalo.</p>
+       <p style="margin:24px 0 0;"><a href="${sitio()}/reservar/${d.claseId}" style="display:inline-block;background:#f7adbf;color:#1a1a1a;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;">Reservar mi lugar</a></p>`,
+    ),
+  }),
 };
 
 // ---------------------------------------------------------------------------
@@ -490,6 +502,35 @@ export async function avisarReserva(datos: {
     inicioClase,
     reservaId,
     claseId,
+    perfilId,
+  });
+}
+
+/**
+ * A la alumna que perdió su lugar en una clase caída: ya hay recuperativa
+ * (PRD-0027). La clave es la recuperativa y la persona: si la recuperativa se
+ * cae y se crea otra, es otro hecho y otro correo.
+ */
+export async function avisarRecuperativa(datos: {
+  para: string;
+  curso: string;
+  original: string;
+  cuando: string;
+  profesora: string;
+  sede: string;
+  direccion: string;
+  claseId: string;
+  perfilId: string;
+  inicioClase: string;
+}): Promise<boolean> {
+  const { para, perfilId, inicioClase, ...cuerpo } = datos;
+  return despachar({
+    plantilla: "recuperativa",
+    para,
+    datos: cuerpo,
+    clave: claveDeEvento("recuperativa", `${datos.claseId}:${perfilId}`),
+    inicioClase,
+    claseId: datos.claseId,
     perfilId,
   });
 }

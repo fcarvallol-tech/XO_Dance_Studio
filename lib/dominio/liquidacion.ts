@@ -238,7 +238,7 @@ export function efectoDeCausa(
   }
 }
 
-const NOMBRE_CAUSA: Record<Causa, string> = {
+export const NOMBRE_CAUSA: Record<Causa, string> = {
   sala_no_disponible: "la sala no estuvo disponible",
   cambio_de_parrilla: "cambio de parrilla",
   ausencia_profesora: "ausencia de la profesora",

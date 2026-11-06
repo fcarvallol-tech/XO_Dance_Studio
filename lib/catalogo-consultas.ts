@@ -132,7 +132,9 @@ export async function getCatalogoPublico(): Promise<Catalogo> {
   const [cursos, profesoras, sedes, horarios] = await Promise.all([
     supabase.from("cursos").select(CAMPOS_CURSO).order("orden"),
     supabase.from("profesoras").select(CAMPOS_PROFESORA).order("orden"),
-    supabase.from("sedes").select(CAMPOS_SEDE).order("orden"),
+    // Una sala arrendada para una clase no es sede de XO (PRD-0027 §7.5). No
+    // reutiliza `activa`, y RLS no la filtra: la clase necesita leerla.
+    supabase.from("sedes").select(CAMPOS_SEDE).eq("ocasional", false).order("orden"),
     // RLS ya entrega solo los activos; la consulta filtra igual.
     supabase
       .from("horarios")
@@ -158,7 +160,7 @@ export async function getCatalogoCompleto(): Promise<
   const [cursos, profesoras, sedes, horarios] = await Promise.all([
     supabase.from("cursos").select(CAMPOS_CURSO).order("orden"),
     supabase.from("profesoras").select(CAMPOS_PROFESORA).order("orden"),
-    supabase.from("sedes").select(CAMPOS_SEDE).order("orden"),
+    supabase.from("sedes").select(CAMPOS_SEDE).eq("ocasional", false).order("orden"),
     supabase.from("horarios").select(CAMPOS_HORARIO).order("dia_semana"),
   ]);
 

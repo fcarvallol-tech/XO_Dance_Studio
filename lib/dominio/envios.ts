@@ -38,7 +38,8 @@ export type Plantilla =
   | "compraRechazada"
   | "reserva"
   | "especialPendiente"
-  | "especialConfirmada";
+  | "especialConfirmada"
+  | "recuperativa";
 
 export type Envio = {
   estado: EstadoEnvio;
@@ -108,6 +109,7 @@ export function caducaAt(plantilla: Plantilla, contexto: ContextoDeCaducidad): D
       return contexto.expiraAt;
     case "reserva":
     case "especialConfirmada":
+    case "recuperativa":
       return contexto.inicioClase;
     case "transferenciaDeclarada":
       // Aviso operativo a la academia: a las 24 h la bandeja ya lo muestra.
