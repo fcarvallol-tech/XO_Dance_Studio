@@ -114,6 +114,16 @@ export function BandejaCompras({ pendientes }: { pendientes: Compra[] }) {
                 !compra.correoAlumna.endsWith(".invalid") ? (
                   <p className="text-sm text-xo-gris">{compra.correoAlumna}</p>
                 ) : null}
+                {/* PRD-0026: al aprobar, la parte de la amiga cae en esta cuenta. */}
+                {compra.amiga ? (
+                  <p className="mt-2 text-sm text-xo-negro">
+                    <span className="text-xo-gris">
+                      {compra.amiga.clases === 1 ? "1 clase" : `${compra.amiga.clases} clases`} para su
+                      amiga:{" "}
+                    </span>
+                    {compra.amiga.nombre ?? "sin nombre en su perfil"}
+                  </p>
+                ) : null}
                 <p className="mt-2 text-sm text-xo-negro">
                   <span className="text-xo-gris">A nombre de: </span>
                   {compra.titularDeclarado ?? (

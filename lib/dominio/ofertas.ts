@@ -32,6 +32,12 @@ export type Oferta = {
   vigenciaDias: number;
   /** Qué se compra de verdad. Lo usa el servidor al declarar la transferencia. */
   planSlug: string;
+  /**
+   * Cuántas clases van a la cuenta de una amiga (PRD-0026). Con más de 0 la
+   * compra pide su correo, y el aviso de que tiene que tener cuenta va **antes**
+   * de elegir: en la vitrina y en la página de la oferta.
+   */
+  clasesParaAmiga: number;
 };
 
 /**
@@ -54,7 +60,13 @@ export function ofertaDePlan(plan: Plan): Oferta {
     vigenteHasta: hayDescuento ? plan.promoHasta : null,
     vigenciaDias: plan.vigenciaDias,
     planSlug: plan.slug,
+    clasesParaAmiga: plan.clasesParaAmiga,
   };
+}
+
+/** Si la oferta es para dos: una parte de las clases va a la cuenta de una amiga. */
+export function esParaAmiga(oferta: Pick<Oferta, "clasesParaAmiga">): boolean {
+  return oferta.clasesParaAmiga > 0;
 }
 
 /** Cuánto sale cada clase con esta oferta. */

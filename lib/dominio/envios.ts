@@ -35,6 +35,7 @@ export type Plantilla =
   | "transferenciaRecibida"
   | "compraAprobada"
   | "regalo"
+  | "creditoDeAmiga"
   | "compraRechazada"
   | "reserva"
   | "especialPendiente"
@@ -121,6 +122,8 @@ export function caducaAt(plantilla: Plantilla, contexto: ContextoDeCaducidad): D
     case "compraAprobada":
     case "compraRechazada":
     case "regalo":
+    // PRD-0026: dice hasta cuándo vale la clase, como el de regalo.
+    case "creditoDeAmiga":
       // Siguen siendo ciertos la semana que viene. El de regalo dice hasta
       // cuándo valen las clases, y eso es cierto mientras no venzan (PRD-0023).
       return null;

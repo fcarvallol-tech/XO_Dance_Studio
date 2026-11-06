@@ -22,6 +22,11 @@ export type Plan = {
   /** Hasta cuándo, en texto ya legible: "lunes 31 de agosto". */
   promoHasta: string | null;
   vigenciaDias: number;
+  /**
+   * Cuántas de las clases caen en la cuenta de una amiga que la compradora
+   * nombra por correo (PRD-0026). 0 en un pack normal.
+   */
+  clasesParaAmiga: number;
 };
 
 /** Lo que se cobra hoy por ese plan: la promo si la hay, si no la lista. */

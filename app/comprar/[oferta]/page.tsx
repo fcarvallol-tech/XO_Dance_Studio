@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MarcoSitio } from "@/components/MarcoSitio";
-import { porClaseDeOferta } from "@/lib/dominio/ofertas";
+import { esParaAmiga, porClaseDeOferta } from "@/lib/dominio/ofertas";
 import { getOfertas, resolverOferta } from "@/lib/ofertas-consultas";
 import { clp } from "@/lib/planes";
 
@@ -108,11 +108,39 @@ export default async function PaginaDeOferta({ params }: Props) {
             </p>
           ) : null}
 
+          {/* PRD-0026: antes del botón, no después. */}
+          {esParaAmiga(oferta) ? (
+            <p className="mt-6 border border-xo-rosa/40 p-5 leading-relaxed text-xo-blanco/85">
+              <strong className="font-semibold text-xo-rosa-claro">
+                Tu amiga tiene que tener cuenta en XO.
+              </strong>{" "}
+              Al comprar te pedimos el correo con que ella entra, y su clase llega
+              a esa cuenta cuando confirmemos tu transferencia. Si todavía no
+              tiene cuenta, pídele que se cree una antes.
+            </p>
+          ) : null}
+
           <dl className="mt-12 space-y-5 border-t border-xo-blanco/15 pt-8">
             <Dato rotulo="Qué incluye">
-              {oferta.clases} {oferta.clases === 1 ? "clase" : "clases"} para
-              cualquier horario del calendario, con cualquier profe y en
-              cualquiera de nuestras salas
+              {esParaAmiga(oferta) ? (
+                <>
+                  {oferta.clases - oferta.clasesParaAmiga === 1
+                    ? "Una clase para ti"
+                    : `${oferta.clases - oferta.clasesParaAmiga} clases para ti`}{" "}
+                  y{" "}
+                  {oferta.clasesParaAmiga === 1
+                    ? "una para tu amiga"
+                    : `${oferta.clasesParaAmiga} para tu amiga`}
+                  , cada una en su cuenta. Sirven para cualquier horario del
+                  calendario, con cualquier profe y en cualquiera de nuestras salas
+                </>
+              ) : (
+                <>
+                  {oferta.clases} {oferta.clases === 1 ? "clase" : "clases"} para
+                  cualquier horario del calendario, con cualquier profe y en
+                  cualquiera de nuestras salas
+                </>
+              )}
             </Dato>
             <Dato rotulo="Hasta cuándo las puedes usar">
               {oferta.vigenciaDias} días desde que te las acreditamos
