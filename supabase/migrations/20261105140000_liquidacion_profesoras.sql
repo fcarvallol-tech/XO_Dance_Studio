@@ -113,9 +113,10 @@ create table if not exists public.causas_de_clase (
   -- Null solo cuando la registró una migración (no hay sesión que atribuir).
   registrada_por uuid references public.perfiles (id),
   registrada_at timestamptz not null default now(),
-  -- Si la profesora llegó y el viaje se perdió (Felipe, 05/11/2026). Prendido
-  -- paga la base, por cualquier causa y aunque se recupere. Vive acá y no en
-  -- `clases` por lo mismo que la causa: `clases` es pública entera.
+  -- Si la profesora llegó (Felipe, 05/11/2026). El dato vale para las cinco
+  -- causas, pero solo cambia el pago en `sala_no_disponible`: ahí paga la base
+  -- aunque se recupere (Felipe, 06/11/2026; la regla está en lib/dominio). Vive
+  -- acá y no en `clases` por lo mismo que la causa: `clases` es pública entera.
   profesora_se_presento boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -879,8 +880,9 @@ grant execute on function public.anular_liquidacion(uuid, uuid, text) to service
 -- La Reggaeton Femme de Pau en Los Leones, 18:00, cancelada por
 -- 20261103210000. No se dictó porque no llegaron alumnas suficientes, Pau no
 -- faltó, y se va a recuperar (CONTEXT.md, 03/11/2026). Si no se recupera, paga
--- la base. `profesora_se_presento` queda en su valor por defecto, apagado:
--- CONTEXT.md dice que esa fecha no se le paga, se le paga el día que la recupere.
+-- la base. `profesora_se_presento` queda apagado (Felipe, 06/11/2026): ese
+-- campo solo cambia el pago en `sala_no_disponible`, y esta fecha se le paga
+-- una sola vez, el día que la recupere.
 --
 -- En una base sin esa clase (staging, la base local) no hace nada.
 

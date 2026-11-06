@@ -236,6 +236,11 @@ await paso("si algo cambió desde que se miró (la huella), rebota", async () =>
   await db.query("delete from reservas where perfil_id = $1 and clase_id = $2", [extra.perfilId, A5]);
 });
 let pagoId;
+await paso("A2 con el campo prendido: asistencia no cobra el viaje, Pau sigue en $124.500 (Felipe, 06/11)", async () => {
+  await registrar(admin, A2, "asistencia_insuficiente", "No llegaron alumnas suficientes", true);
+  assert.equal((await calcular(PAU)).totalClp, 124_500);
+  await registrar(admin, A2, "asistencia_insuficiente", "No llegaron alumnas suficientes");
+});
 await paso("prender o apagar profesora_se_presento mueve la huella: el pago viejo rebota", async () => {
   const vieja = await huella(PAU);
   await registrar(admin, D, "cambio_de_parrilla", "El horario se movió al jueves", true);

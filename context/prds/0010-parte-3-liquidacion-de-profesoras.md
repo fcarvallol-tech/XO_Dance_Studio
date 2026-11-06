@@ -262,18 +262,26 @@ versión en tres días, y **reemplaza a las dos anteriores**.
 
 ### 6.6 Las clases que no se dictaron, y su recuperación
 
-De "Las cinco decisiones…", punto 1, de la regla del 03/11 y de las dos correcciones de Felipe del
-05/11.
+De "Las cinco decisiones…", punto 1, de la regla del 03/11, de las dos correcciones de Felipe del
+05/11 y de la del 06/11.
 
-**Primero se pregunta si ella fue.** `causas_de_clase.profesora_se_presento`, apagado por defecto,
-se marca al clasificar la clase:
+**En `sala_no_disponible`, primero se pregunta si ella fue.** `causas_de_clase.profesora_se_presento`,
+apagado por defecto, se marca al clasificar la clase:
 
-- **Prendido → paga la base, sin variable, por la causa que sea y aunque se haya recuperado.** El
-  hecho que paga es que fue y el viaje se perdió. La recuperación se paga aparte, como cualquier
-  dictada.
-- **Apagado → la tabla de abajo.**
+- **Prendido, y solo en `sala_no_disponible` → paga la base, sin variable, aunque se haya
+  recuperado.** Lo que paga el viaje perdido es que el problema fue nuestro **y ella no podía
+  saberlo**. La recuperación se paga aparte, como cualquier dictada.
+- **Apagado, o cualquier otra causa → la tabla de abajo.** En `asistencia_insuficiente` y
+  `sin_alumnas` ella sí sabía que iba a dar clase: lo que falló fue la demanda, y eso se resuelve con
+  la recuperación. Se paga una sola vez.
 
-| Causa, con el campo apagado | Si **no** se recupera | Si se recupera |
+El prompt del 05/11 decía que el campo valía para cualquier causa, y **eso estaba mal** (Felipe,
+06/11/2026): la clase de Pau del 3/11, a la que ella fue, habría cobrado la base más la recuperación,
+dos pagos por una clase dictada, contra la decisión del 04/11 dicha sobre ese caso exacto. **El campo
+se puede marcar en las cinco causas, porque el dato es cierto igual, pero solo cambia el pago en
+`sala_no_disponible`.** La clase de Pau del 3/11 queda con el campo apagado.
+
+| Causa (`sala_no_disponible`: con el campo apagado) | Si **no** se recupera | Si se recupera |
 |---|---|---|
 | `sala_no_disponible` | **Base**, sin variable: el problema fue de XO | **Nada en la original**: se paga una sola vez, en la recuperación |
 | `cambio_de_parrilla` | **Nada**: esa clase nunca estuvo en su semana | Nada en la original |
@@ -298,6 +306,13 @@ se marca al clasificar la clase:
   estaba mirando.
 - **La recuperación se paga como cualquier clase dictada**: base más variable, en el mes en que se
   dicta.
+- ⚠️ **Consecuencia, dejada por escrito a propósito (Felipe, 06/11/2026): una clase no dictada se
+  paga el mes en que se recupera, no el mes en que tocaba.** Una del 27/11 recuperada el 3/12 no
+  entra en el pago del 1/12: en noviembre esa clase paga $0 y aparece en la liquidación de
+  diciembre. **El incentivo tampoco**, porque el promedio es del mes calendario: esa recuperación
+  suma a las dictadas de diciembre, no a las de noviembre, y noviembre puede quedar bajo el mínimo
+  de 4 dictadas por esa misma razón. No es un error ni se corrige: está aquí para que no se
+  descubra cuando una profesora pregunte por qué le llegó menos.
 - **"Recuperada"** quiere decir que existe una clase marcada como su recuperación
   (`clases.recupera_clase_id`) que no está cancelada ni no dictada.
 - **El caso del 03/11**: la Reggaeton Femme de Pau en Los Leones queda `asistencia_insuficiente`,
@@ -335,7 +350,7 @@ Casos reales en el repo:
 | Lun 07/09 | La Girly de Pau de los lunes **no se dictó** por el problema de salas que movió su horario. La migración se escribió el 08, después de esa clase | `CONTEXT.md` §4, migración `20260908150000` (la borró, no la canceló) | **Ambiguo**: es una clase perdida a última hora (base) y también la primera del cambio de parrilla (nada). Está justo en el borde de la pregunta 2 |
 | 08–09/09 | Las clases futuras de los horarios viejos de Pau se cancelaron (con reserva) o borraron, con motivo "Cambio de horario…" | misma migración | El horario se movió; las clases nuevas reemplazan a las viejas. **Pagar la base por cada clase vieja sería pagarle dos veces la misma semana** |
 | 05/10 | Las clases futuras de Teens con reserva se cancelaron con motivo "XO Teens se deja de dictar por ahora…" | `20261005120000` | El curso ya no existe. **Pagar la base sería pagarle a Carli por clases que nadie iba a dictar** |
-| Mar 03/11 | La Reggaeton Femme de Pau de las 18:00 en Los Leones **no se dictó porque muchas alumnas no alcanzaron a llegar**. Pau no faltó. Se cancela después de la hora, con los créditos devueltos, y se va a recuperar; la sala de la recuperación no se cobra (Felipe, 03/11) | migración `20261103210000` | 🔴 **Pendiente de clasificar.** No calza en ningún valor de abajo: no es la sala, no es la parrilla y no es la profesora. Ver la nota que sigue |
+| Mar 03/11 | La Reggaeton Femme de Pau de las 18:00 en Los Leones **no se dictó porque muchas alumnas no alcanzaron a llegar**. Pau no faltó. Se cancela después de la hora, con los créditos devueltos, y se va a recuperar; la hora perdida no se cobra y la de la recuperación sí (Felipe, 06/11) | migración `20261103210000` | 🔴 **Pendiente de clasificar.** No calza en ningún valor de abajo: no es la sala, no es la parrilla y no es la profesora. Ver la nota que sigue |
 
 > 🔴 **Caso nuevo, 03/11/2026: la clase que no se dicta por asistencia.** La de Pau del martes 3 es
 > la primera clase de parrilla que no se dictó **por las alumnas**: Pau estaba, la sala estaba y la
@@ -347,9 +362,11 @@ Casos reales en el repo:
 > Dos cosas más que el cálculo tendrá que saber, porque esta clase no viene sola:
 > - **Se va a recuperar.** La recuperación es una clase más en el mes de Pau. Si se paga la base
 >   por la del 3 y también por la recuperación, son dos pagos por una sola clase dictada.
-> - **La sala de la recuperación no se cobra** (Felipe). El costo de sala sale hoy de
->   `sedes.costo_hora_clp` por `clases.sede_id`, sin excepción posible por clase: la recuperación
->   en Los Leones se costearía a $17.000 la hora aunque no se pague. Hace falta un modo de marcarla.
+> - **La sala de la recuperación sí se cobra** (Felipe, 06/11/2026; aquí decía lo contrario). La
+>   hora perdida no nos la cobran y la de la recuperación sí: `CONTEXT.md` lo decía bien desde el
+>   3/11. No hace falta marcar nada: `/owner/finanzas` costea solo las clases dictadas, por
+>   `sedes.costo_hora_clp` de `clases.sede_id`, así que la cancelada no suma sala y la recuperación
+>   sí.
 
 De ahí, los valores propuestos:
 
@@ -688,8 +705,8 @@ Más una tercera, P3, **sin fila en `costos_profesoras`**: "Sin costo cargado", 
 |---|---|---|---|
 | A | §13 contestado desde `CONTEXT.md`; §6.5 incentivo y §6.6 causas | ✅ | `03a30ed` |
 | B | ADR-0008: la profesora ve su liquidación | ✅ | `1c442c9` |
-| C | `lib/dominio/liquidacion.ts`, prueba de mutación. **43 tests** tras las correcciones del 05/11: salen los 6 que medían anticipación y entran 6 de `profesora_se_presento` | ✅ | `1ac78c7` y siguientes |
-| D | Migración `20261105140000_liquidacion_profesoras.sql`: escrita, `--dry-run` contra producción lista **solo esa**, **sin aplicar**. Escenario en base local: **36 de 36** | ✅ | ver el log de la rama |
+| C | `lib/dominio/liquidacion.ts`, prueba de mutación. **44 tests** tras las correcciones del 05/11 y 06/11: salen los 6 que medían anticipación, entran los de `profesora_se_presento`, y el 06/11 ese campo se restringe a `sala_no_disponible` | ✅ | `1ac78c7` y siguientes |
+| D | Migración `20261105140000_liquidacion_profesoras.sql`: escrita, `--dry-run` contra producción lista **solo esa**, **sin aplicar**. Escenario en base local: **37 de 37** | ✅ | ver el log de la rama |
 | E | `/owner/liquidaciones`, "Mi liquidación" en el portal, el Route Handler del comprobante | ⏸ No empezado, a propósito | — |
 | — | Aviso de diferencia y ajustes (§8.6) | ⏸ Fase 7, como estaba | — |
 
