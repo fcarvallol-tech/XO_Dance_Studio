@@ -468,8 +468,9 @@ respuestas. Quedan cerradas:
    `ausencia_profesora` **no paga**; y `sin_alumnas` y `asistencia_insuficiente` siguen la regla
    de la recuperación: **si se recupera, se paga una sola vez en la recuperación; si no se
    recupera, se paga la base**, porque ella organizó su día en torno a esa clase y traer alumnas
-   es trabajo de XO. De paso eso deja el incentivo correcto para la academia: **cancelar temprano
-   ahorra la sala y el sueldo, cancelar el mismo día no.**
+   es trabajo de XO. Cancelar temprano ahorra **el cobro de la sala**; a la profesora **siempre** se
+   le va a hacer recuperar la clase (corregido por Felipe el 06/11/2026: decía que ahorraba también
+   el sueldo, y eso contradecía esta misma regla).
 2. **La tarifa de Isi es la general**: $18.000 la hora y $250 por crédito, igual que las demás.
    Sin esto su fila quedaba sin costo y no se le podía liquidar.
 3. **Al reemplazo se le paga a quien dictó**, no a la titular que lo consiguió. El dinero sigue al
@@ -487,6 +488,9 @@ se le debe no son el mismo número, y la liquidación congela uno de los dos. Fe
 **cuando se haga el Inicio de Actividades**, junto con el resto de lo tributario. Hasta entonces
 el sistema registra lo que se transfiere. Esto y lo demás que quede en el aire a mediano plazo
 van a un **PRD aparte**, no dentro de la liquidación (Felipe, 04/11/2026).
+
+✅ **La recuperación no es opcional (Felipe, 06/11/2026).** Cuando se cancela es principalmente por
+decisión de la profesora, y si no, ella es la primera en saberlo.
 
 **Una clase que no se dicta se tiene que recuperar** (Felipe, 02/11/2026). Esto no es solo del
 incentivo: significa que el estado "no dictada" **genera una obligación de reagendar**, no solo
