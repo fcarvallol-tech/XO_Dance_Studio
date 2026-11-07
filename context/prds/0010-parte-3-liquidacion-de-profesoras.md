@@ -574,6 +574,28 @@ mes pagado, así que la corrección **no** puede mover lo pagado. Se corrige con
 **Ni el aviso ni el ajuste son necesarios el 1 de noviembre**: el primer mes pagado es octubre, y la
 primera vez que pueden hacer falta es en noviembre. Van en la última fase (§11).
 
+### 8.7 Cerrar y pagar son dos pasos (Felipe, 06/11/2026) — reemplaza §8.1 y §8.3
+
+Lo escrito arriba decía que no había fila hasta pagar. **Ya no es así.** Felipe pidió cerrar el mes y
+marcarlo pagado cuando haya transferido. Migración `20261106130000_cerrar_liquidacion.sql`.
+
+| Paso | Qué hace |
+|---|---|
+| **Cerrar** | `cerrar_liquidacion()` escribe la fila: monto, detalle y huella congelados. Exige mes terminado, sin clases sin causa, y la huella de lo que se miró. **Cerrar dos veces no duplica:** con la misma huella devuelve la fila que había |
+| **Pagar** | `pagar_liquidacion()` agrega el comprobante y el egreso a esa fila. Rebota si los insumos cambiaron desde el cierre |
+| **Anular** | Marca la fila y su egreso, si lo hay, y el mes se puede cerrar de nuevo: **se agrega una fila, no se corrige la anterior** |
+
+**El libro no se edita:** `liquidaciones_no_se_editan` impide cambiar lo congelado, cambiar un pago
+registrado, revivir una anulada y borrar filas, también para quien escribe por SQL.
+
+**El reloj de la pantalla es `hoy_santiago()`**, el mismo de `cerrar_liquidacion()`: si mirara otro,
+podría ofrecer cerrar algo que la base rechaza.
+
+Con un mes cerrado, `mes_pagado()` ya da verdadero: el candado de §7.4 actúa desde el cierre.
+
+⚠️ **Sin construir:** `ajustes_liquidacion` (§8.6), reasignar desde la pantalla, y cerrar a todas de una
+vez: se cierra profesora por profesora.
+
 ## 9. Lo que ve la profesora
 
 **Propuesta: ve su liquidación, y solo la suya.** Sujeto a la pregunta 5, porque contradice la regla
@@ -707,6 +729,7 @@ Más una tercera, P3, **sin fila en `costos_profesoras`**: "Sin costo cargado", 
 | B | ADR-0008: la profesora ve su liquidación | ✅ | `1c442c9` |
 | C | `lib/dominio/liquidacion.ts`, prueba de mutación. **44 tests** tras las correcciones del 05/11 y 06/11: salen los 6 que medían anticipación, entran los de `profesora_se_presento`, y el 06/11 ese campo se restringe a `sala_no_disponible` | ✅ | `1ac78c7` y siguientes |
 | D | Migración `20261105140000_liquidacion_profesoras.sql`: escrita, `--dry-run` contra producción lista **solo esa**, **sin aplicar**. Escenario en base local: **37 de 37** | ✅ | ver el log de la rama |
+| E | Pantallas: `/owner/liquidaciones` y `/profesora/liquidacion`, cerrar y pagar (§8.7). Rama `prd-0010-parte-3-pantallas`. Migración `20261106130000_cerrar_liquidacion.sql`, aplicada en staging, **sin aplicar en producción**. Probado desde la pantalla: Pau $124.500, Drimy $18.750 | ✅ | `9071e81` y siguientes |
 | E | `/owner/liquidaciones`, "Mi liquidación" en el portal, el Route Handler del comprobante | ⏸ No empezado, a propósito | — |
 | — | Aviso de diferencia y ajustes (§8.6) | ⏸ Fase 7, como estaba | — |
 
