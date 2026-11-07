@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { declararTransferencia } from "@/lib/acciones";
-import { porClaseDeOferta, type Oferta } from "@/lib/dominio/ofertas";
+import { comprobarAmiga, declararTransferencia } from "@/lib/acciones";
+import { esParaAmiga, porClaseDeOferta, type Oferta } from "@/lib/dominio/ofertas";
 import { clp } from "@/lib/planes";
 import type { DatosTransferencia } from "@/lib/compras-consultas";
 
@@ -30,6 +30,12 @@ export function FormularioTransferencia({
   const [listo, setListo] = useState(false);
   const [sinCorreo, setSinCorreo] = useState(false);
   const [enviando, iniciar] = useTransition();
+  // PRD-0026: el correo de la amiga **ya comprobado por el servidor**. Mientras
+  // sea null no se muestran los datos para transferir: si se enterara de que
+  // su amiga no tiene cuenta después de transferir, se sentiría trampa.
+  const paraAmiga = esParaAmiga(oferta);
+  const [amiga, setAmiga] = useState<string | null>(null);
+  const puedeTransferir = !paraAmiga || amiga !== null;
 
   if (listo) {
     return (
@@ -43,6 +49,7 @@ export function FormularioTransferencia({
         <p className="mt-5 leading-relaxed text-xo-gris">
           Miramos la cuenta y te acreditamos las clases. Te llega un correo
           cuando estén listas y ahí ya puedes reservar.
+          {paraAmiga ? " A tu amiga también le escribimos cuando la suya esté en su cuenta." : ""}
         </p>
         {/* El aviso quedó registrado igual: esto es solo que el acuse por
             correo no salió. En gris y sin alarma (PRD-0019 §8.6). */}
@@ -86,10 +93,20 @@ export function FormularioTransferencia({
           Sirven para cualquier horario del calendario, con cualquier profe y en
           cualquiera de nuestras salas.
         </p>
+
+        {paraAmiga ? <AvisoAmiga oferta={oferta} /> : null}
       </div>
 
       <div>
-        <h2 className="xo-eyebrow text-xo-gris">2 · Transfiere</h2>
+        {paraAmiga ? (
+          <PasoAmiga confirmada={amiga} alConfirmar={setAmiga} />
+        ) : null}
+
+        {puedeTransferir ? (
+          <>
+        <h2 className={`xo-eyebrow text-xo-gris ${paraAmiga ? "mt-10" : ""}`}>
+          {paraAmiga ? "3" : "2"} · Transfiere
+        </h2>
 
         <dl className="mt-4 rounded-lg border border-xo-negro/20 p-5 text-sm">
           <Dato etiqueta="Banco" valor={datos.banco} />
@@ -106,7 +123,7 @@ export function FormularioTransferencia({
           </div>
         </dl>
 
-        <h2 className="xo-eyebrow mt-10 text-xo-gris">3 · Avísanos</h2>
+        <h2 className="xo-eyebrow mt-10 text-xo-gris">{paraAmiga ? "4" : "3"} · Avísanos</h2>
 
         <form
           className="mt-4 space-y-4"
@@ -123,6 +140,7 @@ export function FormularioTransferencia({
           }}
         >
           <input type="hidden" name="oferta" value={oferta.slug} />
+          {amiga ? <input type="hidden" name="correo_amiga" value={amiga} /> : null}
 
           <div>
             <label htmlFor="titular" className="xo-eyebrow text-xo-gris">
@@ -167,8 +185,115 @@ export function FormularioTransferencia({
             </p>
           ) : null}
         </form>
+          </>
+        ) : null}
       </div>
     </div>
+  );
+}
+
+/** Lo mismo que dice la vitrina, repetido acá: nadie llega a transferir sin leerlo. */
+function AvisoAmiga({ oferta }: { oferta: Oferta }) {
+  const suyas = oferta.clases - oferta.clasesParaAmiga;
+  return (
+    <p className="mt-5 max-w-prose border-l-2 border-xo-negro pl-4 text-sm leading-relaxed text-xo-negro">
+      {suyas === 1 ? "Una clase es tuya" : `${suyas} clases son tuyas`} y{" "}
+      {oferta.clasesParaAmiga === 1 ? "la otra va" : `${oferta.clasesParaAmiga} van`} a la cuenta
+      de tu amiga. <strong>Tu amiga tiene que tener cuenta en XO</strong> con el correo que nos
+      des: si todavía no la tiene, pídele que se cree una antes de seguir.
+    </p>
+  );
+}
+
+/**
+ * El correo de la amiga, comprobado en el servidor antes de mostrar a dónde
+ * transferir. La respuesta es solo "tiene cuenta" o "no tiene cuenta": nunca
+ * su nombre (PRD-0026 §8.4). Y cada comprobación cuenta para el límite de
+ * intentos, que vive en la base.
+ */
+function PasoAmiga({
+  confirmada,
+  alConfirmar,
+}: {
+  confirmada: string | null;
+  alConfirmar: (correo: string | null) => void;
+}) {
+  const [correo, setCorreo] = useState("");
+  const [mensaje, setMensaje] = useState<string | null>(null);
+  const [comprobando, iniciar] = useTransition();
+
+  if (confirmada) {
+    return (
+      <div>
+        <h2 className="xo-eyebrow text-xo-gris">2 · Tu amiga</h2>
+        <p className="mt-4 text-sm text-xo-negro">
+          <span aria-hidden="true">✦ </span>
+          <strong className="break-all">{confirmada}</strong> tiene cuenta. Su clase llega a esa
+          cuenta cuando confirmemos tu transferencia.
+        </p>
+        <button
+          type="button"
+          onClick={() => alConfirmar(null)}
+          className="xo-eyebrow mt-3 text-xo-negro underline underline-offset-4"
+        >
+          Cambiar el correo
+        </button>
+      </div>
+    );
+  }
+
+  const listo = correo.trim().includes("@");
+
+  return (
+    <form
+      onSubmit={(evento) => {
+        evento.preventDefault();
+        if (!listo) return;
+        setMensaje(null);
+        const valor = correo.trim();
+        iniciar(async () => {
+          const r = await comprobarAmiga(valor);
+          if (!r.ok) setMensaje(r.mensaje);
+          else if (r.tieneCuenta) alConfirmar(valor);
+          else
+            setMensaje(
+              "Ese correo no tiene cuenta en XO. Pídele a tu amiga que se cree una con ese mismo correo, o revisa si está bien escrito.",
+            );
+        });
+      }}
+    >
+      <h2 className="xo-eyebrow text-xo-gris">2 · Tu amiga</h2>
+      <label htmlFor="correo_amiga" className="mt-4 block text-sm text-xo-negro">
+        El correo con que tu amiga entra a XO
+      </label>
+      <input
+        id="correo_amiga"
+        type="email"
+        required
+        autoComplete="off"
+        value={correo}
+        onChange={(e) => {
+          setCorreo(e.target.value);
+          setMensaje(null);
+        }}
+        className="mt-2 w-full rounded-lg border border-xo-negro/25 bg-xo-blanco px-4 py-3 text-xo-negro"
+      />
+      <button
+        type="submit"
+        disabled={!listo || comprobando}
+        className="xo-eyebrow mt-4 w-full rounded-full bg-xo-rosa px-6 py-4 text-xo-negro transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        {comprobando ? "Comprobando…" : "Continuar"}
+      </button>
+      <p className="mt-3 text-sm leading-relaxed text-xo-gris">
+        Solo te decimos si ese correo tiene cuenta, nada más de ella.
+      </p>
+      {mensaje ? (
+        <p role="alert" className="mt-4 border-l-2 border-xo-negro pl-4 text-sm text-xo-negro">
+          {mensaje}
+        </p>
+      ) : null}
+    </form>
   );
 }
 
