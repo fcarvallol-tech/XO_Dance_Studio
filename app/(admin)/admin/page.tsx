@@ -1,20 +1,32 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { TituloPortal } from "@/components/Portal";
 import { CambiarRol } from "@/components/CambiarRol";
 import { RegalarClases } from "@/components/RegalarClases";
+import { QuitarClases } from "@/components/QuitarClases";
 import { cuandoLegible } from "@/lib/compras";
-import { getRegalosRecientes, getSaldosVigentes } from "@/lib/compras-consultas";
-import { NOMBRE_ROL, esRol, type Rol } from "@/lib/roles";
+import {
+  getRegalosRecientes,
+  getRevocacionesRecientes,
+  getSaldosVigentes,
+} from "@/lib/compras-consultas";
+import { NOMBRE_ROL, esRol, tieneNivel, type Rol } from "@/lib/roles";
 import { nombreDe } from "@/lib/catalogo";
 import { getCatalogoCompleto } from "@/lib/catalogo-consultas";
 import { ErrorDeLectura } from "@/components/ErrorDeLectura";
 import { requiereNivel } from "@/lib/sesion";
+import { filtroDePersonas, normalizarBusqueda } from "@/lib/busqueda-personas";
 import { clienteServidor } from "@/lib/supabase/servidor";
 
 export const metadata: Metadata = {
   title: "Administración — XO Dance Studio",
   robots: { index: false, follow: false },
 };
+
+/** Hasta cuántas personas se dibujan. Si hay más, la página lo dice (PRD-0025). */
+const TOPE_PERSONAS = 200;
+
+type Props = { searchParams: Promise<{ q?: string | string[] }> };
 
 type FilaPerfil = {
   id: string;
@@ -33,29 +45,44 @@ type FilaPerfil = {
  * política `perfiles_admin_lee_todos` estuviera mal, esta tabla sale vacía en
  * vez de filtrar datos.
  */
-export default async function Admin() {
+export default async function Admin({ searchParams }: Props) {
   const actor = await requiereNivel("admin", "admin");
   const supabase = await clienteServidor();
+  const busqueda = normalizarBusqueda((await searchParams).q);
   // Completo, no público: un admin tiene que poder ver también lo desactivado.
   const { profesoras, error: errorCatalogo } = await getCatalogoCompleto();
   const activas = profesoras.filter((p) => p.activa);
 
-  const [{ data, error }, saldos, regalos, { data: vigencia }] = await Promise.all([
-    supabase
-      .from("perfiles")
-      .select("id, nombre, email, rol, profesora_id, created_at")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(200),
-    getSaldosVigentes(),
+  // PRD-0024: quitar clases es solo del owner. El botón y la lista no se
+  // dibujan para nadie más, y la base lo vuelve a verificar.
+  const esOwner = tieneNivel(actor.rol, "owner");
+
+  // PRD-0025: el filtro va en la consulta, y `count: "exact"` trae en la misma
+  // respuesta cuántas coinciden en total, más allá del tope. Sin ese número la
+  // lista se cortaba en 200 sin que nadie lo supiera.
+  let consultaPerfiles = supabase
+    .from("perfiles")
+    .select("id, nombre, email, rol, profesora_id, created_at", { count: "exact" })
+    .is("deleted_at", null);
+  if (busqueda) consultaPerfiles = consultaPerfiles.or(filtroDePersonas(busqueda));
+
+  const [{ data, error, count }, saldosDeTodas, regalos, { data: vigencia }, revocaciones] = await Promise.all([
+    consultaPerfiles.order("created_at", { ascending: false }).limit(TOPE_PERSONAS),
+    // Sin búsqueda se leen todos los saldos de una vez, en paralelo. Con
+    // búsqueda, después, y solo los de quienes aparecieron.
+    busqueda ? null : getSaldosVigentes(),
     getRegalosRecientes(),
     // Preferencia con valor por defecto, como `calendario_dias`: si no se lee,
     // 60 es lo mismo que dice el parámetro. La base usa el suyo al regalar.
     supabase.from("parametros").select("valor").eq("clave", "regalo_vigencia_dias").maybeSingle(),
+    esOwner ? getRevocacionesRecientes() : null,
   ]);
   const vigenciaDias = Number(vigencia?.valor ?? 60) || 60;
 
   const perfiles = (data ?? []) as FilaPerfil[];
+  const saldos = saldosDeTodas ?? (await getSaldosVigentes(perfiles.map((p) => p.id)));
+  const total = count ?? perfiles.length;
+  const llegoAlTope = total > perfiles.length;
 
   return (
     <>
@@ -71,6 +98,23 @@ export default async function Admin() {
       />
       <ErrorDeLectura que="el catálogo de profesoras" error={errorCatalogo} />
       <ErrorDeLectura que="los saldos de clases" error={saldos.error} />
+
+      <BuscarPersonas busqueda={busqueda} />
+
+      {error ? null : (
+        <Conteo busqueda={busqueda} mostradas={perfiles.length} total={total} />
+      )}
+      {llegoAlTope && !error ? (
+        <p
+          role="status"
+          className="mb-6 max-w-prose border-l-2 border-xo-negro pl-4 text-sm text-xo-negro"
+          data-tope
+        >
+          <strong>La lista llegó al tope.</strong> Se ven las {perfiles.length} más recientes de{" "}
+          {total}: {total - perfiles.length} no aparecen.{" "}
+          {busqueda ? "Escribe algo más preciso para acotar." : "Busca por nombre o correo para encontrar al resto."}
+        </p>
+      ) : null}
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[60rem] border-collapse text-left">
@@ -104,13 +148,23 @@ export default async function Admin() {
                 <td className="py-3 pr-4">
                   {/* Clases vigentes y el regalo (PRD-0023). También a sí
                       misma y a una profesora: las dos toman clases. */}
-                  <RegalarClases
-                    perfilId={fila.id}
-                    nombre={fila.nombre}
-                    correo={fila.email}
-                    saldo={saldos.datos.get(fila.id) ?? 0}
-                    vigenciaDias={vigenciaDias}
-                  />
+                  <div className="flex flex-wrap items-center gap-3">
+                    <RegalarClases
+                      perfilId={fila.id}
+                      nombre={fila.nombre}
+                      correo={fila.email}
+                      saldo={saldos.datos.get(fila.id) ?? 0}
+                      vigenciaDias={vigenciaDias}
+                    />
+                    {esOwner ? (
+                      <QuitarClases
+                        perfilId={fila.id}
+                        nombre={fila.nombre}
+                        correo={fila.email}
+                        saldo={saldos.datos.get(fila.id) ?? 0}
+                      />
+                    ) : null}
+                  </div>
                 </td>
                 <td className="py-3">
                   {fila.id === actor.id ? (
@@ -132,7 +186,16 @@ export default async function Admin() {
       </div>
 
       {perfiles.length === 0 && !error ? (
-        <p className="text-xo-gris">Todavía no hay nadie registrado.</p>
+        busqueda ? (
+          <p className="mt-4 text-xo-negro">
+            Nadie con «{busqueda}» en el nombre ni en el correo.{" "}
+            <Link href="/admin" className="underline underline-offset-4">
+              Ver a todas
+            </Link>
+          </p>
+        ) : (
+          <p className="text-xo-gris">Todavía no hay nadie registrado.</p>
+        )
       ) : null}
 
       {/* PRD-0023: lo regalado queda a la vista, con por qué y quién. Es plata
@@ -173,7 +236,101 @@ export default async function Admin() {
           ))}
         </ul>
       )}
+
+      {/* PRD-0024: lo quitado queda a la vista, con por qué y quién. Solo owner. */}
+      {revocaciones ? (
+        <>
+          <h2 className="xo-eyebrow mt-14 text-xo-gris">Clases quitadas recientes</h2>
+          <p className="mt-2 max-w-prose text-sm text-xo-gris">
+            Cada una es un movimiento negativo en el libro, con su motivo. No borra el regalo ni la
+            compra de donde salió, y en el tablero cuenta como revocada, no como venta menos.
+          </p>
+          <ErrorDeLectura que="las clases quitadas" error={revocaciones.error} />
+          {revocaciones.error ? null : revocaciones.datos.length === 0 ? (
+            <p className="mt-4 text-xo-gris">Todavía no se ha quitado ninguna clase.</p>
+          ) : (
+            <ul className="mt-4 divide-y divide-xo-negro/10 border-y border-xo-negro/10" data-revocaciones>
+              {revocaciones.datos.map((r) => (
+                <li key={`${r.revocadoAt}-${r.perfilId}`} className="py-3">
+                  <p className="text-sm text-xo-negro">
+                    {r.alumna ?? "Sin nombre"} · −{r.cantidad} {r.cantidad === 1 ? "clase" : "clases"}
+                    {r.lotes > 1 ? <span className="text-xo-gris"> (de {r.lotes} lotes)</span> : null}
+                  </p>
+                  <p className="text-sm text-xo-negro">
+                    <span className="text-xo-gris">Por qué: </span>
+                    {r.motivo}
+                  </p>
+                  <p className="text-sm text-xo-gris">
+                    {cuandoLegible(r.revocadoAt)} · por {r.autor ?? "alguien sin perfil"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      ) : null}
     </>
+  );
+}
+
+/**
+ * Formulario nativo con `GET`: la búsqueda queda en la URL, se puede recargar
+ * y compartir, y funciona sin JavaScript.
+ */
+function BuscarPersonas({ busqueda }: { busqueda: string | null }) {
+  return (
+    <form method="get" action="/admin" role="search" className="mb-4 flex flex-wrap items-end gap-3">
+      <label className="block w-full max-w-md">
+        <span className="xo-eyebrow text-xo-gris">Buscar por nombre o correo</span>
+        <input
+          type="search"
+          name="q"
+          defaultValue={busqueda ?? ""}
+          maxLength={100}
+          autoComplete="off"
+          placeholder="cami, gmail, Pérez…"
+          className="mt-2 w-full rounded-lg border border-xo-negro/25 bg-xo-blanco px-4 py-3 text-xo-negro placeholder:text-xo-gris"
+        />
+      </label>
+      <button
+        type="submit"
+        className="xo-eyebrow rounded-full bg-xo-negro px-5 py-3 text-xo-blanco transition-opacity hover:opacity-85"
+      >
+        Buscar
+      </button>
+      {busqueda ? (
+        <Link
+          href="/admin"
+          className="xo-eyebrow rounded-full border border-xo-negro/20 px-5 py-3 text-xo-negro transition-colors hover:border-xo-negro/50"
+        >
+          Limpiar
+        </Link>
+      ) : null}
+    </form>
+  );
+}
+
+/** El número total se dice siempre, haya tope o no (Felipe, 05/11/2026). */
+function Conteo({
+  busqueda,
+  mostradas,
+  total,
+}: {
+  busqueda: string | null;
+  mostradas: number;
+  total: number;
+}) {
+  const personas = (n: number) => `${n} ${n === 1 ? "persona" : "personas"}`;
+  return (
+    <p className="mb-4 text-sm text-xo-gris" data-conteo>
+      {busqueda
+        ? total === 0
+          ? null
+          : `${personas(total)} con «${busqueda}»${mostradas < total ? `, se ven ${mostradas}` : ""}.`
+        : mostradas < total
+          ? `${personas(total)} registradas, se ven ${mostradas}.`
+          : `${personas(total)} registradas.`}
+    </p>
   );
 }
 
