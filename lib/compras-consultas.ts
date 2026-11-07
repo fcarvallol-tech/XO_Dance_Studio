@@ -613,16 +613,26 @@ export async function getRevocacionesRecientes(limite = 30): Promise<Lectura<Rev
  * Cuántas clases vigentes tiene cada persona, para la tabla de Personas: es lo
  * que se mira antes de regalar. Una sola consulta para toda la tabla, no una
  * por fila. Con la sesión: RLS deja a admin leer todos los lotes.
+ *
+ * Con `perfilIds` (PRD-0025, cuando hay búsqueda) lee solo los lotes de esas
+ * personas. Sin búsqueda se leen todos: la lista ya muestra a casi todas, y
+ * 200 uuid en un `in=(…)` son más de 7 KB de URL.
  */
-export async function getSaldosVigentes(): Promise<Lectura<Map<string, number>>> {
+export async function getSaldosVigentes(
+  perfilIds?: string[],
+): Promise<Lectura<Map<string, number>>> {
+  const saldos = new Map<string, number>();
+  if (perfilIds && perfilIds.length === 0) return { datos: saldos, error: null };
+
   const supabase = await clienteServidor();
-  const { data, error } = await supabase
+  let consulta = supabase
     .from("creditos")
     .select("perfil_id, cantidad_disponible")
     .gt("cantidad_disponible", 0)
     .gt("fecha_vencimiento", new Date().toISOString());
+  if (perfilIds) consulta = consulta.in("perfil_id", perfilIds);
+  const { data, error } = await consulta;
 
-  const saldos = new Map<string, number>();
   for (const f of (data ?? []) as { perfil_id: string; cantidad_disponible: number }[]) {
     saldos.set(f.perfil_id, (saldos.get(f.perfil_id) ?? 0) + f.cantidad_disponible);
   }

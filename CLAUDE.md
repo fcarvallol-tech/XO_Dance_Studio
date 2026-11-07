@@ -250,6 +250,9 @@ de a una, y una página que hace ocho tarda el doble que una que hace cuatro.
   - Sin aprobación, el trabajo termina en: migración escrita, `npm run build` corrido, y avisar que
     queda lista para aplicar.
   - El procedimiento completo está en `supabase/README.md`.
+- **Primero la migración, después el deploy.** Si el código sale antes que su migración, el build
+  falla: pasó con `sedes.ocasional` el 06/11/2026, porque la página consulta la columna durante el
+  build. Nunca mergear a `main` una rama cuya migración no esté aplicada en producción.
 
 ## Datos sensibles
 
