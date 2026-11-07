@@ -46,8 +46,9 @@ for (let i = 0; i < 20; i++) {
 
 /** Una clase del horario de Pau en esa fecha, a las 19:00 de Santiago. */
 async function clase(fecha) {
-  return (await uno(db, `insert into clases (horario_id, fecha, inicio, curso_id, profesora_id, sede_id, cupo_maximo)
-    values ($1, $2::date, ($2::date + time '19:00') at time zone 'America/Santiago', $3, $4, $5, $6) returning id`,
+  return (await uno(db, `insert into clases (horario_id, fecha, inicio, fin, curso_id, profesora_id, sede_id, cupo_maximo)
+    values ($1, $2::date, ($2::date + time '19:00') at time zone 'America/Santiago',
+            ($2::date + time '20:00') at time zone 'America/Santiago', $3, $4, $5, $6) returning id`,
     [horarioPau.id, fecha, horarioPau.curso_id, PAU, horarioPau.sede_id, capacidad])).id;
 }
 /** n reservas confirmadas que consumen crédito, con su asiento en el libro. */
