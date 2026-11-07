@@ -134,6 +134,7 @@ function gruposPara(rol: Rol, correosFallidos = 0, transferenciasPendientes = 0)
         // "Clases que dicto" y no "Mis clases": ella también tiene las suyas
         // como alumna, y las dos aparecen en la misma barra.
         { href: "/profesora/mis-clases", texto: "Clases que dicto" },
+        { href: "/profesora/liquidacion", texto: "Mi liquidación" },
         { href: "/profesora/solicitudes", texto: "Pedir horario" },
       ],
     });
@@ -175,6 +176,7 @@ function gruposPara(rol: Rol, correosFallidos = 0, transferenciasPendientes = 0)
       enlaces: [
         { href: "/owner/metricas", texto: "Métricas" },
         { href: "/owner/finanzas", texto: "Finanzas" },
+        { href: "/owner/liquidaciones", texto: "Liquidaciones" },
       ],
     });
   }
