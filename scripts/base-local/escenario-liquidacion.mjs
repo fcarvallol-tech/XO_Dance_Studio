@@ -96,13 +96,18 @@ async function calcular(profesoraId, ahora = new Date("2026-12-02T12:00:00-03:00
       tipo: i.tipo, estado: i.estado, causa: i.causa,
       profesoraSePresento: i.profesora_se_presento,
       recuperada: i.recuperada, creditosConsumidos: i.creditos_consumidos,
+      curso: i.curso, sede: i.sede,
+      recuperacionInicio: i.recuperacion_inicio ? new Date(i.recuperacion_inicio).toISOString() : null,
+      recuperaInicio: i.recupera_inicio ? new Date(i.recupera_inicio).toISOString() : null,
     })),
   });
 }
 const huella = async (profesoraId) => (await como(db, owner, (tx) =>
   uno(tx, "select huella from public.huellas_liquidacion('2026-11-01') where profesora_id = $1", [profesoraId]))).huella;
-const pagar = (actor, profesoraId, monto, h, comprobante = "liquidaciones/x.png", mes = "2026-11-01") =>
-  sv("select * from public.pagar_liquidacion($1, $2, $3, $4, '{}'::jsonb, $5, $6)", [actor.userId, profesoraId, mes, monto, h, comprobante]);
+const cerrar = (actor, profesoraId, monto, h, mes = "2026-11-01") =>
+  sv("select * from public.cerrar_liquidacion($1, $2, $3, $4, '{}'::jsonb, $5)", [actor.userId, profesoraId, mes, monto, h]);
+const pagar = (actor, liquidacionId, comprobante = "liquidaciones/x.png") =>
+  sv("select * from public.pagar_liquidacion($1, $2, $3)", [actor.userId, liquidacionId, comprobante]);
 
 console.log("\n1. Tarifas");
 await paso("las cinco profesoras activas tienen tarifa, Isi incluida, con umbral 5", async () => {
@@ -209,21 +214,18 @@ await paso("Drimy: $18.750 por la clase que cubrió (8 créditos → 3 sobre el 
   assert.equal(r.incentivoClp, 0);
 });
 
-console.log("\n5. Pagar");
-await paso("con el mes en curso (hoy real, 05/11) rebota", async () => {
-  await falla(pagar(owner, PAU, 124_500, await huella(PAU)), /todavía no termina/);
+console.log("\n5. Cerrar y pagar");
+await paso("con el mes en curso (hoy real) no se cierra", async () => {
+  await falla(cerrar(owner, PAU, 124_500, await huella(PAU)), /todavía no termina/);
 });
 // Desde acá, "hoy" es el 2 de diciembre.
 await db.exec("create or replace function public.hoy_santiago() returns date language sql stable as $$ select date '2026-12-02' $$");
-await paso("sin comprobante rebota", async () => {
-  await falla(pagar(owner, PAU, 124_500, await huella(PAU), "  "), /comprobante/);
+await paso("admin no puede cerrar; una sesión no llama la función", async () => {
+  await falla(cerrar(admin, PAU, 124_500, await huella(PAU)), /Solo el owner/);
+  await falla(como(db, owner, (tx) => tx.query("select public.cerrar_liquidacion($1, $2, '2026-11-01', 1, '{}', 'x')", [owner.userId, PAU])), /permission denied/);
 });
-await paso("admin no puede pagar; una sesión no llama la función", async () => {
-  await falla(pagar(admin, PAU, 124_500, await huella(PAU)), /Solo el owner/);
-  await falla(como(db, owner, (tx) => tx.query("select public.pagar_liquidacion($1, $2, '2026-11-01', 1, '{}', 'x', 'y')", [owner.userId, PAU])), /permission denied/);
-});
-await paso("octubre no se paga: se pagó a mano", async () => {
-  await falla(pagar(owner, PAU, 1000, "x", "c.png", "2026-10-01"), /noviembre de 2026/);
+await paso("octubre no se cierra: se pagó a mano", async () => {
+  await falla(cerrar(owner, PAU, 1000, "x", "2026-10-01"), /noviembre de 2026/);
   await falla(como(db, owner, (tx) => tx.query("select * from public.insumos_liquidacion('2026-10-01')")), /noviembre de 2026/);
 });
 await paso("si algo cambió desde que se miró (la huella), rebota", async () => {
@@ -231,7 +233,7 @@ await paso("si algo cambió desde que se miró (la huella), rebota", async () =>
   // Una reserva más en A5, de una alumna que no estaba (reservar() usa las primeras).
   const extra = alumnas[15];
   await db.query("insert into reservas (perfil_id, clase_id, credito_id) values ($1, $2, $3)", [extra.perfilId, A5, extra.creditoId]);
-  await falla(pagar(owner, PAU, 124_500, vieja), /cambió mientras lo mirabas/);
+  await falla(cerrar(owner, PAU, 124_500, vieja), /cambió mientras lo mirabas/);
   // Se deshace para seguir con los montos de arriba.
   await db.query("delete from reservas where perfil_id = $1 and clase_id = $2", [extra.perfilId, A5]);
 });
@@ -241,27 +243,58 @@ await paso("A2 con el campo prendido: asistencia no cobra el viaje, Pau sigue en
   assert.equal((await calcular(PAU)).totalClp, 124_500);
   await registrar(admin, A2, "asistencia_insuficiente", "No llegaron alumnas suficientes");
 });
-await paso("prender o apagar profesora_se_presento mueve la huella: el pago viejo rebota", async () => {
+await paso("prender o apagar profesora_se_presento mueve la huella: el cierre viejo rebota", async () => {
   const vieja = await huella(PAU);
   await registrar(admin, D, "cambio_de_parrilla", "El horario se movió al jueves", true);
   assert.notEqual(await huella(PAU), vieja);
-  await falla(pagar(owner, PAU, 124_500, vieja), /cambió mientras lo mirabas/);
+  await falla(cerrar(owner, PAU, 124_500, vieja), /cambió mientras lo mirabas/);
   await registrar(admin, D, "cambio_de_parrilla", "El horario se movió al jueves", false);
   assert.equal(await huella(PAU), vieja);
 });
-await paso("pagar a Pau: liquidación de $124.500 con su huella y comprobante, y un egreso igual", async () => {
-  const r = await pagar(owner, PAU, 124_500, await huella(PAU));
+await paso("cerrar a Pau: fila de $124.500 con su huella, sin pago ni egreso todavía", async () => {
+  const r = await cerrar(owner, PAU, 124_500, await huella(PAU));
   pagoId = r.id;
+  assert.deepEqual([r.monto_clp, r.pagada_at, r.egreso_id, r.comprobante_path], [124_500, null, null, null]);
+  assert.ok(r.cerrada_at);
+});
+await paso("cerrar dos veces el mismo mes no duplica: devuelve la misma fila", async () => {
+  const r = await cerrar(owner, PAU, 124_500, await huella(PAU));
+  assert.equal(r.id, pagoId);
+  assert.equal((await uno(db, "select count(*)::int n from liquidaciones_profesoras where profesora_id = $1", [PAU])).n, 1);
+});
+await paso("cerrar con otro cálculo rebota", async () => {
+  await falla(cerrar(owner, PAU, 124_500, "otra-huella"), /ya está cerrado/);
+});
+await paso("el libro no se edita: ni el monto, ni el detalle, ni borrar", async () => {
+  await falla(db.query("update liquidaciones_profesoras set monto_clp = 1 where id = $1", [pagoId]), /no se cambia/);
+  await falla(db.query("update liquidaciones_profesoras set detalle = '{\"x\":1}' where id = $1", [pagoId]), /no se cambia/);
+  await falla(db.query("delete from liquidaciones_profesoras where id = $1", [pagoId]), /no se borra/);
+});
+await paso("con el mes cerrado, marcar una clase o reasignarla rebota", async () => {
+  await falla(registrar(admin, A1, "ausencia_profesora"), /ya se le pagó/);
+  await falla(sv("select id from public.reasignar_clase($1, $2, $3)", [admin.userId, A1, DRIMY]), /ya se le pagó/);
+});
+await paso("pagar sin comprobante rebota; admin no paga; una sesión no llama la función", async () => {
+  await falla(pagar(owner, pagoId, "  "), /comprobante/);
+  await falla(pagar(admin, pagoId), /Solo el owner/);
+  await falla(como(db, owner, (tx) => tx.query("select public.pagar_liquidacion($1, $2, 'y')", [owner.userId, pagoId])), /permission denied/);
+});
+await paso("si los insumos cambiaron desde el cierre, pagar rebota", async () => {
+  const extra = alumnas[15];
+  await db.query("insert into reservas (perfil_id, clase_id, credito_id) values ($1, $2, $3)", [extra.perfilId, A5, extra.creditoId]);
+  await falla(pagar(owner, pagoId), /cambió desde que se cerró/);
+  await db.query("delete from reservas where perfil_id = $1 and clase_id = $2", [extra.perfilId, A5]);
+});
+await paso("pagar a Pau: agrega comprobante y un egreso igual, y lo congelado no se mueve", async () => {
+  const r = await pagar(owner, pagoId);
   assert.equal(r.monto_clp, 124_500);
+  assert.ok(r.pagada_at);
   const e = await uno(db, "select categoria, monto_clp, comprobante_path, fecha::text from egresos where id = $1", [r.egreso_id]);
   assert.deepEqual([e.categoria, e.monto_clp, e.comprobante_path, e.fecha], ["sueldo_profesora", 124_500, "liquidaciones/x.png", "2026-12-02"]);
 });
-await paso("pagar dos veces el mismo mes rebota", async () => {
-  await falla(pagar(owner, PAU, 124_500, await huella(PAU)), /ya está pagado/);
-});
-await paso("con el mes pagado, marcar una clase o reasignarla rebota (va como ajuste)", async () => {
-  await falla(registrar(admin, A1, "ausencia_profesora"), /ya se le pagó/);
-  await falla(sv("select id from public.reasignar_clase($1, $2, $3)", [admin.userId, A1, DRIMY]), /ya se le pagó/);
+await paso("pagar dos veces rebota, y un pago registrado no se cambia", async () => {
+  await falla(pagar(owner, pagoId), /ya está pagado/);
+  await falla(db.query("update liquidaciones_profesoras set comprobante_path = 'otro' where id = $1", [pagoId]), /no se cambia/);
 });
 
 console.log("\n6. Lo que ve cada una (ADR-0008)");
@@ -317,6 +350,16 @@ await paso("anular el pago: queda con deleted_at, anula el egreso y el mes vuelv
   assert.ok(l.deleted_at);
   assert.ok((await uno(db, "select deleted_at from egresos where id = $1", [l.egreso_id])).deleted_at);
   await registrar(admin, A1, "sala_no_disponible", "Ahora sí se puede corregir"); // ya no está pagado
+});
+
+await paso("cerrar de nuevo agrega una fila: la anulada sigue ahí", async () => {
+  const r = await cerrar(owner, PAU, 100_000, await huella(PAU));
+  assert.notEqual(r.id, pagoId);
+  assert.equal((await uno(db, "select count(*)::int n from liquidaciones_profesoras where profesora_id = $1", [PAU])).n, 2);
+  await sv("select id from public.anular_liquidacion($1, $2, 'Era solo para probar')", [owner.userId, r.id]);
+});
+await paso("una anulada no vuelve", async () => {
+  await falla(db.query("update liquidaciones_profesoras set deleted_at = null, anulada_at = null where id = $1", [pagoId]), /no vuelve/);
 });
 
 console.log("\n8. Las métricas dejan de contar una no dictada como dictada");

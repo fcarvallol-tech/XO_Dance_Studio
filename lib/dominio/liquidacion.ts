@@ -85,6 +85,9 @@ export type ClaseLiquidable = {
   /** Quien la dictó: `clases.profesora_id`. Con un reemplazo, la reemplazante. */
   profesoraId: string;
   cursoId: string;
+  /** Para leer: el nombre del curso y de la sala. No entran en ningún cálculo. */
+  curso: string;
+  sede: string;
   inicio: string;
   fin: string | null;
   tipo: "parrilla" | "especial";
@@ -98,6 +101,10 @@ export type ClaseLiquidable = {
   profesoraSePresento: boolean;
   /** Si tiene una recuperación vigente: una clase con `recupera_clase_id` a esta, no cancelada. */
   recuperada: boolean;
+  /** Cuándo es esa recuperación. Puede caer en otro mes, y ahí se paga en ese otro. */
+  recuperacionInicio: string | null;
+  /** Si esta clase recupera a otra, cuándo era esa otra. */
+  recuperaInicio: string | null;
   /** Reservas con crédito y sin devolver (el mismo hecho que atribuye ingreso). */
   creditosConsumidos: number;
 };
@@ -119,8 +126,13 @@ export type TipoLinea =
 export type Linea = {
   claseId: string;
   cursoId: string;
+  curso: string;
+  sede: string;
   inicio: string;
   tipo: TipoLinea;
+  causa: Causa | null;
+  recuperacionInicio: string | null;
+  recuperaInicio: string | null;
   horas: number;
   creditosConsumidos: number;
   baseClp: number;
@@ -130,12 +142,18 @@ export type Linea = {
   explicacion: string;
 };
 
+/** Una clase de las que se promediaron para el incentivo. */
+export type ClaseDelPromedio = { claseId: string; inicio: string; creditos: number };
+
 export type IncentivoDeCurso = {
   cursoId: string;
+  curso: string;
   /** Cuántas clases dictadas tuvo ese curso en el mes. */
   dictadas: number;
   /** Los créditos de las mejores, de mayor a menor. Vacío si no llega al mínimo. */
   mejores: number[];
+  /** Cuáles clases son esas mejores. Vacío si no llega al mínimo. */
+  clasesDelPromedio: ClaseDelPromedio[];
   /** Promedio de las mejores, solo para mostrar. La comparación se hace sin decimales. */
   promedio: number | null;
   /** Cuántos tramos alcanzó: 0, 1 o 2. */
@@ -257,8 +275,13 @@ export function lineaDeClase(clase: ClaseLiquidable, tarifa: Tarifa, ahora: Date
   ): Linea => ({
     claseId: clase.id,
     cursoId: clase.cursoId,
+    curso: clase.curso,
+    sede: clase.sede,
     inicio: clase.inicio,
     tipo,
+    causa: clase.causa,
+    recuperacionInicio: clase.recuperacionInicio,
+    recuperaInicio: clase.recuperaInicio,
     horas: h,
     creditosConsumidos: clase.creditosConsumidos,
     baseClp,
@@ -320,7 +343,10 @@ export function lineaDeClase(clase: ClaseLiquidable, tarifa: Tarifa, ahora: Date
  * - La comparación es **sin decimales**: suma de las mejores ≥ tramo × 4. Así
  *   13,75 no llega a 14 y 14,00 sí, sin redondeos que discutir.
  */
-export function incentivoDeCurso(cursoId: string, creditosDeDictadas: number[]): IncentivoDeCurso {
+export function incentivoDeCurso(
+  cursoId: string,
+  creditosDeDictadas: number[],
+): Omit<IncentivoDeCurso, "curso" | "clasesDelPromedio"> {
   const dictadas = creditosDeDictadas.length;
   if (dictadas < INCENTIVO.minimoDictadas) {
     return {
@@ -390,14 +416,29 @@ export function liquidar(entrada: {
   const lineas = delMes.map((c) => lineaDeClase(c, tarifa, ahora));
 
   // Incentivo por curso, con las dictadas de parrilla.
-  const porCurso = new Map<string, number[]>();
+  const porCurso = new Map<string, Linea[]>();
   for (const l of lineas) {
     if (l.tipo !== "dictada") continue;
-    porCurso.set(l.cursoId, [...(porCurso.get(l.cursoId) ?? []), l.creditosConsumidos]);
+    porCurso.set(l.cursoId, [...(porCurso.get(l.cursoId) ?? []), l]);
   }
   const incentivos = [...porCurso.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([cursoId, creditos]) => incentivoDeCurso(cursoId, creditos));
+    .map(([cursoId, dictadas]): IncentivoDeCurso => {
+      const incentivo = incentivoDeCurso(cursoId, dictadas.map((l) => l.creditosConsumidos));
+      // Mismo orden que `mejores`; en un empate entra la primera del mes.
+      const ordenadas = [...dictadas].sort(
+        (a, b) => b.creditosConsumidos - a.creditosConsumidos || a.inicio.localeCompare(b.inicio),
+      );
+      return {
+        ...incentivo,
+        curso: dictadas[0].curso,
+        clasesDelPromedio: ordenadas.slice(0, incentivo.mejores.length).map((l) => ({
+          claseId: l.claseId,
+          inicio: l.inicio,
+          creditos: l.creditosConsumidos,
+        })),
+      };
+    });
 
   const baseClp = lineas.reduce((t, l) => t + l.baseClp, 0);
   const variableClp = lineas.reduce((t, l) => t + l.variableClp, 0);
@@ -436,4 +477,89 @@ export function textoDeBloqueo(b: Bloqueo): string {
     case "clases_sin_causa":
       return `${b.cuantas} ${b.cuantas === 1 ? "clase cancelada o no dictada sin causa" : "clases canceladas o no dictadas sin causa"}.`;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Lo que no se está pagando
+// ---------------------------------------------------------------------------
+
+export type RazonDeNoPago =
+  /** Se recupera en otro mes: se paga allá, no en este pago. */
+  | "se_paga_otro_mes"
+  /** Se recupera dentro del mes: ya está pagada, en la línea de la recuperación. */
+  | "se_paga_en_la_recuperacion"
+  /** No tiene fecha de recuperación. */
+  | "sin_fecha"
+  /** Falta decir por qué no se dictó. */
+  | "sin_causa"
+  /** La causa no paga, y no hay nada que recuperar. */
+  | "no_paga"
+  | "futura"
+  | "especial";
+
+export type NoPagada = {
+  claseId: string;
+  inicio: string;
+  curso: string;
+  sede: string;
+  razon: RazonDeNoPago;
+  /** Cuándo caería la recuperación, si tiene fecha. */
+  cae: string | null;
+  explicacion: string;
+};
+
+const MESES_NOMBRE = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+
+/** "2026-11" → "noviembre de 2026". */
+export function nombreDeMes(mes: string): string {
+  const [anio, numero] = mes.split("-").map(Number);
+  return `${MESES_NOMBRE[numero - 1]} de ${anio}`;
+}
+
+/**
+ * Lo que este pago deja afuera, y por qué (Felipe, 06/11/2026). Importa tanto
+ * como el total: una clase del 27/11 recuperada el 3/12 se paga en diciembre,
+ * y si eso no se ve se descubre cuando la profesora pregunta.
+ *
+ * Una no dictada que igual paga la base por `sala_no_disponible` con la
+ * profesora presente no está acá si ya tiene recuperación: esa línea sí paga.
+ */
+export function noEntraEnEstePago(lineas: Linea[], mes: string): NoPagada[] {
+  const salida: NoPagada[] = [];
+  for (const l of lineas) {
+    const fila = (razon: RazonDeNoPago, explicacion: string, cae: string | null = null) =>
+      salida.push({ claseId: l.claseId, inicio: l.inicio, curso: l.curso, sede: l.sede, razon, cae, explicacion });
+
+    if (l.tipo === "futura") fila("futura", "Todavía no ocurre.");
+    if (l.tipo === "especial") fila("especial", "Clase especial: se paga aparte.");
+    if (l.tipo === "sin_causa") {
+      fila("sin_causa", "Falta decir por qué no se dictó. Hasta entonces no se puede cerrar el mes.", l.recuperacionInicio);
+    }
+    if (l.tipo !== "no_dictada" || l.causa === "cambio_de_parrilla") {
+      if (l.tipo === "no_dictada") fila("no_paga", "Cambio de parrilla: esa clase nunca estuvo en su semana.");
+      continue;
+    }
+
+    if (l.recuperacionInicio !== null) {
+      if (l.totalClp > 0) continue;
+      const otroMes = mesEnSantiago(l.recuperacionInicio);
+      if (otroMes === mes) {
+        fila("se_paga_en_la_recuperacion", "Se paga una sola vez, en la recuperación de este mismo mes.", l.recuperacionInicio);
+      } else {
+        fila("se_paga_otro_mes", `Se paga en ${nombreDeMes(otroMes)}, cuando se recupere. No entra en este pago.`, l.recuperacionInicio);
+      }
+      continue;
+    }
+
+    fila(
+      "sin_fecha",
+      l.totalClp > 0
+        ? "Sin fecha de recuperación. Si se cierra así, se paga la base y después ya no se puede recuperar."
+        : "Sin fecha de recuperación, y hoy no paga nada.",
+    );
+  }
+  return salida;
 }

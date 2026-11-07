@@ -25,6 +25,8 @@ import {
   liquidar,
   mesEnSantiago,
   mesTerminado,
+  noEntraEnEstePago,
+  nombreDeMes,
   textoDeBloqueo,
   variableDeClase,
   type Causa,
@@ -42,6 +44,8 @@ function clase(dia: string, extra: Partial<ClaseLiquidable> = {}): ClaseLiquidab
     id: `c${++n}`,
     profesoraId: P1,
     cursoId: "reggaeton",
+    curso: "Reggaeton",
+    sede: "Los Leones",
     inicio: `${dia}T19:00:00-03:00`,
     fin: null,
     tipo: "parrilla",
@@ -49,6 +53,8 @@ function clase(dia: string, extra: Partial<ClaseLiquidable> = {}): ClaseLiquidab
     causa: null,
     profesoraSePresento: false,
     recuperada: false,
+    recuperacionInicio: null,
+    recuperaInicio: null,
     creditosConsumidos: 0,
     ...extra,
   };
@@ -485,4 +491,85 @@ test("una futura del mes no cuenta para el piso: el incentivo se decide con el m
   assert.equal(r.incentivos[0].dictadas, 3);
   assert.equal(r.incentivoClp, 0);
   assert.ok(r.bloqueos.some((b) => b.tipo === "mes_en_curso"));
+});
+
+// ---------------------------------------------------------------------------
+// Cuáles clases se promediaron, y lo que no se está pagando
+// ---------------------------------------------------------------------------
+
+test("el incentivo dice cuáles 4 clases usó, de mayor a menor, y deja afuera la peor", () => {
+  const cs = [
+    clase("2026-11-03", { creditosConsumidos: 9 }),
+    clase("2026-11-10", { creditosConsumidos: 16 }),
+    clase("2026-11-17", { creditosConsumidos: 12 }),
+    clase("2026-11-24", { creditosConsumidos: 14 }),
+    clase("2026-11-26", { creditosConsumidos: 14 }),
+  ];
+  const r = liquidar({ profesoraId: P1, mes: "2026-11", tarifa: T, ahora: DIC_1, clases: cs });
+  const usadas = r.incentivos[0].clasesDelPromedio;
+  assert.deepEqual(usadas.map((c) => c.creditos), r.incentivos[0].mejores);
+  assert.deepEqual(usadas.map((c) => c.claseId), [cs[1].id, cs[3].id, cs[4].id, cs[2].id]);
+  assert.equal(r.incentivos[0].promedio, 14);
+  assert.equal(r.incentivos[0].curso, "Reggaeton");
+});
+
+test("menos de 4 dictadas: no hay clases del promedio y dice por qué", () => {
+  const r = liquidar({ profesoraId: P1, mes: "2026-11", tarifa: T, ahora: DIC_1, clases: [clase("2026-11-03", { creditosConsumidos: 20 })] });
+  assert.deepEqual(r.incentivos[0].clasesDelPromedio, []);
+  assert.match(r.incentivos[0].explicacion, /hacen falta 4/);
+});
+
+const noEntra = (cs: ClaseLiquidable[]) =>
+  noEntraEnEstePago(liquidar({ profesoraId: P1, mes: "2026-11", tarifa: T, ahora: DIC_1, clases: cs }).lineas, "2026-11");
+
+test("la del 27/11 recuperada el 3/12: dice que se paga en diciembre y cuándo cae", () => {
+  const cae = "2026-12-03T19:00:00-03:00";
+  const [f] = noEntra([noDictada("2026-11-27", "asistencia_insuficiente", { recuperada: true, recuperacionInicio: cae })]);
+  assert.deepEqual([f.razon, f.cae], ["se_paga_otro_mes", cae]);
+  assert.match(f.explicacion, /Se paga en diciembre de 2026/);
+});
+
+test("recuperada dentro del mes: se paga en la recuperación", () => {
+  const [f] = noEntra([noDictada("2026-11-03", "sin_alumnas", { recuperada: true, recuperacionInicio: "2026-11-20T19:00:00-03:00" })]);
+  assert.equal(f.razon, "se_paga_en_la_recuperacion");
+});
+
+test("sin fecha y pagando la base: avisa que después no se puede recuperar", () => {
+  const [f] = noEntra([noDictada("2026-11-27", "sin_alumnas")]);
+  assert.equal(f.razon, "sin_fecha");
+  assert.match(f.explicacion, /ya no se puede recuperar/);
+});
+
+test("ausencia sin fecha: no paga nada y sigue pendiente de recuperar", () => {
+  const [f] = noEntra([noDictada("2026-11-27", "ausencia_profesora")]);
+  assert.equal(f.razon, "sin_fecha");
+  assert.match(f.explicacion, /no paga nada/);
+});
+
+test("cambio de parrilla: no paga y no queda pendiente de recuperar", () => {
+  const [f] = noEntra([noDictada("2026-11-27", "cambio_de_parrilla")]);
+  assert.equal(f.razon, "no_paga");
+});
+
+test("sala con la profesora presente y recuperada: paga, así que no está en lo no pagado", () => {
+  assert.deepEqual(noEntra([noDictada("2026-11-12", "sala_no_disponible", {
+    recuperada: true, profesoraSePresento: true, recuperacionInicio: "2026-11-20T19:00:00-03:00",
+  })]), []);
+});
+
+test("sin causa, futura y especial también se ven", () => {
+  const futura = clase("2026-11-30");
+  const fs = noEntraEnEstePago(
+    liquidar({ profesoraId: P1, mes: "2026-11", tarifa: T, ahora: new Date("2026-11-20T12:00:00-03:00"), clases: [
+      clase("2026-11-03", { estado: "cancelada" }), futura, clase("2026-11-05", { tipo: "especial" }),
+    ] }).lineas, "2026-11");
+  assert.deepEqual(fs.map((f) => f.razon).sort(), ["especial", "futura", "sin_causa"]);
+});
+
+test("una dictada no está en lo no pagado", () => {
+  assert.deepEqual(noEntra([clase("2026-11-03")]), []);
+});
+
+test("nombreDeMes", () => {
+  assert.equal(nombreDeMes("2026-12"), "diciembre de 2026");
 });
