@@ -13,17 +13,17 @@ const dani = await persona(db, "dani@xo.test", "Dani");
 
 const buscar = (quien, correo) => servidor(db, (tx) =>
   uno(tx, "select public.buscar_invitada($1, $2) as id", [quien.userId, correo]));
-const declarar = (quien, correo, monto = 16000) => servidor(db, (tx) =>
+const declarar = (quien, correo, monto = 15000) => servidor(db, (tx) =>
   uno(tx, "select public.declarar_pack_amigas($1, 'pack-amigas', $2, $3, null, null) as r",
     [quien.userId, monto, correo]));
 const acreditar = (compraId) => servidor(db, (tx) =>
   uno(tx, "select * from public.acreditar_compra($1, $2, null)", [compraId, admin.userId]));
 
 console.log("\n1. El plan");
-await paso("pack-amigas: 2 clases, $16.000, 30 días, activo, 1 para la amiga", async () => {
+await paso("pack-amigas: 2 clases, $15.000, 30 días, activo, 1 para la amiga", async () => {
   const p = await uno(db, "select * from planes where slug = 'pack-amigas'");
   assert.deepEqual([p.cantidad_clases, p.precio_clp, p.vigencia_dias, p.activo, p.clases_para_invitada, p.nombre],
-    [2, 16000, 30, true, 1, "Pack de amigas"]);
+    [2, 15000, 30, true, 1, "Pack de amigas"]);
 });
 await paso("los planes de antes quedan con 0 para invitada", async () => {
   const r = await filas(db, "select slug from planes where slug <> 'pack-amigas' and clases_para_invitada <> 0");
@@ -76,12 +76,12 @@ const planAmigas = (await uno(db, "select id from planes where slug = 'pack-amig
 const planPack2 = (await uno(db, "select id from planes where slug = 'pack-2'")).id;
 await paso("insert directo del plan de amigas: se rechaza (le falta la amiga)", async () => {
   await falla(como(db, ana, (tx) => tx.query(
-    "insert into compras (perfil_id, plan_id, cantidad_clases, monto_clp) values ($1, $2, 2, 16000)",
+    "insert into compras (perfil_id, plan_id, cantidad_clases, monto_clp) values ($1, $2, 2, 15000)",
     [ana.perfilId, planAmigas])), /necesita el correo de tu amiga/);
 });
 await paso("insert directo nombrando invitada: sin permiso de columna", async () => {
   await falla(como(db, ana, (tx) => tx.query(
-    "insert into compras (perfil_id, plan_id, cantidad_clases, monto_clp, perfil_invitada_id, cantidad_invitada) values ($1, $2, 2, 16000, $3, 1)",
+    "insert into compras (perfil_id, plan_id, cantidad_clases, monto_clp, perfil_invitada_id, cantidad_invitada) values ($1, $2, 2, 15000, $3, 1)",
     [ana.perfilId, planAmigas, bea.perfilId])), /permission denied/);
 });
 await paso("un pack-2 normal se sigue declarando igual que antes", async () => {
@@ -105,7 +105,7 @@ await paso("declarar con el correo de Bea: una compra pendiente, invitada y cant
   compraId = r.compra_id;
   const c = await uno(db, "select * from compras where id = $1", [compraId]);
   assert.deepEqual([c.estado, c.perfil_id, c.perfil_invitada_id, c.cantidad_clases, c.cantidad_invitada, c.monto_clp],
-    ["pendiente", ana.perfilId, bea.perfilId, 2, 1, 16000]);
+    ["pendiente", ana.perfilId, bea.perfilId, 2, 1, 15000]);
 });
 await paso("la invitada no se puede cambiar después de declarada", async () => {
   await falla(db.query("update compras set perfil_invitada_id = $1 where id = $2", [caro.perfilId, compraId]), /no se cambia/);
@@ -163,16 +163,16 @@ await paso("Caro (otra alumna) no ve nada de esto", async () => {
 });
 
 console.log("\n6. El tablero");
-await paso("metricas_resumen: una compra, $16.000, dos vendidas, cero regaladas", async () => {
+await paso("metricas_resumen: una compra, $15.000, dos vendidas, cero regaladas", async () => {
   const m = (await como(db, owner, (tx) => uno(tx,
     "select public.metricas_resumen(now() - interval '1 day', now() + interval '1 day', now() - interval '3 days', now() - interval '1 day') m"))).m;
   assert.equal(m.venta.compras, 1);
-  assert.equal(Number(m.venta.ingresos_clp), 16000);
+  assert.equal(Number(m.venta.ingresos_clp), 15000);
   assert.equal(m.creditos.vendidas, 2);
   assert.equal(m.creditos.regaladas, 0);
   assert.equal(m.creditos.vigentes_vendidas, 2);
   assert.equal(m.creditos.vigentes_regaladas, 0);
-  assert.deepEqual(m.venta.por_plan.map((p) => [p.slug, p.compras, Number(p.monto_clp)]), [["pack-amigas", 1, 16000]]);
+  assert.deepEqual(m.venta.por_plan.map((p) => [p.slug, p.compras, Number(p.monto_clp)]), [["pack-amigas", 1, 15000]]);
   assert.equal(m.conciliacion.libro, m.conciliacion.lotes);
   console.log("     ", JSON.stringify({ venta: { compras: m.venta.compras, ingresos: m.venta.ingresos_clp }, creditos: { vendidas: m.creditos.vendidas, regaladas: m.creditos.regaladas }, conciliacion: m.conciliacion, con_compra: m.alumnas.con_compra }));
 });

@@ -12,7 +12,7 @@
 
 ## 1. Problema
 
-La promo **ya salió** y hay gente preguntando: comprar 2 clases por **$16.000**, una para ti y una
+La promo **ya salió** y hay gente preguntando: comprar 2 clases por **$15.000**, una para ti y una
 para tu amiga. El precio ya existe, porque el pack de 2 cuesta eso. Lo que no existe es que **los dos
 créditos caigan en dos cuentas distintas**. Hasta ahora se atendía a mano, regalando el crédito de la
 amiga con `regalar_creditos`. Eso tiene un costo: el tablero lo cuenta como **regalado**, cuando en
@@ -26,7 +26,7 @@ igual que cualquier otra.
 
 ## 3. Alcance — las decisiones de Felipe
 
-1. **Plan nuevo `pack-amigas`**: 2 clases, $16.000, `vigencia_dias` 30, activo. Se llama **"Pack de
+1. **Plan nuevo `pack-amigas`**: 2 clases, **$15.000** (Felipe, 07/11/2026; era $15.000: a $7.500 la clase contra $8.500 la suelta se lee como promo, y a $15.000 casi no se notaba), `vigencia_dias` 30, activo. Se llama **"Pack de
    amigas"**, que es como ya circula la promo (lo elegí yo, §8.6).
 2. **En la compra, un campo para el correo de la amiga**, obligatorio para este plan y solo para
    este.
@@ -45,7 +45,7 @@ igual que cualquier otra.
    `compra`.
 9. **A la amiga le llega un correo** cuando su clase aterriza, **por la cola de PRD-0019**.
 10. Anular, rechazar y el link de PRD-0020: ver §6.
-11. **`metricas_resumen` lo cuenta como una compra de $16.000 y dos créditos vendidos.** No cambia, y
+11. **`metricas_resumen` lo cuenta como una compra de $15.000 y dos créditos vendidos.** No cambia, y
     está comprobado (§12).
 
 ## 4. Fuera de alcance
@@ -123,7 +123,7 @@ Migración `20261105120000_pack_de_amigas.sql`.
 | Qué | Cambio |
 |---|---|
 | `planes.clases_para_invitada` | `int not null default 0`, entre 0 y `cantidad_clases − 1`. Hoy 0 en todos los planes y 1 en `pack-amigas` |
-| `planes` (fila nueva) | `pack-amigas` · "Pack de amigas" · 2 clases · $16.000 · 30 días · `orden` al final · activo · 1 para la amiga |
+| `planes` (fila nueva) | `pack-amigas` · "Pack de amigas" · 2 clases · $15.000 · 30 días · `orden` al final · activo · 1 para la amiga |
 | `compras.perfil_invitada_id` | `uuid` anulable, FK `compras_perfil_invitada_id_fkey` → `perfiles`, con nombre fijo porque PostgREST lo necesita para el embed |
 | `compras.cantidad_invitada` | `int not null default 0`. **Congelado al declarar**, como el monto: si mañana el plan cambia, la compra no se recalcula |
 | Checks en `compras` | Sin amiga → `cantidad_invitada` = 0. Con amiga → al menos una clase para cada una. La amiga ≠ quien paga |
@@ -185,7 +185,7 @@ ajustar sin migración.
 
 ## 9. Criterios de aceptación
 
-- [x] El plan existe con 2 clases, $16.000, 30 días y 1 para la amiga, y anon lo ve. *Base local.*
+- [x] El plan existe con 2 clases, $15.000, 30 días y 1 para la amiga, y anon lo ve. *Base local.*
 - [x] Correo de la propia compradora: rechazado. Sin cuenta: no. Con cuenta: sí, sin importar
       mayúsculas ni espacios. *Base local.*
 - [x] El 6.º intento en una hora y el 11.º en el día se rechazan. *Base local.*
@@ -194,7 +194,7 @@ ajustar sin migración.
 - [x] Aprobar crea **dos** lotes con el mismo `compra_id` y una clase cada uno, el mismo vencimiento a
       30 días, y dos movimientos `compra` con el saldo de cada dueña. Libro = lotes. *Base local.*
 - [x] Aprobar dos veces no duplica nada. *Base local.*
-- [x] `metricas_resumen`: **1 compra, $16.000, 2 vendidas, 0 regaladas**, y `por_plan` muestra
+- [x] `metricas_resumen`: **1 compra, $15.000, 2 vendidas, 0 regaladas**, y `por_plan` muestra
       `pack-amigas` con 1 compra. *Base local, con sesión de owner.*
 - [x] Rechazar antes de aprobar: ningún lote. Anular una compra pendiente: se puede. *Base local.*
 - [x] Un pack de 2 normal sigue funcionando igual: un lote de 2. *Base local.*
@@ -211,7 +211,7 @@ ajustar sin migración.
 ## 10. Métrica de éxito
 
 Que el pack se venda sin intervención a mano y que el tablero muestre cada uno como una venta de
-$16.000 y dos clases vendidas.
+$15.000 y dos clases vendidas.
 
 ## 11. Riesgos y supuestos
 
@@ -221,7 +221,7 @@ $16.000 y dos clases vendidas.
   - **la bandeja de compras sí falla**, porque pide `cantidad_invitada` y la amiga.
 - **El correo de la amiga** usa el nombre de pila de quien compró. Si alguien escribe el correo de
   una desconocida, esa persona recibe un correo con ese nombre. El riesgo es bajo: hay que pagar
-  $16.000 para mandarlo.
+  $15.000 para mandarlo.
 - **`saldo_creditos` no está abierta a una sesión.** La amiga ve su saldo sumando sus lotes, como
   todas.
 - **Hallazgo de paso, no arreglado:** las plantillas de correo anteriores interpolan el nombre de la
@@ -243,7 +243,7 @@ $16.000 y dos clases vendidas.
 | 7 | Bandeja de admin: "1 clase para su amiga: <nombre>" | ✅ |
 | 8 | Prueba desde la página en staging, con los dos correos | ⏳ Necesita la migración en staging, con aprobación |
 
-**Lo que dijo `metricas_resumen`** en el escenario, con sesión de owner:
+**Lo que dijo `metricas_resumen`** en el escenario del 05/11, con sesión de owner, cuando el pack costaba $16.000:
 
 ```json
 {"venta":{"compras":1,"ingresos":16000},"creditos":{"vendidas":2,"regaladas":0},"conciliacion":{"libro":2,"lotes":2},"con_compra":1}
