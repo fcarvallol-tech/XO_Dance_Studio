@@ -684,3 +684,101 @@ causa, así que la liquidación de Pau en staging aparece bloqueada por eso.
 1. **¿Mergeo `documentos-06-11` a `main`?** Son solo documentos, pero publica.
 2. **¿Cómo se resuelve la duración de la parrilla?** Una hora fija por defecto, o llenar `fin`.
 3. **¿Empiezo el paso E de la liquidación?** Es lo que queda en el camino del 1/12.
+
+---
+
+## Paso E y duración, 06/11
+
+**Nada a producción.** A `main` solo entró `documentos-06-11`, con la regla nueva en `CLAUDE.md`
+(`d68a550`). El CLI sigue en staging, y `hoy_santiago()` quedó restaurada.
+
+| Parte | Rama | Commits | Migración |
+|---|---|---|---|
+| 2 · Paso E | `prd-0010-parte-3-pantallas` | `9071e81`, `3ee9c38`, y el aviso por monto | `20261106130000_cerrar_liquidacion.sql` |
+| 3 · Duración | `duracion-de-clases`, sobre la anterior | `5099141`, `160e4de` | `20261106140000_duracion_en_horarios.sql` |
+
+Las dos están aplicadas en staging y **no en producción**. Cada `--dry-run` listó solo esa migración.
+Para aplicar armé `probar-liquidacion`, una rama local descartable que junta `staging-06-11` con estas
+dos: sin ella `db push` no conoce lo ya aplicado. No está pusheada.
+
+### Cambios de diseño que no estaban en tu pedido
+
+- **Cerrar y pagar se separaron.** Antes no había fila hasta pagar. Cerrar congela monto, detalle y
+  huella. Pagar agrega comprobante y egreso. Un disparador impide editar lo congelado o borrar.
+- **La pantalla usa el reloj de la base**, `hoy_santiago()`, para no ofrecer lo que la base rechaza.
+- **Agregué clasificar la causa en la pantalla.** Sin eso, una clase sin causa traba el mes y no hay
+  cómo destrabarlo desde el sitio.
+- **El comprobante es obligatorio para marcar pagada**, como decía el PRD §8.4.
+
+### Los montos: pantalla contra escenario
+
+Noviembre en staging se armó con las cantidades del escenario, con `regalar_creditos` y `reservar()`:
+62 reservas de 16 alumnas inventadas, sin escribir reservas a mano. Son otras fechas que las del
+escenario, con los mismos créditos. Las causas se pusieron desde la pantalla. Para ver el mes
+terminado reemplacé `hoy_santiago()` por el 2/12 y la restauré.
+
+| | Escenario | Pantalla | Pantalla, tras rellenar `fin` |
+|---|---|---|---|
+| **Pau** | .500 | **.500** | **.500** |
+| **Drimy** | $18.750 | **$18.750** | **$18.750** |
+
+Base local: liquidación 44 de 44, duración 7 de 7, recuperativa 24 de 24, salas 19, revocar 25, pack
+30. `npm test`: 287 en la rama del paso E. `npm run build` pasa.
+
+### Lo que abrí y lo que vi
+
+| Pantalla | Qué vi |
+|---|---|
+| **`/owner/liquidaciones`, reloj real** | "El mes todavía no termina", y Cerrar deshabilitado |
+| **Pau, a 390 px** | Las 4 dictadas con fecha, sala, créditos, base y variable. Las 5 no dictadas con su causa y lo que pagan, incluido "No paga". Las 4 clases del promedio: 16, 14, 14 y 12, promedio 14 |
+| **Lo que no entra** | La del 3/11 "se paga una sola vez, en la recuperación"; la del 26/11 "sin fecha de recuperación". Lina: "Se paga en diciembre de 2026", con "Se recupera el jueves 3 de diciembre, 16:00" |
+| **Drimy** | "1 clase dictada: hacen falta 4 para optar" |
+| **Cerrar dos veces** | Dos pestañas apretando a la vez: una sola fila, sin anulada de más |
+| **Pagar** | Sin comprobante no deja. Con PNG: pagada, con egreso igual |
+| **Anular** | La fila anulada sigue ahí y el nuevo cierre agrega otra |
+| **`/profesora/liquidacion`** | Cada una ve lo suyo, sin botones. Busqué en el HTML correo, nombre y teléfono de todas las alumnas de staging: **cero** |
+| **Recuperativa** | Ya muestra "de 60 minutos, costaría $15.000": hallazgo 1 resuelto |
+| **`/calendario`** | Igual: las de una hora no muestran rango |
+
+### Preguntado a la base con cada sesión
+
+`scripts/verificar-roles-liquidacion.mjs`, en transacciones revertidas, con cuentas reales de
+profesora.
+
+- **La tabla:** owner ve 3 filas; profesora, alumna y admin, 0; `anon`, sin permiso. Por API, 401.
+- **`mis_liquidaciones`:** Pau ve la suya; **Drimy, buscando $124.500, 0 filas**; admin y alumna, 0.
+- **Insumos, huellas, costos y egresos:** solo owner. Causas: admin y owner.
+- **Nadie con sesión** ejecuta cerrar, pagar, anular ni `registrar_no_dictada`, ni hace `update` o
+  `delete` del libro. Eso incluye a owner: todo pasa por el servidor.
+- **`buscar_invitada`:** ahora sí preguntado, nadie con sesión la ejecuta.
+- **El comprobante:** sin sesión 403; por URL pública del bucket, 400. **No abrí "Ver comprobante" con
+  sesión de owner.**
+
+### Qué falló, o queda por decidir
+
+1. 🔴 **Una clase sin fecha de recuperación al cerrar.** Paga la base, y después
+   `crear_recuperativa` la rechaza porque el mes está cerrado. Contradice "la recuperación no es
+   opcional". La pantalla lo advierte, pero no lo impide: es tuyo.
+2. 🔴 **El orden para producción cambió.** Tu lista no tiene las dos migraciones nuevas. Van después
+   de la liquidación: `20261106130000` y `20261106140000`. **La de duración tiene que aplicarse antes de
+   cerrar noviembre:** rellenar `fin` mueve la huella, y lo comprobé: una cerrada antes no se deja
+   pagar, y rebota con "anula el cierre y vuelve a cerrar".
+3. **La migración de duración aborta si producción tiene un horario que no está en la lista.** Es a
+   propósito. Los 15 salieron de staging; no leí producción.
+4. **Un cierre de Drimy no quedó en la primera corrida**, sin mensaje de error. En la segunda funcionó.
+   Lo más probable es que mi espera de 3 segundos fuera corta, pero no lo comprobé.
+5. **Una recuperativa cancelada después de cerrar:** la original deja de estar recuperada y el monto
+   cambia, y eso debería ir como ajuste. `ajustes_liquidacion` no existe. No lo probé.
+6. **Sin construir:** reasignar una clase desde la pantalla (en staging lo hice por función), los
+   ajustes, y cerrar a todas de una vez.
+7. **Textos:** "Si se cierra así…" está escrito para ti y lo ve también la profesora. Los candados
+   dicen "ya se le pagó" aunque el mes solo esté cerrado.
+8. **`escenario-recuperativa.mjs` necesita un ajuste al mergear:** inserta clases sin `fin`. Está hecho
+   solo en `probar-liquidacion`.
+9. **Efecto menor:** el portal de la profesora ahora dice "a 19:00", porque `fin` existe.
+
+### Lo que quedó en staging
+
+16 alumnas `prueba.NN`, dos cuentas `profe.pau` y `profe.drimy`, y noviembre de Pau y Drimy
+reordenado. Pau y Drimy quedaron **cerradas sin pagar**, con sus filas anuladas a la vista. Una
+recuperativa de Lina el 3/12, y 20 clases nuevas de `generar_clases(85)`.
