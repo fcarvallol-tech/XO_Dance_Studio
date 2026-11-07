@@ -326,9 +326,10 @@ try {
     );
     await q(
       `insert into public.clases
-         (id, horario_id, fecha, inicio, curso_id, profesora_id, sede_id,
+         (id, horario_id, fecha, inicio, fin, curso_id, profesora_id, sede_id,
           cupo_maximo, estado)
-       values ($1, $2, ${cuando}::date, ${cuando}, $3, $4, $5, 22, 'programada')`,
+       values ($1, $2, ${cuando}::date, ${cuando}, ${cuando} + interval '60 minutes',
+               $3, $4, $5, 22, 'programada')`,
       [id, h.id, h.curso_id, h.profesora_id, h.sede_id],
     );
   }

@@ -64,7 +64,9 @@ export default async function Liquidaciones({ searchParams }: { searchParams: Pr
           <div className="space-y-4">
             {profesoras.map((p) => {
               const foto = p.fila?.detalle ?? p.calculo;
-              const cambio = p.fila !== null && p.fila.huella !== p.huella;
+              // Por el monto, no por la huella: la huella cambia también con algo que
+              // no mueve la plata, y un aviso que no significa nada deja de leerse.
+              const cambio = p.fila !== null && p.fila.monto !== p.calculo.totalClp;
               return (
                 <details
                   key={p.profesoraId}
