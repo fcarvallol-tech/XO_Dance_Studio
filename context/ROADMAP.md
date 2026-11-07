@@ -1,8 +1,39 @@
 # ROADMAP.md — XO Dance Studio
 
 > Qué se construye, en qué orden y por qué.
-> Última actualización: **4 de noviembre de 2026**.
+> Última actualización: **6 de noviembre de 2026**.
 > ⚠️ Replanificado tras el cambio a modelo de paquetes y reservas.
+
+---
+
+## Estado al 6 de noviembre de 2026
+
+**Último deploy:** sin cambios, `3cb80f7` del 05/11. **Nada a producción el 6/11.**
+
+| Qué | Estado |
+|---|---|
+| **Staging al día** | ✅ Las tres de `main` y las de las cuatro ramas aplicadas: 45 migraciones, ninguna pendiente. Producción sigue sin ellas |
+| **Liquidación (PRD-0010 parte 3)** | ⏸ Sin publicar. `profesora_se_presento` solo paga en `sala_no_disponible`. 🔴 **Falta el paso E: no hay pantalla**, y el plazo del 1/12 depende de ella |
+| **Recuperativa, categoría y "otra sala" (PRD-0027)** | ⏸ Sin publicar. Probado desde la página en staging. Hallazgos en su §12.1 |
+| **Revocar (PRD-0024) y pack de amigas (PRD-0026)** | ⏸ Sin publicar. Probados desde la página en staging |
+
+**Pendiente:** decidir el orden de publicación y mergear `grilla-filas-de-cinco-minutos`. Las ramas
+se integraron en `staging-06-11`, con dos conflictos resueltos ahí. Detalle en
+`context/informe-noche-05-11-2026.md`.
+
+---
+
+## Estado al 5 de noviembre de 2026
+
+**Último deploy:** `3cb80f7`, 05/11 a las 11:25.
+
+| Qué | Estado |
+|---|---|
+| **Filtrar Personas (PRD-0025)** | ✅ **En producción desde el 5/11.** Buscador por nombre o correo en `/admin`, con el total siempre a la vista. Sin migración. ⏳ **Falta probarlo desde la página** con sesión de admin y con una alumna: comprobado sin sesión en producción y con el filtro exacto contra staging, ver PRD-0025 §12. Son 74 alumnas, así que el aviso de tope es prevención |
+| **Decisiones de la liquidación y lista de pedidos** | ✅ **En `main` desde el 5/11** (`ef2bb1e`, rama `pedidos-de-uso`): solo documentos. Se desbloquea que PRD-0010 parte 3 cite reglas que existen en `main`. **Octubre no se reconstruye**: lo dicho abajo el 4/11 quedó reemplazado por la decisión 5 de `CONTEXT.md`, y la liquidación parte en noviembre |
+
+**Pendiente:** el plazo del 1 de diciembre sigue en pie para pagar noviembre; la preventa del 30/11
+sigue sin PRD-0012. Pedidos 2 y 6 cerrados con PRD-0025; pedido 8 nuevo.
 
 ---
 
@@ -34,7 +65,7 @@
 | **Video del hero** | 3/11 | ✅ **Publicado el 3/11** (`ae2a259`), después de que Felipe confirmara que las personas del video son mayores de edad. Velo al 80 %. Medido **en producción**, 24 cuadros en un iPhone 13 emulado: el titular rosa queda en **4,61:1**, que **pasa por 0,11**, y es lo primero que va a fallar si se cambia el video o se aclara el velo; el resto del texto, entre 5,85 y 5,90:1. La portada pesa **4,37 MB** en móvil, 3,64 de ellos el video; con "reducir movimiento" el video no se baja y quedan ~0,73 MB |
 | Descripción del curso `reggaeton` (Drimy) | 2/11 | ✅ **En producción desde el 3/11**, sin "bailado desde lo femenino" (Felipe) |
 | **Preventa del 3/11** | 3/11 | ✅ **Cerrada.** Estuvo en producción desde las 00:45 del 3/11 (`20261103140000`, merge `0fb88d1`), se apagó sola a medianoche y la reversión `20261104120000_fin_preventa_noviembre.sql` se aplicó a las 00:2x del 4/11, aprobada por nombre. Comprobado en el sitio publicado: Comprar y los cuatro links de oferta en $8.500, $16.000, $28.000 y $48.000, sin tachado ni plazo. `supabase/pendientes/` quedó vacía |
-| **Clase de Pau del martes 3/11, 18:00, Los Leones** | 3/11 | ✅ **Cancelada en producción el 3/11** (`20261103210000`), con motivo "Cancelada" a secas (Felipe). No se dictó porque muchas alumnas no alcanzaron a llegar; se va a recuperar y la sala de la recuperación no se cobra. Tenía **2 reservas** según el calendario público antes de aplicar, y la migración terminó sin abortar, lo que prueba que las dos estaban `confirmada` y que **volvieron 2 créditos con 2 movimientos**. **Confirmado el 4/11** con una consulta de solo lectura aprobada por Felipe: las 2 reservas están `cancelada` con `credito_devuelto`, y **ningún lote estaba vencido** —los dos vencen el 03/12—, así que no hace falta ningún regalo. 🔴 **Pendiente de clasificar para el pago** en PRD-0010 parte 3: Pau no faltó, y la causa "no se dictó por asistencia" no existe en el modelo |
+| **Clase de Pau del martes 3/11, 18:00, Los Leones** | 3/11 | ✅ **Cancelada en producción el 3/11** (`20261103210000`), con motivo "Cancelada" a secas (Felipe). No se dictó porque muchas alumnas no alcanzaron a llegar; se va a recuperar; la hora perdida no se cobra y la de la recuperación sí (Felipe, 06/11). Tenía **2 reservas** según el calendario público antes de aplicar, y la migración terminó sin abortar, lo que prueba que las dos estaban `confirmada` y que **volvieron 2 créditos con 2 movimientos**. **Confirmado el 4/11** con una consulta de solo lectura aprobada por Felipe: las 2 reservas están `cancelada` con `credito_devuelto`, y **ningún lote estaba vencido** —los dos vencen el 03/12—, así que no hace falta ningún regalo. 🔴 **Pendiente de clasificar para el pago** en PRD-0010 parte 3: Pau no faltó, y la causa "no se dictó por asistencia" no existe en el modelo |
 | **Los Leones a 16** | 3/11 | ✅ **En producción desde el 3/11** (`20261103211000`), por reclamos de sala llena. Segundo cambio en dos días: 22 → 18 el 2/11 y 18 → 16 el 3/11. Ninguna clase futura pasaba de 16 (la más llena, 9: Girly de Carli del sábado 7/11). Calendario público comprobado a las 21:59: las **35 clases futuras** de Los Leones en 16 |
 | Corte contable al 1/11 | 2/11 | **No se construye** (Felipe): lo de octubre es la cuenta de prueba y un regalo a un perfil de profesora. En su lugar se anula la compra de prueba por `compras.deleted_at`, **esperando aprobación de Felipe** |
 | Staging pausado + token de Supabase vencido | ~13/10 | ✅ **Resuelto el 2/11**: staging despausado, token nuevo, y el registro de migraciones de staging reparado (1002, 1004 y 1005 estaban aplicadas sin su fila) |
@@ -141,6 +172,32 @@ en pausa por decisión suya.
 - Que un cron que falla en silencio se vea en pantalla, igual que se hizo con los correos. El de
   generación de clases ya se cayó dos veces por una variable de entorno.
 
+### 📋 Pedidos de Felipe mientras usa el sitio
+
+> **Esta lista se acumula, no se trabaja de a uno.** Son ajustes que Felipe va encontrando al
+> operar la academia con la página ya en producción. **No se implementan cuando se anotan**: se
+> juntan acá hasta que haya suficiente para un PRD propio, y él dice cuándo. Anotar algo acá no
+> es aprobarlo.
+>
+> Abierta el 03/11/2026, el día que el sitio empezó a usarse de verdad.
+
+| # | Qué pidió | Por qué, y qué hay hoy | Fecha |
+|---|---|---|---|
+| 1 | **El owner tiene que poder ver quiénes se inscribieron a una clase** | Hoy **no puede**. `inscritas_de_clase` exige `dicta_la_clase(p_clase_id)` y **no tiene excepción para `admin` ni para `owner`**: Felipe ve el contador —"3 de 18 inscritas"— pero no los nombres, y solo la profesora que dicta esa clase ve la lista. Peor: **el portal de administración no tiene reservas en ninguna parte** —tiene compras, correos, planes, solicitudes y leads—, así que quien aprueba las transferencias y contesta los mensajes no tiene dónde mirar cuando una alumna escribe "transferí y no sé si quedé". ⚠️ Al resolverlo, respetar la regla dura de PRD-0008: **nombres sí, datos de contacto nunca** —ni RUT, ni correo, ni teléfono, ni datos del apoderado— | 03/11/2026 |
+| 2 | ✅ **Hecho, PRD-0025.** **Buscar por nombre en el listado de personas** | `/admin` ("Personas y roles") lista sin filtro. Con una academia chica se ve entera; con cien alumnas, no. Felipe quiere un buscador por nombre | 03/11/2026 |
+| 3 | **Ficha de cada persona, con sus reservas** | Hoy `/admin` es **una tabla plana y no clickeable**: nombre, correo, rol, profesora asignada y saldo de clases, más el botón de regalar créditos. **No existe ninguna ficha de persona.** No se puede abrir a una alumna y ver qué reservó, qué compró ni a qué clases fue. Felipe lo pidió para poder responder cuando alguien escribe preguntando por lo suyo | 03/11/2026 |
+| 4 | **Que la alumna pueda editar su perfil** | Hoy `/mi-perfil` es **solo lectura**: muestra nombre, correo y rol, sin un campo editable. El nombre se escribe una vez al registrarse y queda así para siempre. Una alumna lo anotó mal el 03/11 y no tuvo cómo corregirlo, y tampoco hay quién se lo corrija desde administración. Decidir de paso **qué más puede editar** —y qué no debería poder, como el correo, que es su forma de entrar— | 03/11/2026 |
+| 5 | **Revocar créditos** 🔴 **pedido para ahora** | Para dos casos reales: **regaló de más** y se corrige, o **la alumna fue a clase y se le olvidó reservar**, así que el crédito corresponde que se consuma —y además eso cuenta para el variable de la profesora—. **No se borra nada**: el libro `movimientos_credito` no se edita nunca, así que revocar es **agregar un movimiento negativo con motivo escrito**, el espejo exacto de `regalar_creditos` (PRD-0023). Decidido el 04/11: **solo el owner**, no admin; y **se descuenta del lote que vence primero**, que es además el orden en que ya se consumen | 04/11/2026 |
+| 6 | ✅ **Hecho, PRD-0025.** **Filtrar el listado de personas, por nombre o correo** | Es el pedido 2, que estaba "para más adelante". El 04/11 Felipe dijo que ya está buscando a mano en un listado grande todos los días | 04/11/2026 |
+| 7 | **Pack de amigas** 🔴 **la promo ya salió** | Comprar 2 créditos por **$16.000** —uno para ti y uno para tu amiga—. El precio **ya existe**: el pack de 2 cuesta exactamente eso. Lo que no existe es que **los dos créditos caigan en dos cuentas distintas**. Decidido el 04/11 que va por la vía simple: créditos normales en dos cuentas, **no** créditos atados a una clase. ⚠️ **Se anunció antes de existir y hay gente preguntando**: hasta que esté, se atiende a mano con `regalar_creditos` más la revocación del pedido 5 | 04/11/2026 |
+| 8 | **El umbral de 5 en `/owner/finanzas`** 🐛 **es un bug** | `costoClase()` (`lib/dominio/finanzas.ts`) sigue cobrando $250 por cada crédito, sin el umbral del 21/10: **el margen sobrestima el costo hasta en $1.250 por clase**. La liquidación sí lo aplica, así que las dos pantallas van a dar números distintos | 05/11/2026 |
+
+> **Los tres son el mismo hueco visto desde tres ángulos**, y conviene resolverlos juntos y no
+> de a parches: **el portal de administración no tiene reservas en ninguna parte.** El 1 las pide
+> por clase, el 3 por persona, y el 2 es el filtro de la pantalla donde empieza el 3. Cuando esto
+> se convierta en PRD, el alcance es *"administración puede ver y responder por las reservas"*, no
+> tres pantallas sueltas.
+
 ---
 
 ## Principio de secuenciación
@@ -241,6 +298,7 @@ transaccionalidad del crédito.
 | 4.2 | ✅ Portal de la profesora: clases, inscritas, solicitar horario. **Nunca datos de contacto de la alumna** | PRD-0008 |
 | 4.3 | ✅ Portal de administración: profesoras, cursos, calendario general, alumnas, reservas, solicitudes, transferencias, correos | PRD-0009 |
 | 4.4 | ⚪ Que cada profesora edite su propia foto y bio — **sin PRD** | — |
+| 4.5 | ✅ Filtrar Personas por nombre o correo, con el total a la vista | PRD-0025 |
 
 ---
 
@@ -313,6 +371,8 @@ Modelo profesor-cliente: comisiones, rentabilidad por profesora, marca personal.
 
 | Fecha | Cambio |
 |---|---|
+| 6 nov 2026 | **Staging al día con las cuatro ramas, probadas desde la página.** Decisiones de Felipe: `profesora_se_presento` solo paga en `sala_no_disponible`, la recuperación no es opcional, la sala de la recuperación se cobra y el cupo de la recuperativa es por orden de llegada. PRD-0027 suma el selector de categoría y "otra sala". Nada a producción |
+| 5 nov 2026 | **PRD-0025 en producción: Personas se filtra por nombre o correo y dice siempre el total** (`3cb80f7`), sin migración. `pedidos-de-uso` a `main` (`ef2bb1e`), solo documentos. Falta la prueba desde la página con sesión de admin y con una alumna. Se anota el pedido 8: el umbral de 5 no está en `/owner/finanzas` |
 | 4 nov 2026 | **Preventa revertida, lote vencido descartado y ramas en orden.** (1) `20261104120000_fin_preventa_noviembre.sql` pasó de `supabase/pendientes/` a `migrations/` y se aplicó con aprobación de Felipe por nombre; el dry-run listó esa sola. Terminó sin abortar, así que los cuatro precios de lista coinciden con los que la migración comprueba. En el sitio publicado, `/comprar` y los cuatro `/comprar/<oferta>` muestran $8.500, $16.000, $28.000 y $48.000 sin tachado ni plazo; `/comprar/pack-8` siguió mostrando la preventa unos minutos pasada la medianoche, hasta que su caché de una hora se renovó. (2) **Consulta de solo lectura**, aprobada para eso y nada más, por la API de administración: las 2 reservas de la clase de Pau del 3/11 están canceladas con el crédito devuelto, y los dos lotes vencen el 03/12: **ninguno volvió vencido**. Cierra lo que el `db push` del 3/11 no mostró. (3) `pau-3-nov-y-leones-16` mergeada a `main`: hasta ahora `main` tenía dos migraciones menos que producción. De `rescate-20-octubre` se trajo **solo** `0010-parte-3-liquidacion-de-profesoras.md`; el resto choca con `main` y se queda en la rama. La CLI quedó vinculada de vuelta a staging |
 | 3 nov 2026 (noche, 2) | **Clase de Pau del 3/11 cancelada y Los Leones a 16, en producción.** Felipe aprobó por nombre `20261103210000_clase_pau_3_nov_no_dictada.sql` y `20261103211000_capacidad_los_leones_16.sql`; el dry-run listó esas dos y nada más. (1) La Reggaeton Femme de Pau de las 18:00 **no se dictó porque muchas alumnas no alcanzaron a llegar**. Se canceló después de la hora con motivo "Cancelada" a secas, como pidió Felipe —primero se había escrito una explicación—. El disparador `clases_al_cancelar` no mira la fecha, así que actúa sobre una clase pasada, pero solo devuelve las reservas `confirmada`: la migración aborta si hay alguna en `asistio`/`no_asistio` y comprueba que reservas devueltas, créditos y movimientos coincidan. **Terminó sin abortar**, y el calendario público daba 2 reservas: volvieron **2 créditos**. Probada antes en staging dentro de transacciones revertidas: 3 confirmadas sembradas, 3 lotes de 3 a 4, 3 movimientos `cancelacion`, el aviso de lote vencido, idempotencia y el aborto con `no_asistio`. ⚠️ **`supabase db push` no imprime los `NOTICE` de la migración**, así que el número exacto y el aviso de lote vencido no se vieron en producción: para la próxima, lo que haya que leer al aplicar va en una consulta aparte, no en un `raise notice`. Queda **pendiente de clasificar para el pago** en PRD-0010 parte 3 (rama `rescate-20-octubre`): Pau no faltó y esa causa no existe en el modelo. (2) **Los Leones de 18 a 16** por reclamos de sala llena, con el cupo de las clases futuras; antes se contó lo reservado en cada una (máximo 9) y la migración aborta si alguna pasa de 16. El calendario público tardó ~17 minutos en mostrarlo: la página revalida cada 10 minutos y el webhook de revalidación sigue sin existir. CONTEXT.md anota los dos cambios en dos días y corrige **Studio 98, que figuraba con 35 en cuatro lugares** cuando es 30 desde el 2/11. La CLI quedó vinculada **de vuelta a staging** |
 | 3 nov 2026 (noche) | **El video del hero se publica.** Felipe confirmó que las personas que salen son mayores de edad. Antes de mergear, `hero-video` se puso al día con `main` —traía el sitio de antes de la preventa y del calendario con sector—, sin conflictos; contra `main` cambia solo `Hero.tsx`, el video y el poster. Build y hero mirados de nuevo en local con el código nuevo encima, y mergeado (`ae2a259`). **Comprobado en `xodancestudio.cl`, no en local**: el video arranca solo, sin audio (0 bytes de audio decodificados), y vuelve a empezar al terminar sin pausarse. Contraste medido de nuevo sobre el sitio publicado, 24 cuadros en los 15 s, ocultando el texto y midiendo el fondo real bajo cada línea: titular **4,61:1** —pasa por 0,11—, bajada 5,86, "Academia de baile" 5,90 y ubicación 5,85. Portada en móvil: **4,37 MB**, 3,64 del video. `/comprar` y `/calendario` en producción, comparados con su versión de antes del merge: iguales, salvo el build, la URL canónica, la hora y los IDs de clase. **Deuda nueva**: el logo se sirve a 3.840 px en móvil y pesa 190 KB, más que el poster. Sigue **sin probar en un iPhone real** |
