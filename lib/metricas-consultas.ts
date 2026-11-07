@@ -37,8 +37,15 @@ export type Resumen = {
     vendidas: number;
     regaladas: number;
     consumidas: number;
+    /**
+     * PRD-0024: clases quitadas en el período, en positivo. **Línea propia**:
+     * no se restan de vendidas ni de regaladas. Opcional porque antes de la
+     * migración 20261105130000 la base no la devuelve.
+     */
+    revocadas?: number;
     otorgadas_historico: number;
     consumidas_historico: number;
+    revocadas_historico?: number;
     disponibles: number;
     vencidas_sin_usar: number;
     por_vencer_30d: number;
@@ -50,7 +57,7 @@ export type Resumen = {
     por_vencer_30d_vendidas: number;
     por_vencer_30d_regaladas: number;
   };
-  creditos_anterior: { vendidas: number; regaladas: number; consumidas: number };
+  creditos_anterior: { vendidas: number; regaladas: number; consumidas: number; revocadas?: number };
   conciliacion: { libro: number; lotes: number };
   /** Sin filtro de período: lo que permite distinguir un mes en cero de una base vacía. */
   desde_siempre: {

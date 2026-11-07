@@ -3,9 +3,14 @@ import Link from "next/link";
 import { TituloPortal } from "@/components/Portal";
 import { CambiarRol } from "@/components/CambiarRol";
 import { RegalarClases } from "@/components/RegalarClases";
+import { QuitarClases } from "@/components/QuitarClases";
 import { cuandoLegible } from "@/lib/compras";
-import { getRegalosRecientes, getSaldosVigentes } from "@/lib/compras-consultas";
-import { NOMBRE_ROL, esRol, type Rol } from "@/lib/roles";
+import {
+  getRegalosRecientes,
+  getRevocacionesRecientes,
+  getSaldosVigentes,
+} from "@/lib/compras-consultas";
+import { NOMBRE_ROL, esRol, tieneNivel, type Rol } from "@/lib/roles";
 import { nombreDe } from "@/lib/catalogo";
 import { getCatalogoCompleto } from "@/lib/catalogo-consultas";
 import { ErrorDeLectura } from "@/components/ErrorDeLectura";
@@ -48,6 +53,10 @@ export default async function Admin({ searchParams }: Props) {
   const { profesoras, error: errorCatalogo } = await getCatalogoCompleto();
   const activas = profesoras.filter((p) => p.activa);
 
+  // PRD-0024: quitar clases es solo del owner. El botón y la lista no se
+  // dibujan para nadie más, y la base lo vuelve a verificar.
+  const esOwner = tieneNivel(actor.rol, "owner");
+
   // PRD-0025: el filtro va en la consulta, y `count: "exact"` trae en la misma
   // respuesta cuántas coinciden en total, más allá del tope. Sin ese número la
   // lista se cortaba en 200 sin que nadie lo supiera.
@@ -57,7 +66,7 @@ export default async function Admin({ searchParams }: Props) {
     .is("deleted_at", null);
   if (busqueda) consultaPerfiles = consultaPerfiles.or(filtroDePersonas(busqueda));
 
-  const [{ data, error, count }, saldosDeTodas, regalos, { data: vigencia }] = await Promise.all([
+  const [{ data, error, count }, saldosDeTodas, regalos, { data: vigencia }, revocaciones] = await Promise.all([
     consultaPerfiles.order("created_at", { ascending: false }).limit(TOPE_PERSONAS),
     // Sin búsqueda se leen todos los saldos de una vez, en paralelo. Con
     // búsqueda, después, y solo los de quienes aparecieron.
@@ -66,6 +75,7 @@ export default async function Admin({ searchParams }: Props) {
     // Preferencia con valor por defecto, como `calendario_dias`: si no se lee,
     // 60 es lo mismo que dice el parámetro. La base usa el suyo al regalar.
     supabase.from("parametros").select("valor").eq("clave", "regalo_vigencia_dias").maybeSingle(),
+    esOwner ? getRevocacionesRecientes() : null,
   ]);
   const vigenciaDias = Number(vigencia?.valor ?? 60) || 60;
 
@@ -138,13 +148,23 @@ export default async function Admin({ searchParams }: Props) {
                 <td className="py-3 pr-4">
                   {/* Clases vigentes y el regalo (PRD-0023). También a sí
                       misma y a una profesora: las dos toman clases. */}
-                  <RegalarClases
-                    perfilId={fila.id}
-                    nombre={fila.nombre}
-                    correo={fila.email}
-                    saldo={saldos.datos.get(fila.id) ?? 0}
-                    vigenciaDias={vigenciaDias}
-                  />
+                  <div className="flex flex-wrap items-center gap-3">
+                    <RegalarClases
+                      perfilId={fila.id}
+                      nombre={fila.nombre}
+                      correo={fila.email}
+                      saldo={saldos.datos.get(fila.id) ?? 0}
+                      vigenciaDias={vigenciaDias}
+                    />
+                    {esOwner ? (
+                      <QuitarClases
+                        perfilId={fila.id}
+                        nombre={fila.nombre}
+                        correo={fila.email}
+                        saldo={saldos.datos.get(fila.id) ?? 0}
+                      />
+                    ) : null}
+                  </div>
                 </td>
                 <td className="py-3">
                   {fila.id === actor.id ? (
@@ -216,6 +236,39 @@ export default async function Admin({ searchParams }: Props) {
           ))}
         </ul>
       )}
+
+      {/* PRD-0024: lo quitado queda a la vista, con por qué y quién. Solo owner. */}
+      {revocaciones ? (
+        <>
+          <h2 className="xo-eyebrow mt-14 text-xo-gris">Clases quitadas recientes</h2>
+          <p className="mt-2 max-w-prose text-sm text-xo-gris">
+            Cada una es un movimiento negativo en el libro, con su motivo. No borra el regalo ni la
+            compra de donde salió, y en el tablero cuenta como revocada, no como venta menos.
+          </p>
+          <ErrorDeLectura que="las clases quitadas" error={revocaciones.error} />
+          {revocaciones.error ? null : revocaciones.datos.length === 0 ? (
+            <p className="mt-4 text-xo-gris">Todavía no se ha quitado ninguna clase.</p>
+          ) : (
+            <ul className="mt-4 divide-y divide-xo-negro/10 border-y border-xo-negro/10" data-revocaciones>
+              {revocaciones.datos.map((r) => (
+                <li key={`${r.revocadoAt}-${r.perfilId}`} className="py-3">
+                  <p className="text-sm text-xo-negro">
+                    {r.alumna ?? "Sin nombre"} · −{r.cantidad} {r.cantidad === 1 ? "clase" : "clases"}
+                    {r.lotes > 1 ? <span className="text-xo-gris"> (de {r.lotes} lotes)</span> : null}
+                  </p>
+                  <p className="text-sm text-xo-negro">
+                    <span className="text-xo-gris">Por qué: </span>
+                    {r.motivo}
+                  </p>
+                  <p className="text-sm text-xo-gris">
+                    {cuandoLegible(r.revocadoAt)} · por {r.autor ?? "alguien sin perfil"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      ) : null}
     </>
   );
 }

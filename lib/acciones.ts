@@ -815,3 +815,57 @@ export async function regalarCreditos(
     vence,
   };
 }
+
+/**
+ * Quitar clases a una persona (PRD-0024). El espejo del regalo: **solo el
+ * owner**, motivo obligatorio, del lote vigente que vence primero, y si el
+ * saldo no alcanza no se quita nada. Todo eso lo decide `revocar_creditos()`,
+ * que vuelve a verificar el rol adentro; esto responde antes y con el mensaje
+ * del formulario.
+ *
+ * Sin correo a la alumna (PRD-0024 §8.6.b): ve el saldo nuevo en Mis reservas.
+ * **No sirve para "fue a clase y no reservó"**: eso es una reserva que falta,
+ * no un crédito de más, y con una revocación la profesora no cobraría.
+ */
+export async function revocarCreditos(
+  perfilId: string,
+  cantidad: number,
+  motivo: string,
+): Promise<{ ok: true; saldo: number } | { ok: false; mensaje: string }> {
+  const actor = await perfilActual();
+  if (!actor || !tieneNivel(actor.rol, "owner")) {
+    return { ok: false, mensaje: "Solo el owner puede quitar clases." };
+  }
+  if (!Number.isInteger(cantidad) || cantidad < 1) {
+    return { ok: false, mensaje: "La cantidad tiene que ser al menos 1." };
+  }
+  if (motivo.trim().length < 5) {
+    return { ok: false, mensaje: "Escribe por qué se quitan (al menos 5 caracteres)." };
+  }
+
+  const admin = clienteAdmin();
+  const { error } = await admin.rpc("revocar_creditos", {
+    p_perfil_id: perfilId,
+    p_cantidad: cantidad,
+    p_motivo: motivo,
+    p_actor_user_id: actor.userId,
+  });
+  if (error) return { ok: false, mensaje: comoMensaje(error) };
+
+  const { data: lotes } = await admin
+    .from("creditos")
+    .select("cantidad_disponible")
+    .eq("perfil_id", perfilId)
+    .gt("fecha_vencimiento", new Date().toISOString());
+
+  revalidatePath("/admin");
+  revalidatePath("/mis-clases");
+  revalidatePath("/reservar");
+  return {
+    ok: true,
+    saldo: ((lotes ?? []) as { cantidad_disponible: number }[]).reduce(
+      (total, l) => total + l.cantidad_disponible,
+      0,
+    ),
+  };
+}
