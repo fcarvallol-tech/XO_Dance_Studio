@@ -40,8 +40,9 @@ async function fechaDesde(desde, esRegular) {
 }
 
 async function clase(fecha) {
-  return (await uno(db, `insert into clases (horario_id, fecha, inicio, curso_id, profesora_id, sede_id, cupo_maximo)
-    values ($1, $2::date, ($2::date + time '19:00') at time zone 'America/Santiago', $3, $4, $5, $6) returning id`,
+  return (await uno(db, `insert into clases (horario_id, fecha, inicio, fin, curso_id, profesora_id, sede_id, cupo_maximo)
+    values ($1, $2::date, ($2::date + time '19:00') at time zone 'America/Santiago',
+            ($2::date + time '20:00') at time zone 'America/Santiago', $3, $4, $5, $6) returning id`,
     [horario.id, fecha, horario.curso_id, PAU, horario.sede_id, sedePropia.capacidad])).id;
 }
 async function lote(quien, n) {
@@ -110,11 +111,12 @@ await paso("una clase en pie no se recupera", async () => {
 });
 await paso("una sala o una profesora ocupadas a esa hora", async () => {
   const f = await fechaDesde(23, false);
-  await db.query(`insert into horarios (curso_id, profesora_id, sede_id, dia_semana, hora)
-    select curso_id, profesora_id, $1, $2, '18:00' from horarios where id = $3`, [sedeOtra.id, await isodow(f), horario.id]).catch(() => {});
+  await db.query(`insert into horarios (duracion_min, curso_id, profesora_id, sede_id, dia_semana, hora)
+    select 60, curso_id, profesora_id, $1, $2, '18:00' from horarios where id = $3`, [sedeOtra.id, await isodow(f), horario.id]).catch(() => {});
   const h2 = await uno(db, "select id from horarios where sede_id = $1 and dia_semana = $2 and hora = '18:00' limit 1", [sedeOtra.id, await isodow(f)]);
-  await db.query(`insert into clases (horario_id, fecha, inicio, curso_id, profesora_id, sede_id, cupo_maximo)
-    values ($1, $2::date, ($2::date + time '18:00') at time zone 'America/Santiago', $3, $4, $5, 5)`, [h2.id, f, horario.curso_id, DRIMY, sedeOtra.id]);
+  await db.query(`insert into clases (horario_id, fecha, inicio, fin, curso_id, profesora_id, sede_id, cupo_maximo)
+    values ($1, $2::date, ($2::date + time '18:00') at time zone 'America/Santiago',
+            ($2::date + time '19:00') at time zone 'America/Santiago', $3, $4, $5, 5)`, [h2.id, f, horario.curso_id, DRIMY, sedeOtra.id]);
   await falla(crear(admin, CAIDA, f, "18:30", sedeOtra.id, PAU), /ya tiene una clase a esa hora/);
 });
 await paso("alumna y profesora, rechazadas adentro; una sesión no llama la función", async () => {
