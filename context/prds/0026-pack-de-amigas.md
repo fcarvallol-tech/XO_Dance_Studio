@@ -284,3 +284,13 @@ usaron** los alias que se habían acordado.
   Una amiga sin otros créditos vería "1" sin saber de dónde viene.
 - **Revocar descuenta del lote que vence primero (PRD-0024), no del lote del pack.** En una amiga que ya tenía un regalo, quitar 1 se lleva el regalo, que vence el 3/12, y el lote del pack queda vivo. Para anular la compra hay que quitarle todo lo vigente.
 
+### 12.2 Correcciones del 08/11/2026, rama `prd-0026-correcciones`
+
+Felipe las pidió en este orden, de peor a menos malo. Van dentro de este PRD.
+
+| # | Qué | Cómo | Estado |
+|---|---|---|---|
+| 1 | La clase del pack no aparecía explicada en `/mis-clases` | Se agregó la sección **"Clases que te dejaron"**: "1 clase del pack de amigas · Te la dejó Ana el viernes 6 de noviembre · vence el…". Se arma con `getMisClasesDeAmiga`: los lotes se leen con su sesión, y la compra con la service role, filtrada por que el lote sea de ella y que ella sea la invitada. De la compradora sale solo el nombre de pila. Sin migración | ✅ Probado desde la página contra staging (`scripts/verificar-clases-de-amiga.mjs`, 5 de 5). Falta en producción |
+| 2 | El `volver` se perdía en el enlace del correo | **Era la plantilla, no el código.** `FormularioEntrar` ya mandaba `emailRedirectTo` con el `volver`, y la plantilla del panel lo ignoraba. La nueva arma el enlace con `{{ .RedirectTo }}`: ver `supabase/plantillas-correo/` | ⏳ Se aplica en el panel de Supabase |
+| 3 | Asunto en inglés, "Your sign-in link" | El asunto pasa a "Tu enlace para entrar a XO", en Magic Link y en Confirm signup | ⏳ Se aplica en el panel, junto con el 2 |
+
