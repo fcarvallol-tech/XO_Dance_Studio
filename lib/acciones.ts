@@ -956,3 +956,66 @@ export async function revocarCreditos(
     ),
   };
 }
+
+export type ResultadoAsistenciaPasada =
+  | { ok: true; creditoDe: "dia_de_la_clase" | "hoy"; loteVencidoHoy: boolean }
+  | { ok: false; sinCreditoEseDia: true; vigentesHoy: number }
+  | { ok: false; sinCreditoEseDia?: false; mensaje: string };
+
+/**
+ * Registrar que una alumna bailó en una clase que ya pasó, sin reserva
+ * (PRD-0030). **Crea la reserva**, que es lo que consume el crédito y lo que
+ * le paga a la profesora; quitar el crédito dejaría la clase mal registrada.
+ *
+ * Todo lo que importa lo decide `reservar_retroactiva()`: el lote vigente **el
+ * día de la clase**, el movimiento fechado ese día, sin validar cupo, solo
+ * owner. Si ese día no tenía crédito, la base no inventa uno: devuelve la
+ * pregunta, y el owner decide si usar uno de los que tiene hoy
+ * (`usarCreditoDeHoy`).
+ */
+export async function registrarAsistenciaPasada(
+  perfilId: string,
+  claseId: string,
+  motivo: string,
+  usarCreditoDeHoy = false,
+): Promise<ResultadoAsistenciaPasada> {
+  const actor = await perfilActual();
+  if (!actor || !tieneNivel(actor.rol, "owner")) {
+    return { ok: false, mensaje: "Solo el owner puede registrar una asistencia pasada." };
+  }
+  if (motivo.trim().length < 5) {
+    return { ok: false, mensaje: "Escribe por qué se registra (al menos 5 caracteres)." };
+  }
+
+  const { data, error } = await clienteAdmin().rpc("reservar_retroactiva", {
+    p_actor_user_id: actor.userId,
+    p_perfil_id: perfilId,
+    p_clase_id: claseId,
+    p_motivo: motivo,
+    p_usar_credito_de_hoy: usarCreditoDeHoy,
+  });
+  if (error) return { ok: false, mensaje: comoMensaje(error) };
+
+  const r = data as {
+    ok: boolean;
+    motivo?: string;
+    vigentes_hoy?: number;
+    credito_de?: "dia_de_la_clase" | "hoy";
+    lote_vencido_hoy?: boolean;
+  };
+  if (!r.ok && r.motivo === "sin_credito_ese_dia") {
+    return { ok: false, sinCreditoEseDia: true, vigentesHoy: r.vigentes_hoy ?? 0 };
+  }
+  if (!r.ok) {
+    return {
+      ok: false,
+      mensaje:
+        "No tenía crédito ese día ni tiene uno hoy. No se registró nada: la deuda de una clase es la parte 2 del PRD-0030.",
+    };
+  }
+
+  revalidatePath("/owner/asistencias");
+  revalidatePath("/admin");
+  revalidatePath("/mis-clases");
+  return { ok: true, creditoDe: r.credito_de ?? "dia_de_la_clase", loteVencidoHoy: !!r.lote_vencido_hoy };
+}

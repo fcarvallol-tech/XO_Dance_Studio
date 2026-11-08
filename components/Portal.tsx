@@ -175,6 +175,7 @@ function gruposPara(rol: Rol, correosFallidos = 0, transferenciasPendientes = 0)
       enlaces: [
         { href: "/owner/metricas", texto: "Métricas" },
         { href: "/owner/finanzas", texto: "Finanzas" },
+        { href: "/owner/asistencias", texto: "Asistencias pasadas" },
       ],
     });
   }
