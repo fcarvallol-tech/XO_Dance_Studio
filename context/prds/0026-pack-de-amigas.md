@@ -256,3 +256,31 @@ compró. Si mañana interesa saber cuántas llegaron por un pack de amigas, eso 
 **Corregido de paso en `aprobarCompra`:** el vencimiento del correo de aprobación se leía con
 `.eq("compra_id").maybeSingle()`. Con dos lotes por compra eso da error, y el correo habría dicho
 un vencimiento genérico. Ahora busca el lote de cada una.
+
+### 12.1 Prueba en producción, 08/11/2026
+
+Felipe compró desde la página con su cuenta de owner, y la amiga fue `felipe@motex.ai`. **No se
+usaron** los alias que se habían acordado.
+
+- **Correo inexistente bloqueado, y el aviso aparece antes de elegir el plan.** Lo vio Felipe en la página.
+- **Lotes.** Quedaron dos lotes con el mismo `compra_id`, uno en cada cuenta, de 1 clase cada uno, con su movimiento `compra`, $15.000 y vencimiento exacto a 30 días de la aprobación.
+- **Correo a la amiga (`creditoDeAmiga`).** Llegó a la bandeja de entrada **2 segundos después de aprobar**, desde `XO Dance Studio <hola@xodancestudio.cl>`.
+  - Asunto: "Felipe te dejó una clase en XO".
+  - Cuerpo: "Prueba test, Felipe compró el pack de amigas y una de las clases es para ti. Ya está en tu cuenta… Vale hasta el martes 8 de diciembre".
+  - Trae el botón "Reservar mi clase".
+- **El copy del correo se queda así.** Saluda con el nombre del perfil de la amiga y nombra a la compradora por su primer nombre. Felipe lo revisó el 08/11.
+- **Anular antes de revocar falló, como debía.** El candado respondió: "Esta compra todavía tiene 2 clases sin usar en sus lotes".
+- 🔴 **El botón del correo, sin sesión, no vuelve a reservar.** Se probó con un navegador limpio, sin cookies, y el camino fue:
+  1. `/reservar` responde 307 a `/entrar?volver=%2Freservar`.
+  2. Se pide el enlace con el correo de la amiga.
+  3. El correo del enlace llega **sin `volver`**: `/auth/confirmar?token_hash=…&type=magiclink`.
+  4. Al abrirlo, va a `/entrar` y después a **`/mis-clases`**, no a `/reservar`.
+
+  La amiga queda dentro y ve "CLASES DISPONIBLES 2", pero tiene que buscar el botón Reservar de nuevo. Además, el correo del enlace llega con asunto en inglés, **"Your sign-in link"**: el cuerpo está en español, pero el asunto es la plantilla de Supabase.
+- **Lo que la amiga ve en `/mis-clases`.** El crédito del pack suma en el total ("2"), pero **no aparece explicado en ninguna parte**:
+  - "Clases de regalo" lista solo el regalo del 3/11;
+  - "Tus compras" lista solo lo que compró ella.
+
+  Una amiga sin otros créditos vería "1" sin saber de dónde viene.
+- **Revocar descuenta del lote que vence primero (PRD-0024), no del lote del pack.** En una amiga que ya tenía un regalo, quitar 1 se lleva el regalo, que vence el 3/12, y el lote del pack queda vivo. Para anular la compra hay que quitarle todo lo vigente.
+
