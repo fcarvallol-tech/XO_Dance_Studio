@@ -55,6 +55,7 @@ function clase(dia: string, extra: Partial<ClaseLiquidable> = {}): ClaseLiquidab
     recuperada: false,
     recuperacionInicio: null,
     recuperaInicio: null,
+    noSeRecuperaAt: null,
     creditosConsumidos: 0,
     ...extra,
   };
@@ -120,13 +121,22 @@ test("base: una hora $18.000; hora y media $27.000, redondeada al peso", () => {
 
 const TODAS: readonly Causa[] = ["sala_no_disponible", "cambio_de_parrilla", "ausencia_profesora", "sin_alumnas", "asistencia_insuficiente"];
 
-test("causas sin recuperar: sala → base; parrilla y ausencia → nada; sin alumnas y asistencia → base", () => {
+test("causas sin recuperar (07/11): sala, sin alumnas y asistencia → pendiente; parrilla y ausencia → nada", () => {
   const ctx = { recuperada: false, profesoraSePresento: false };
-  assert.equal(efectoDeCausa("sala_no_disponible", ctx), "base");
+  assert.equal(efectoDeCausa("sala_no_disponible", ctx), "pendiente");
   assert.equal(efectoDeCausa("cambio_de_parrilla", ctx), "nada");
   assert.equal(efectoDeCausa("ausencia_profesora", ctx), "nada");
+  assert.equal(efectoDeCausa("sin_alumnas", ctx), "pendiente");
+  assert.equal(efectoDeCausa("asistencia_insuficiente", ctx), "pendiente");
+});
+
+test("marcada 'no se va a recuperar': sala, sin alumnas y asistencia → base; parrilla y ausencia siguen en nada", () => {
+  const ctx = { recuperada: false, profesoraSePresento: false, noSeRecupera: true };
+  assert.equal(efectoDeCausa("sala_no_disponible", ctx), "base");
   assert.equal(efectoDeCausa("sin_alumnas", ctx), "base");
   assert.equal(efectoDeCausa("asistencia_insuficiente", ctx), "base");
+  assert.equal(efectoDeCausa("cambio_de_parrilla", ctx), "nada");
+  assert.equal(efectoDeCausa("ausencia_profesora", ctx), "nada");
 });
 
 test("recuperada y sin presentarse, por cualquier causa: nada en la original (se paga una vez, en la recuperación)", () => {
@@ -207,7 +217,8 @@ test("la original con la profesora presente y su recuperación: se pagan las dos
 });
 
 test("una no dictada no paga variable aunque haya tenido reservas", () => {
-  const l = lineaDeClase(noDictada("2026-11-12", "sala_no_disponible", { creditosConsumidos: 12 }), T, DIC_1);
+  // Marcada para que pague base: lo que se prueba es que el variable no entra.
+  const l = lineaDeClase(noDictada("2026-11-12", "sala_no_disponible", { creditosConsumidos: 12, noSeRecuperaAt: "2026-11-20T12:00:00-03:00" }), T, DIC_1);
   assert.deepEqual([l.baseClp, l.variableClp, l.totalClp], [18_000, 0, 18_000]);
 });
 
@@ -215,8 +226,10 @@ test("el caso de Pau del 03/11: asistencia insuficiente, cancelada después de l
   const pau = noDictada("2026-11-03", "asistencia_insuficiente", { estado: "cancelada" });
   // Si se recupera: $0 en la original.
   assert.equal(lineaDeClase({ ...pau, recuperada: true }, T, DIC_1).totalClp, 0);
-  // Si no se recupera: la base. Pau no faltó.
-  assert.equal(lineaDeClase(pau, T, DIC_1).totalClp, 18_000);
+  // Mientras está pendiente: $0 (Felipe, 07/11/2026: no pago una clase que no se hizo).
+  assert.equal(lineaDeClase(pau, T, DIC_1).totalClp, 0);
+  // Si se marca que no se va a recuperar: la base. Pau no faltó.
+  assert.equal(lineaDeClase({ ...pau, noSeRecuperaAt: "2026-11-10T12:00:00-03:00" }, T, DIC_1).totalClp, 18_000);
 });
 
 test("cancelada o no dictada sin causa: no paga y queda marcada para bloquear el mes", () => {
@@ -344,7 +357,7 @@ test("no dictada + recuperación: la original paga $0, la recuperación se paga 
   assert.equal(r.totalClp, 81_000 + 7_500);
 });
 
-test("sin la recuperación, el mismo mes paga la base de la no dictada y no llega al piso", () => {
+test("sin la recuperación, la no dictada queda pendiente en $0 y el mes no llega al piso", () => {
   const r = liquidar({
     profesoraId: P1,
     mes: "2026-11",
@@ -357,7 +370,7 @@ test("sin la recuperación, el mismo mes paga la base de la no dictada y no lleg
       clase("2026-11-24", { creditosConsumidos: 14 }),
     ],
   });
-  assert.deepEqual(r.lineas.map((l) => l.totalClp), [20_750, 19_750, 18_000, 20_250]);
+  assert.deepEqual(r.lineas.map((l) => l.totalClp), [20_750, 19_750, 0, 20_250]);
   assert.equal(r.incentivoClp, 0);
 });
 
@@ -388,7 +401,7 @@ test("reemplazo: la clase se le paga a quien dictó, no a la titular", () => {
 // El mes completo, calculado a mano
 // ---------------------------------------------------------------------------
 
-test("un mes completo de P1: $187.750, línea por línea", () => {
+test("un mes completo de P1: $151.750, línea por línea (era $187.750 antes de la regla del 07/11)", () => {
   const r = liquidar({
     profesoraId: P1,
     mes: "2026-11",
@@ -404,9 +417,9 @@ test("un mes completo de P1: $187.750, línea por línea", () => {
       // Heels: dos dictadas, una sin sala, una por cambio de parrilla, una sin alumnas no recuperada.
       clase("2026-11-05", { cursoId: "heels", creditosConsumidos: 3 }),      // 18.000
       clase("2026-11-12", { cursoId: "heels", creditosConsumidos: 5 }),      // 18.000
-      noDictada("2026-11-19", "sala_no_disponible", { cursoId: "heels", estado: "cancelada" }), // 18.000
+      noDictada("2026-11-19", "sala_no_disponible", { cursoId: "heels", estado: "cancelada" }), // 0, pendiente (no se presentó)
       noDictada("2026-11-26", "cambio_de_parrilla", { cursoId: "heels", estado: "cancelada" }), // 0
-      clase("2026-11-28", { cursoId: "heels", estado: "cancelada", causa: "sin_alumnas" }), // 18.000
+      clase("2026-11-28", { cursoId: "heels", estado: "cancelada", causa: "sin_alumnas" }), // 0, pendiente
       // Una de 90 minutos.
       clase("2026-11-07", { cursoId: "intensivo", fin: "2026-11-07T20:30:00-03:00", creditosConsumidos: 6 }), // 27.250
       // Lo que no entra: una especial, una del mes siguiente, una de otra profesora.
@@ -416,10 +429,10 @@ test("un mes completo de P1: $187.750, línea por línea", () => {
     ],
   });
 
-  assert.equal(r.baseClp, 72_000 + 72_000 + 27_000);           // 171.000
+  assert.equal(r.baseClp, 72_000 + 36_000 + 27_000);           // 135.000: las dos pendientes de heels, en $0
   assert.equal(r.variableClp, 2_750 + 1_750 + 2_250 + 2_250 + 250); // 9.250
   assert.equal(r.incentivoClp, 7_500);
-  assert.equal(r.totalClp, 187_750);
+  assert.equal(r.totalClp, 151_750);
   assert.equal(r.especiales, 1);
   assert.equal(r.lineas.length, 12); // 11 de parrilla del mes + la especial
   assert.deepEqual(r.bloqueos, []);
@@ -534,16 +547,19 @@ test("recuperada dentro del mes: se paga en la recuperación", () => {
   assert.equal(f.razon, "se_paga_en_la_recuperacion");
 });
 
-test("sin fecha y pagando la base: avisa que después no se puede recuperar", () => {
+test("sin recuperación ni marca: pendiente, $0, y dice cuándo se paga", () => {
   const [f] = noEntra([noDictada("2026-11-27", "sin_alumnas")]);
-  assert.equal(f.razon, "sin_fecha");
-  assert.match(f.explicacion, /ya no se puede recuperar/);
+  assert.equal(f.razon, "pendiente");
+  assert.match(f.explicacion, /cuando se dicte la recuperación, o en el mes en que marques/);
 });
 
-test("ausencia sin fecha: no paga nada y sigue pendiente de recuperar", () => {
+test("marcada 'no se va a recuperar' en el mes: paga, así que no está en lo no pagado", () => {
+  assert.deepEqual(noEntra([noDictada("2026-11-27", "sin_alumnas", { noSeRecuperaAt: "2026-11-28T10:00:00-03:00" })]), []);
+});
+
+test("ausencia sin fecha: no paga, y no queda como pendiente", () => {
   const [f] = noEntra([noDictada("2026-11-27", "ausencia_profesora")]);
-  assert.equal(f.razon, "sin_fecha");
-  assert.match(f.explicacion, /no paga nada/);
+  assert.equal(f.razon, "no_paga");
 });
 
 test("cambio de parrilla: no paga y no queda pendiente de recuperar", () => {
@@ -572,4 +588,72 @@ test("una dictada no está en lo no pagado", () => {
 
 test("nombreDeMes", () => {
   assert.equal(nombreDeMes("2026-12"), "diciembre de 2026");
+});
+
+// ---------------------------------------------------------------------------
+// La regla de pendientes (Felipe, 07/11/2026): "no pago una clase que no se
+// hizo". Lo que separa los casos es de quién fue la culpa, no si se recuperó.
+// ---------------------------------------------------------------------------
+
+const ENE_2 = new Date("2027-01-02T12:00:00-03:00");
+const mesDe = (mes: string, clases: ClaseLiquidable[]) =>
+  liquidar({ profesoraId: P1, mes, tarifa: T, ahora: ENE_2, clases });
+
+test("1.4.a una clase pendiente de recuperación paga $0 este mes", () => {
+  const r = mesDe("2026-11", [noDictada("2026-11-27", "sin_alumnas", { estado: "cancelada" })]);
+  assert.equal(r.totalClp, 0);
+  assert.match(r.lineas[0].explicacion, /pendiente de recuperación/);
+});
+
+test("1.4.b marcada 'no se va a recuperar' paga la base en el mes de la marca, no en el de la clase", () => {
+  const t = noDictada("2026-11-27", "sin_alumnas", { estado: "cancelada", noSeRecuperaAt: "2026-12-04T11:00:00-03:00" });
+  // Noviembre: la marca es de diciembre, así que para noviembre sigue pendiente.
+  assert.equal(mesDe("2026-11", [t]).totalClp, 0);
+  // Diciembre: entra como línea, con la base, y dice de qué mes es.
+  const dic = mesDe("2026-12", [t]);
+  assert.equal(dic.totalClp, 18_000);
+  assert.equal(dic.lineas.length, 1);
+  assert.match(dic.lineas[0].explicacion, /Clase de noviembre de 2026.*se paga en este mes/);
+  // Enero ya no la vuelve a pagar.
+  assert.equal(mesDe("2027-01", [t]).totalClp, 0);
+  // Marcada dentro de su mismo mes: se paga en ese mes.
+  assert.equal(mesDe("2026-11", [{ ...t, noSeRecuperaAt: "2026-11-28T11:00:00-03:00" }]).totalClp, 18_000);
+});
+
+test("1.4.c un mes con clases pendientes se puede cerrar: no hay bloqueo", () => {
+  const r = mesDe("2026-11", [clase("2026-11-03", { creditosConsumidos: 10 }), noDictada("2026-11-27", "asistencia_insuficiente")]);
+  assert.deepEqual(r.bloqueos, []);
+  assert.equal(r.totalClp, 19_250);
+});
+
+test("1.4.d una clase recuperada se paga una sola vez: la original $0, la recuperación entera", () => {
+  const r = mesDe("2026-11", [
+    noDictada("2026-11-10", "asistencia_insuficiente", { recuperada: true, recuperacionInicio: "2026-11-20T19:00:00-03:00" }),
+    clase("2026-11-20", { creditosConsumidos: 8, recuperaInicio: "2026-11-10T19:00:00-03:00" }),
+  ]);
+  assert.deepEqual(r.lineas.map((l) => l.totalClp), [0, 18_750]);
+  assert.equal(r.totalClp, 18_750);
+});
+
+test("1.4.e pendiente en noviembre y recuperada en diciembre: se paga en diciembre, en la recuperación", () => {
+  const original = noDictada("2026-11-27", "sin_alumnas", { estado: "cancelada", recuperada: true, recuperacionInicio: "2026-12-04T19:00:00-03:00" });
+  const recuperacion = clase("2026-12-04", { creditosConsumidos: 8, recuperaInicio: "2026-11-27T19:00:00-03:00" });
+  assert.equal(mesDe("2026-11", [original, recuperacion]).totalClp, 0);
+  assert.equal(mesDe("2026-12", [original, recuperacion]).totalClp, 18_750);
+  const [f] = noEntraEnEstePago(mesDe("2026-11", [original, recuperacion]).lineas, "2026-11");
+  assert.equal(f.razon, "se_paga_otro_mes");
+});
+
+test("1.4.f el viaje perdido (sin sala y se presentó) paga la base aunque se recupere, y la recuperación aparte", () => {
+  const r = mesDe("2026-11", [
+    noDictada("2026-11-01", "sala_no_disponible", { profesoraSePresento: true, recuperada: true, recuperacionInicio: "2026-11-10T19:00:00-03:00" }),
+    clase("2026-11-10", { creditosConsumidos: 5, recuperaInicio: "2026-11-01T19:00:00-03:00" }),
+  ]);
+  assert.deepEqual(r.lineas.map((l) => l.totalClp), [18_000, 18_000]);
+  // Y sin recuperar, también: no queda pendiente, porque la culpa fue de XO.
+  assert.equal(mesDe("2026-11", [noDictada("2026-11-01", "sala_no_disponible", { profesoraSePresento: true })]).totalClp, 18_000);
+});
+
+test("sala sin que se presentara: es pendiente como las demás, no paga el viaje", () => {
+  assert.equal(mesDe("2026-11", [noDictada("2026-11-01", "sala_no_disponible")]).totalClp, 0);
 });
