@@ -147,6 +147,10 @@ export type Linea = {
   totalClp: number;
   /** Por qué paga lo que paga, en palabras: lo lee el owner y la profesora. */
   explicacion: string;
+  /** Solo en una no dictada con causa: base, nada o pendiente. */
+  efecto: Efecto | null;
+  /** Cuándo se marcó que no se va a recuperar, si se marcó. */
+  noSeRecuperaAt: string | null;
 };
 
 /** Una clase de las que se promediaron para el incentivo. */
@@ -283,6 +287,7 @@ export function lineaDeClase(
     baseClp: number,
     variableClp: number,
     explicacion: string,
+    efecto: Efecto | null = null,
   ): Linea => ({
     claseId: clase.id,
     cursoId: clase.cursoId,
@@ -299,6 +304,8 @@ export function lineaDeClase(
     variableClp,
     totalClp: baseClp + variableClp,
     explicacion,
+    efecto,
+    noSeRecuperaAt: clase.noSeRecuperaAt ?? null,
   });
 
   if (clase.tipo === "especial") {
@@ -324,7 +331,8 @@ export function lineaDeClase(
     return linea("sin_causa", 0, 0, "Falta decir por qué no se dictó. Hasta entonces no se puede pagar el mes.");
   }
 
-  const marca = clase.noSeRecuperaAt;
+  // `?? null`: un insumo que no trae el campo cuenta como sin marca.
+  const marca = clase.noSeRecuperaAt ?? null;
   const marcaVale = marca !== null && (mes === null || mesEnSantiago(marca) <= mes);
   const efecto = efectoDeCausa(clase.causa, {
     recuperada: clase.recuperada,
@@ -350,7 +358,7 @@ export function lineaDeClase(
 
   // Sin variable aunque haya tenido reservas: al no dictarse, los créditos
   // vuelven a las alumnas, y una que no vuelve —cancelada tarde— no la dictó.
-  return linea("no_dictada", efecto === "base" ? baseDeClase(h, tarifa) : 0, 0, explicacion);
+  return linea("no_dictada", efecto === "base" ? baseDeClase(h, tarifa) : 0, 0, explicacion, efecto);
 }
 
 /**
@@ -435,7 +443,7 @@ export function liquidar(entrada: {
       (c) =>
         c.profesoraId === profesoraId &&
         (mesEnSantiago(c.inicio) === mes ||
-          (mesEnSantiago(c.inicio) < mes && c.noSeRecuperaAt !== null && mesEnSantiago(c.noSeRecuperaAt) === mes)),
+          (mesEnSantiago(c.inicio) < mes && c.noSeRecuperaAt != null && mesEnSantiago(c.noSeRecuperaAt) === mes)),
     )
     .sort((a, b) => a.inicio.localeCompare(b.inicio));
 

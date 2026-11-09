@@ -596,6 +596,34 @@ Con un mes cerrado, `mes_pagado()` ya da verdadero: el candado de §7.4 actúa d
 ⚠️ **Sin construir:** `ajustes_liquidacion` (§8.6), reasignar desde la pantalla, y cerrar a todas de una
 vez: se cierra profesora por profesora.
 
+### 8.8 Pendiente de recuperación y "no se va a recuperar" (Felipe, 07/11/2026) — reemplaza lo que pagaba una no dictada sin recuperar
+
+**"No pago una clase que no se hizo."** Lo que separa los casos es de quién fue la culpa, no si se
+recuperó.
+
+| Caso | Paga |
+|---|---|
+| `sala_no_disponible` y la profesora se presentó | La base, **aunque se recupere**: le hicimos perder el viaje |
+| Recuperada, por la causa que sea | $0 en la original; se paga la recuperación, que es una dictada más |
+| `cambio_de_parrilla`, `ausencia_profesora` | $0 |
+| `sala_no_disponible` (sin presentarse), `sin_alumnas`, `asistencia_insuficiente`, sin recuperar | **Pendiente: $0 este mes.** No traba el cierre |
+| Las mismas, marcadas **"no se va a recuperar"** | La base, **en el mes de la marca**, no en el de la clase |
+
+- La marca la pone y la quita **solo el owner**, con `marcar_no_se_recupera()`, desde
+  `/owner/liquidaciones`. Vive en `causas_de_clase.no_se_recupera_at`.
+- No se marca una clase que ya tiene recuperación. Una marcada no se puede recuperar: un disparador
+  sobre `clases.recupera_clase_id` lo impide, así que vale también para `crear_recuperativa`.
+- Quitar la marca se puede mientras el mes de la marca no esté cerrado.
+- Los insumos entregan la marca solo si cae en el mes que se mira o antes. Una marca de diciembre no
+  mueve la huella de un noviembre ya cerrado. Las clases de meses anteriores marcadas en un mes
+  entran en los insumos de ese mes.
+- Escenario: **Pau $106.500**. Son $72.000 de base por las cuatro dictadas, $9.000 de variable,
+  $18.000 por la del 1/11 (viaje perdido, recuperada) y $7.500 de incentivo. La del 27/11 queda
+  pendiente en $0, y si se marca pasa a $18.000.
+- Va **dentro** de las migraciones de la liquidación, que no estaban en producción: la columna, la
+  función y el disparador en `20261105140000`; los insumos y la huella en `20261106130000`, que es
+  donde ya se rehacían.
+
 ## 9. Lo que ve la profesora
 
 **Propuesta: ve su liquidación, y solo la suya.** Sujeto a la pregunta 5, porque contradice la regla

@@ -18,6 +18,10 @@
 --  4. cerrar_liquidacion(); pagar_liquidacion() pasa a recibir la liquidación.
 --  5. mis_liquidaciones() devuelve también las cerradas sin pagar.
 --  6. El bucket del comprobante, que faltaba.
+--  7. La marca "no se va a recuperar" (Felipe, 07/11/2026; la columna y su
+--     función están en 20261105140000): los insumos la traen, y traen también
+--     las clases de meses anteriores marcadas en este mes, porque su base se
+--     paga acá. La huella la incluye.
 --
 -- Idempotente.
 
@@ -105,8 +109,15 @@ create trigger liquidaciones_no_se_editan
 -- ---------------------------------------------------------------------------
 -- 3. Cuándo cae la recuperación
 -- ---------------------------------------------------------------------------
--- Cambia el tipo de retorno, así que se recrean. La huella no cambia: mover la
--- fecha de una recuperación dentro del mismo estado no mueve el monto.
+-- Cambia el tipo de retorno, así que se recrean. Mover la fecha de una
+-- recuperación dentro del mismo estado no mueve el monto, así que no va en la
+-- huella.
+--
+-- La marca "no se va a recuperar" sí mueve el monto. Se entrega **solo si cae
+-- en el mes que se mira o antes**: una marca de diciembre sobre una clase de
+-- noviembre no existe para noviembre —ahí sigue pendiente, $0— y así marcar
+-- en diciembre no mueve la huella de un noviembre ya cerrado. Y las clases de
+-- meses anteriores marcadas en este mes entran en los insumos de este mes.
 
 drop function if exists public.insumos_liquidacion(date);
 drop function if exists public.mis_insumos_liquidacion(date);
@@ -129,7 +140,8 @@ returns table (
   recupera_clase_id uuid,
   creditos_consumidos int,
   recuperacion_inicio timestamptz,
-  recupera_inicio timestamptz
+  recupera_inicio timestamptz,
+  no_se_recupera_at timestamptz
 )
 language sql
 stable
@@ -148,7 +160,8 @@ as $$
              and r.credito_devuelto = false
              and r.estado not in ('pendiente_pago', 'expirada', 'liberada')),
          rec.inicio,
-         ori.inicio
+         ori.inicio,
+         case when ca.no_se_recupera_at < b.hasta then ca.no_se_recupera_at end
   from public.clases cl
   join public.cursos cu on cu.id = cl.curso_id
   join public.sedes se on se.id = cl.sede_id
@@ -162,19 +175,51 @@ as $$
   ) rec on true
   left join public.clases ori on ori.id = cl.recupera_clase_id
   cross join public.bordes_de_mes(p_mes) b
-  where cl.inicio >= b.desde and cl.inicio < b.hasta
+  where ((cl.inicio >= b.desde and cl.inicio < b.hasta)
+         -- De un mes anterior, marcada "no se va a recuperar" en este: su base va acá.
+         or (cl.inicio < b.desde
+             and ca.no_se_recupera_at >= b.desde and ca.no_se_recupera_at < b.hasta))
     and (cl.tipo = 'parrilla' or cl.publicada_at is not null)
   order by cl.inicio, cl.id;
 $$;
 
 revoke all on function public.insumos_del_mes(date) from public, anon, authenticated, service_role;
 
+/** La huella, ahora con la marca: marcar o quitarla mueve el monto. */
+create or replace function public.huella_del_mes(p_profesora_id uuid, p_mes date)
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select md5(
+    coalesce((
+      select string_agg(
+        concat_ws('|', i.clase_id, i.inicio, i.fin, i.tipo, i.estado, i.causa,
+                  i.profesora_se_presento, i.recuperada, i.creditos_consumidos,
+                  coalesce(i.no_se_recupera_at::text, 'pendiente')),
+        ',' order by i.clase_id)
+      from public.insumos_del_mes(p_mes) i
+      where i.profesora_id = p_profesora_id
+    ), '')
+    || '#' ||
+    coalesce((
+      select concat_ws('|', base_hora_clp, variable_credito_clp, umbral_variable)
+      from public.costos_profesoras where profesora_id = p_profesora_id
+    ), 'sin_tarifa')
+  );
+$$;
+
+revoke all on function public.huella_del_mes(uuid, date) from public, anon, authenticated, service_role;
+
 create function public.insumos_liquidacion(p_mes date)
 returns table (
   clase_id uuid, profesora_id uuid, curso_id uuid, curso text, sede text,
   inicio timestamptz, fin timestamptz, tipo text, estado text, causa text,
   profesora_se_presento boolean, recuperada boolean, recupera_clase_id uuid,
-  creditos_consumidos int, recuperacion_inicio timestamptz, recupera_inicio timestamptz
+  creditos_consumidos int, recuperacion_inicio timestamptz, recupera_inicio timestamptz,
+  no_se_recupera_at timestamptz
 )
 language plpgsql
 stable
@@ -201,7 +246,7 @@ returns table (
   clase_id uuid, curso_id uuid, curso text, sede text,
   inicio timestamptz, fin timestamptz, tipo text, estado text, causa text,
   profesora_se_presento boolean, recuperada boolean, creditos_consumidos int,
-  recuperacion_inicio timestamptz, recupera_inicio timestamptz
+  recuperacion_inicio timestamptz, recupera_inicio timestamptz, no_se_recupera_at timestamptz
 )
 language plpgsql
 stable
@@ -217,7 +262,7 @@ begin
   return query
   select i.clase_id, i.curso_id, i.curso, i.sede, i.inicio, i.fin, i.tipo, i.estado,
          i.causa, i.profesora_se_presento, i.recuperada, i.creditos_consumidos,
-         i.recuperacion_inicio, i.recupera_inicio
+         i.recuperacion_inicio, i.recupera_inicio, i.no_se_recupera_at
   from public.insumos_del_mes(p_mes) i
   where i.profesora_id = v_profesora;
 end;

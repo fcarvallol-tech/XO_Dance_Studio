@@ -90,3 +90,26 @@ export async function clasificarClase(datos: {
   refrescar();
   return { ok: true };
 }
+
+/**
+ * "No se va a recuperar" (Felipe, 07/11/2026). Solo owner: decide pagar la base
+ * de una clase que no se hizo, en el mes de la marca. Quitarla la devuelve a
+ * pendiente, mientras ese mes no esté cerrado. La regla la cuida la base.
+ */
+export async function marcarNoSeRecupera(datos: {
+  claseId: string;
+  marcar: boolean;
+}): Promise<ResultadoLiquidacion> {
+  const actor = await perfilActual();
+  if (!actor || !tieneNivel(actor.rol, "owner")) return { ok: false, mensaje: "No tienes permiso." };
+
+  const { error } = await clienteAdmin().rpc("marcar_no_se_recupera", {
+    p_actor_user_id: actor.userId,
+    p_clase_id: datos.claseId,
+    p_marcar: datos.marcar,
+  });
+  if (error) return { ok: false, mensaje: comoMensaje(error) };
+
+  refrescar();
+  return { ok: true };
+}
