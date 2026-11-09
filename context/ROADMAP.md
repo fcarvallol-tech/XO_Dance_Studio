@@ -1,8 +1,28 @@
 # ROADMAP.md — XO Dance Studio
 
 > Qué se construye, en qué orden y por qué.
-> Última actualización: **6 de noviembre de 2026**.
+> Última actualización: **9 de noviembre de 2026**.
 > ⚠️ Replanificado tras el cambio a modelo de paquetes y reservas.
+
+---
+
+## Estado al 9 de noviembre de 2026
+
+**Último deploy:** `8edbf6d` del 08/11 (correcciones del pack de amigas). **Nada a producción del
+08 al 09/11.** Esta sección se reconstruyó leyendo el repo y la base: la del 07/11 no se escribió.
+
+| Qué | Estado |
+|---|---|
+| **Revocar créditos (PRD-0024) y pack de amigas (PRD-0026)** | ✅ **En producción desde el 07/11**, aprobados por nombre y probados en producción el 08/11 con una compra real del pack |
+| **Liquidación (PRD-0010 parte 3)** | ⏸ Sin publicar, **lista para revisar**. Ya tiene la regla de pendientes del 07/11, dentro de las migraciones sin aplicar (`20261105140000` y `20261106130000`): la clase pendiente paga $0, y la marca "no se va a recuperar" paga la base en el mes en que se marca. Escenario: **Pau $106.500**, 52 de 52. Rama `prd-0010-parte-3-pantallas` |
+| **Reserva retroactiva (PRD-0030 parte 1)** | ⏸ Sin publicar. Migración `20261108120000` escrita y sin aplicar en ningún lado. Rama `prd-0030-reserva-retroactiva` |
+| **Correo y preventa** | 🔴 **El 3/11 se pasó la cuota diaria de Resend**: 20 correos fallaron entre 19:23 y 20:59, y el día de la cuota se reinicia a las 21:00 de Chile. **Un primer día de preventa como el lanzamiento se pasa otra vez**: ~230–250 correos contra un techo observado de ~190–210. Ver `context/correo-y-preventa-09-11.md`. **Decisión de Felipe: pagar el plan** |
+| **Ficha de persona (PRD-0031) y aviso de vencimiento (PRD-0032)** | 📝 Borradores. **PRD-0032 tiene que estar vivo el 22/11**: el primer aviso sale el 23/11 |
+
+**Pendiente:** aprobar la liquidación para producción (el 1/12 se paga noviembre), decidir el plan
+de Resend antes del 23/11, aprobar los dos PRDs y el texto del aviso antes del 20/11. Staging tiene
+la versión **anterior** de las dos migraciones de la liquidación: para volver a probar ahí hay que
+revertirlas con `migration repair` y aplicarlas de nuevo.
 
 ---
 
@@ -373,6 +393,7 @@ Modelo profesor-cliente: comisiones, rentabilidad por profesora, marca personal.
 
 | Fecha | Cambio |
 |---|---|
+| 9 nov 2026 | **Regla de pendientes en la liquidación, el correo de la preventa contado, y dos PRDs.** (1) Se reconstruyó el estado tras la caída de la sesión: producción tiene exactamente las dos migraciones aprobadas el 07/11, y nada más. (2) PRD-0010 parte 3 §8.8: la clase pendiente de recuperación paga $0, y la marca "no se va a recuperar" (solo owner) paga la base en el mes de la marca. Va dentro de las migraciones sin aplicar, con un disparador que impide recuperar una clase marcada. Pau $106.500. (3) `context/correo-y-preventa-09-11.md`: cuota diaria, 3 correos por compra, 1 por reserva, y la proyección de la preventa. (4) PRD-0031, la ficha de persona, y PRD-0032, el aviso de vencimiento, en borrador |
 | 6 nov 2026 | **Staging al día con las cuatro ramas, probadas desde la página.** Decisiones de Felipe: `profesora_se_presento` solo paga en `sala_no_disponible`, la recuperación no es opcional, la sala de la recuperación se cobra y el cupo de la recuperativa es por orden de llegada. PRD-0027 suma el selector de categoría y "otra sala". Nada a producción |
 | 5 nov 2026 | **PRD-0025 en producción: Personas se filtra por nombre o correo y dice siempre el total** (`3cb80f7`), sin migración. `pedidos-de-uso` a `main` (`ef2bb1e`), solo documentos. Falta la prueba desde la página con sesión de admin y con una alumna. Se anota el pedido 8: el umbral de 5 no está en `/owner/finanzas` |
 | 4 nov 2026 | **Preventa revertida, lote vencido descartado y ramas en orden.** (1) `20261104120000_fin_preventa_noviembre.sql` pasó de `supabase/pendientes/` a `migrations/` y se aplicó con aprobación de Felipe por nombre; el dry-run listó esa sola. Terminó sin abortar, así que los cuatro precios de lista coinciden con los que la migración comprueba. En el sitio publicado, `/comprar` y los cuatro `/comprar/<oferta>` muestran $8.500, $16.000, $28.000 y $48.000 sin tachado ni plazo; `/comprar/pack-8` siguió mostrando la preventa unos minutos pasada la medianoche, hasta que su caché de una hora se renovó. (2) **Consulta de solo lectura**, aprobada para eso y nada más, por la API de administración: las 2 reservas de la clase de Pau del 3/11 están canceladas con el crédito devuelto, y los dos lotes vencen el 03/12: **ninguno volvió vencido**. Cierra lo que el `db push` del 3/11 no mostró. (3) `pau-3-nov-y-leones-16` mergeada a `main`: hasta ahora `main` tenía dos migraciones menos que producción. De `rescate-20-octubre` se trajo **solo** `0010-parte-3-liquidacion-de-profesoras.md`; el resto choca con `main` y se queda en la rama. La CLI quedó vinculada de vuelta a staging |
