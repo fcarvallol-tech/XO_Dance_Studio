@@ -357,6 +357,15 @@ $$;
  * metricas_finanzas (PRD-0010 §7.1.3) — con crédito, sin devolver, fuera de
  * pendiente_pago, expirada y liberada.
  */
+-- Se borran antes de crearlas: 20261106130000 las rehace con otro tipo de
+-- retorno, y `create or replace` no puede cambiarlo. Sin esto, esta migración
+-- no se puede volver a aplicar sobre una base que ya tiene aquella (pasó en
+-- staging el 10/11/2026). En una base sin ellas, los `drop` no hacen nada.
+drop function if exists public.insumos_liquidacion(date);
+drop function if exists public.mis_insumos_liquidacion(date);
+drop function if exists public.mis_liquidaciones();
+drop function if exists public.insumos_del_mes(date);
+
 create or replace function public.insumos_del_mes(p_mes date)
 returns table (
   clase_id uuid,
