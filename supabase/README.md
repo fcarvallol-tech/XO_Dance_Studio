@@ -79,9 +79,16 @@ que tapar también la publicable, que `config.ts` prefiere:
 
 ```bash
 set -a; . ./.env.staging; set +a
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
 NEXT_PUBLIC_SITE_URL=http://localhost:3000 npm run build && npm run start
 ```
+
+⚠️ `.env.staging` trae `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` directo. La versión anterior de este
+comando la pisaba con `$NEXT_PUBLIC_SUPABASE_ANON_KEY`, que ya no existe, y el build se caía con
+"Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" (10/11/2026).
+
+Las cuentas de staging son `@ejemplo.invalid` y no reciben correo. Para entrar al sitio local con
+una de ellas: `node scripts/enlace-staging.mjs owner@ejemplo.invalid /owner/liquidaciones`, que
+imprime un enlace de un solo uso, válido por una hora.
 
 Se verifica con `node scripts/verificar-finanzas.mjs` (datos) y
 `node scripts/verificar-finanzas-navegador.mjs` (clics). El escenario de prueba se
