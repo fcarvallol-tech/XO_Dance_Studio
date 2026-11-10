@@ -90,6 +90,25 @@ Las cuentas de staging son `@ejemplo.invalid` y no reciben correo. Para entrar a
 una de ellas: `node scripts/enlace-staging.mjs owner@ejemplo.invalid /owner/liquidaciones`, que
 imprime un enlace de un solo uso, válido por una hora.
 
+### 🔴 El reloj de staging está adelantado al 2/12/2026 (desde el 10/11/2026)
+
+`hoy_santiago()` en staging devuelve `date '2026-12-02'` fijo, no `now()`. **Es a propósito**: el
+primer mes liquidable es noviembre de 2026 y no se puede cerrar ni pagar antes de que termine, así
+que la revisión de Felipe de la liquidación (owner y Pau, mes `2026-11`) necesita que staging crea
+que es diciembre. Solo afecta lo que lee `hoy_santiago()` —la liquidación y la fecha del egreso al
+pagar—; `now()` sigue siendo la hora real.
+
+**Se devuelve en cuanto Felipe apruebe la liquidación**, antes de cualquier otra prueba en staging:
+
+```sql
+create or replace function public.hoy_santiago()
+returns date language sql stable
+as $$ select (now() at time zone 'America/Santiago')::date; $$;
+```
+
+Para saber cómo está: `select public.hoy_santiago();`. Si da una fecha que no es hoy, sigue
+adelantado. Esta nota se borra al devolverlo.
+
 Se verifica con `node scripts/verificar-finanzas.mjs` (datos) y
 `node scripts/verificar-finanzas-navegador.mjs` (clics). El escenario de prueba se
 siembra con `node scripts/sembrar-escenario.mjs` y se verifica con
