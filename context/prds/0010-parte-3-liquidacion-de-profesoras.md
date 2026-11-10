@@ -822,6 +822,17 @@ que dio Felipe, y el total se recalculó a mano:
 - **Total: base $108.000** (5 × 18.000 + el viaje del 12/11) **+ variable $11.500 + objetivos
   $7.500 = $127.000.** Con la del 26/11 marcada "no se va a recuperar": $145.000.
 
+> ⚠️ **Este escenario no es un mes típico de Pau, y $127.000 no es "lo que gana Pau"** (Felipe,
+> 10/11/2026). Es un dato de prueba. Los martes sí se parecen a un mes real, con sus 4 clases. Los
+> jueves están **casi vacíos a propósito**, para pasar por los casos raros en un solo mes: un cambio
+> de parrilla, una sala que falló con la profesora presente, una recuperación en sábado, un
+> reemplazo y una pendiente. Los créditos de cada clase también son inventados. Para saber cuánto
+> gana una profesora hay que mirar su liquidación real, no este número.
+>
+> 🔴 **La recuperativa del viernes 27/11 está sembrada en staging, pero en producción no existe.**
+> Sin ella, en producción los martes de Pau tienen 3 dictadas (10, 17 y 24), no optan, y Pau
+> **pierde los $7.500** del objetivo. Tiene que existir antes del cierre de noviembre.
+
 En la base local (`escenario-liquidacion.mjs`, 55/55) es exactamente este mes. En staging lo deja
 `scripts/rehacer-noviembre-pau.mjs`, **que escribe en staging y no se ha corrido**: descancela el
 martes 17/11 y lo llena con 15 reservas, y lleva la recuperación del 3/11 del miércoles 18/11 al
@@ -834,8 +845,9 @@ con 3 dictadas, los jueves con 1, y ningún objetivo.
 | 2 | Migración `20261110130000` y escenario local rehecho, 55/55 | ✅ `34ac62b` |
 | 3 | Pantalla: Variable y Objetivos desplegables antes del total | ✅ `729925f` |
 | 4 | Scripts de staging: rehacer el mes de Pau, verificador con $127.000 | ✅ `c3ff365`, sin correr |
-| 5 | Aplicar `20261110130000` en staging y correr `rehacer-noviembre-pau.mjs --aplicar` | ⏳ Necesita aprobación de Felipe |
+| 5 | Aplicar `20261110130000` en staging y correr `rehacer-noviembre-pau.mjs --aplicar` | ✅ 10/11, aprobado por Felipe. El dry-run listó solo esa. Permisos preguntados con la sesión de cada rol: anon, alumna, Pau, Drimy, admin y owner. Pantalla revisada a 390 px: owner y Pau en **$127.000** |
 | 6 | Felipe vuelve a mirar la pantalla | ⏳ |
+| 6b | **La recuperativa del 27/11 en producción** | 🔴 Falta decidir cómo crearla |
 | 7 | Producción: `20261105140000`, `20261106130000` y `20261110130000` | ⏳ Necesita aprobación de Felipe |
 
 **Correcciones de Felipe del 05/11/2026, ya aplicadas:** se borró el corte por anticipación y se
