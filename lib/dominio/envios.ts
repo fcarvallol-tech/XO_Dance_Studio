@@ -39,7 +39,8 @@ export type Plantilla =
   | "compraRechazada"
   | "reserva"
   | "especialPendiente"
-  | "especialConfirmada";
+  | "especialConfirmada"
+  | "vencimientoProximo";
 
 export type Envio = {
   estado: EstadoEnvio;
@@ -89,6 +90,8 @@ export type ContextoDeCaducidad = {
   expiraAt: Date | null;
   inicioClase: Date | null;
   encoladoAt: Date;
+  /** Del aviso de vencimiento (PRD-0032): cuándo vencen esas clases. */
+  venceAt?: Date | null;
 };
 
 /**
@@ -110,6 +113,9 @@ export function caducaAt(plantilla: Plantilla, contexto: ContextoDeCaducidad): D
     case "reserva":
     case "especialConfirmada":
       return contexto.inicioClase;
+    case "vencimientoProximo":
+      // "Te quedan 3 clases, vencen el 3" deja de ser cierto el 3 (PRD-0032 §6).
+      return contexto.venceAt ?? null;
     case "transferenciaDeclarada":
       // Aviso operativo a la academia: a las 24 h la bandeja ya lo muestra.
       return sumarMinutos(contexto.encoladoAt, 24 * 60);

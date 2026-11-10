@@ -108,6 +108,25 @@ test("caducaAt: el acuse a la alumna caduca a las 24 h, como el aviso a la acade
   );
 });
 
+test("caducaAt: el aviso de vencimiento caduca en el vencimiento (PRD-0032 §7)", () => {
+  // "Te quedan 3 clases, vencen el 3" mandado el 4 es falso: no se manda.
+  const vence = utc("2026-12-03T15:00:00");
+  assert.equal(
+    caducaAt("vencimientoProximo", {
+      expiraAt: null,
+      inicioClase: null,
+      encoladoAt: AHORA,
+      venceAt: vence,
+    })?.toISOString(),
+    vence.toISOString(),
+  );
+  // Sin el dato no se inventa una fecha, como en los demás.
+  assert.equal(
+    caducaAt("vencimientoProximo", { expiraAt: null, inicioClase: null, encoladoAt: AHORA }),
+    null,
+  );
+});
+
 test("caducaAt: lo que sigue siendo cierto no caduca nunca", () => {
   for (const plantilla of ["compraAprobada", "compraRechazada", "regalo", "creditoDeAmiga"] as const) {
     assert.equal(
