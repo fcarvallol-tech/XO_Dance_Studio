@@ -36,11 +36,21 @@ export const TARIFA_GENERAL: Tarifa = {
   umbralVariable: 5,
 };
 
-/** Incentivo por promedio, regla del 04/11/2026 (CONTEXT.md §5.b). */
+/**
+ * Incentivo por promedio, regla del 04/11/2026 (CONTEXT.md §5.b), **por
+ * horario** (Felipe, 10/11/2026): cuando Felipe dice "curso" se refiere al
+ * horario semanal. Los martes de Pau se promedian solo con los martes, aunque
+ * el jueves sea el mismo curso en la base.
+ */
 export const INCENTIVO = {
-  /** Cuántas clases se promedian: las mejores del mes. */
+  /** Cuántas clases se promedian: las mejores del mes, de ese horario. */
   mejores: 4,
-  /** Con menos dictadas en el mes, no hay incentivo. */
+  /**
+   * Con menos dictadas en el mes, en ese horario, no hay incentivo. Exigente a
+   * propósito (Felipe, 10/11/2026). Consecuencia conocida, no un error: si una
+   * clase se cae y su recuperación queda en el mes siguiente, ese horario
+   * queda con 3 y no opta ese mes.
+   */
   minimoDictadas: 4,
   /** Los tramos **se suman**: con promedio 22 o más se cobran los dos. */
   tramos: [
@@ -85,6 +95,16 @@ export type ClaseLiquidable = {
   /** Quien la dictó: `clases.profesora_id`. Con un reemplazo, la reemplazante. */
   profesoraId: string;
   cursoId: string;
+  /**
+   * El horario semanal al que **cuenta** la clase, para el incentivo. Una
+   * recuperativa cuenta en el horario que recupera, no en el día en que se
+   * dicta: la del 3/11 de Pau recuperada el viernes 27/11 es una clase de los
+   * martes. La base lo entrega así (`coalesce` con el horario de la original).
+   */
+  horarioId: string;
+  /** El día de ese horario, 1 = lunes … 7 = domingo, y su hora. Solo para nombrarlo. */
+  diaSemana: number | null;
+  hora: string | null;
   /** Para leer: el nombre del curso y de la sala. No entran en ningún cálculo. */
   curso: string;
   sede: string;
@@ -133,6 +153,9 @@ export type TipoLinea =
 export type Linea = {
   claseId: string;
   cursoId: string;
+  horarioId: string;
+  diaSemana: number | null;
+  hora: string | null;
   curso: string;
   sede: string;
   inicio: string;
@@ -156,11 +179,23 @@ export type Linea = {
 /** Una clase de las que se promediaron para el incentivo. */
 export type ClaseDelPromedio = { claseId: string; inicio: string; creditos: number };
 
-export type IncentivoDeCurso = {
+/** Uno de los dos objetivos (los tramos del incentivo) y si se logró. */
+export type Objetivo = { desdePromedio: number; montoClp: number; logrado: boolean };
+
+export type IncentivoDeHorario = {
+  horarioId: string;
   cursoId: string;
   curso: string;
-  /** Cuántas clases dictadas tuvo ese curso en el mes. */
+  diaSemana: number | null;
+  hora: string | null;
+  /** "Girly, sábados": el curso solo no alcanza si la profesora tiene dos horarios de él. */
+  etiqueta: string;
+  /** Cuántas clases dictadas tuvo ese horario en el mes. */
   dictadas: number;
+  /** Cuántas le faltan para optar a los objetivos. 0 si ya opta. */
+  faltan: number;
+  /** Las dictadas de ese horario en el mes, de más a menos créditos. */
+  clasesDictadas: ClaseDelPromedio[];
   /** Los créditos de las mejores, de mayor a menor. Vacío si no llega al mínimo. */
   mejores: number[];
   /** Cuáles clases son esas mejores. Vacío si no llega al mínimo. */
@@ -169,6 +204,8 @@ export type IncentivoDeCurso = {
   promedio: number | null;
   /** Cuántos tramos alcanzó: 0, 1 o 2. */
   tramos: number;
+  /** Los dos objetivos, logrados o no. */
+  objetivos: Objetivo[];
   montoClp: number;
   explicacion: string;
 };
@@ -183,7 +220,7 @@ export type Liquidacion = {
   profesoraId: string;
   mes: string;
   lineas: Linea[];
-  incentivos: IncentivoDeCurso[];
+  incentivos: IncentivoDeHorario[];
   baseClp: number;
   variableClp: number;
   incentivoClp: number;
@@ -291,6 +328,9 @@ export function lineaDeClase(
   ): Linea => ({
     claseId: clase.id,
     cursoId: clase.cursoId,
+    horarioId: clase.horarioId,
+    diaSemana: clase.diaSemana ?? null,
+    hora: clase.hora ?? null,
     curso: clase.curso,
     sede: clase.sede,
     inicio: clase.inicio,
@@ -362,52 +402,73 @@ export function lineaDeClase(
 }
 
 /**
- * El incentivo de un curso en un mes (regla del 04/11/2026): el promedio de
- * las 4 mejores clases **dictadas**, con dos tramos que se suman.
+ * El incentivo de un horario en un mes (regla del 04/11/2026, por horario
+ * desde el 10/11/2026): el promedio de las 4 mejores clases **dictadas** de
+ * ese horario, con dos objetivos —tramos— que se suman.
  *
- * - Con menos de 4 dictadas, nada. Una recuperación es una dictada más.
+ * - Con menos de 4 dictadas, nada. Una recuperación es una dictada más **del
+ *   horario que recupera**.
  * - Las no dictadas no entran como cero: no entran.
  * - La comparación es **sin decimales**: suma de las mejores ≥ tramo × 4. Así
  *   13,75 no llega a 14 y 14,00 sí, sin redondeos que discutir.
  */
-export function incentivoDeCurso(
-  cursoId: string,
+export function incentivoDeHorario(
+  horarioId: string,
   creditosDeDictadas: number[],
-): Omit<IncentivoDeCurso, "curso" | "clasesDelPromedio"> {
+): Pick<IncentivoDeHorario, "horarioId" | "dictadas" | "faltan" | "mejores" | "promedio" | "tramos" | "objetivos" | "montoClp" | "explicacion"> {
   const dictadas = creditosDeDictadas.length;
   if (dictadas < INCENTIVO.minimoDictadas) {
+    const faltan = INCENTIVO.minimoDictadas - dictadas;
     return {
-      cursoId,
+      horarioId,
       dictadas,
+      faltan,
       mejores: [],
       promedio: null,
       tramos: 0,
+      objetivos: INCENTIVO.tramos.map((t) => ({ desdePromedio: t.desdePromedio, montoClp: t.montoClp, logrado: false })),
       montoClp: 0,
-      explicacion: `${dictadas} ${dictadas === 1 ? "clase dictada" : "clases dictadas"}: hacen falta ${INCENTIVO.minimoDictadas} para optar.`,
+      explicacion: `${dictadas} ${dictadas === 1 ? "clase dictada" : "clases dictadas"} en este horario: ${faltan === 1 ? "falta 1" : `faltan ${faltan}`} para optar a los objetivos del mes.`,
     };
   }
 
   const mejores = [...creditosDeDictadas].sort((a, b) => b - a).slice(0, INCENTIVO.mejores);
   const suma = mejores.reduce((t, n) => t + n, 0);
-  const alcanzados = INCENTIVO.tramos.filter((t) => suma >= t.desdePromedio * INCENTIVO.mejores);
+  const objetivos = INCENTIVO.tramos.map((t) => ({
+    desdePromedio: t.desdePromedio,
+    montoClp: t.montoClp,
+    logrado: suma >= t.desdePromedio * INCENTIVO.mejores,
+  }));
+  const alcanzados = objetivos.filter((o) => o.logrado);
   const montoClp = alcanzados.reduce((t, x) => t + x.montoClp, 0);
   const promedio = suma / INCENTIVO.mejores;
 
   return {
-    cursoId,
+    horarioId,
     dictadas,
+    faltan: 0,
     mejores,
     promedio,
     tramos: alcanzados.length,
+    objetivos,
     montoClp,
     explicacion:
       alcanzados.length === 0
-        ? `Promedio ${formatoPromedio(promedio)} en sus ${INCENTIVO.mejores} mejores: el primer tramo es desde ${INCENTIVO.tramos[0].desdePromedio}.`
-        : `Promedio ${formatoPromedio(promedio)} en sus ${INCENTIVO.mejores} mejores: ${alcanzados.length === 1 ? "primer tramo" : "los dos tramos"}.`,
+        ? `Promedio ${formatoPromedio(promedio)} en sus ${INCENTIVO.mejores} mejores: el primer objetivo es desde ${INCENTIVO.tramos[0].desdePromedio}.`
+        : `Promedio ${formatoPromedio(promedio)} en sus ${INCENTIVO.mejores} mejores: ${alcanzados.length === 1 ? "primer objetivo" : "los dos objetivos"}.`,
   };
 }
 
-function formatoPromedio(n: number): string {
+const DIAS_PLURAL = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábados", "domingos"];
+
+/** "Girly, sábados". Sin día conocido, el curso solo. */
+export function etiquetaDeHorario(curso: string, diaSemana: number | null, hora: string | null = null): string {
+  if (diaSemana === null || diaSemana < 1 || diaSemana > 7) return curso;
+  const h = hora ? ` ${hora.slice(0, 5)}` : "";
+  return `${curso}, ${DIAS_PLURAL[diaSemana - 1]}${h}`;
+}
+
+export function formatoPromedio(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(".", ",");
 }
 
@@ -449,30 +510,44 @@ export function liquidar(entrada: {
 
   const lineas = delMes.map((c) => lineaDeClase(c, tarifa, ahora, mes));
 
-  // Incentivo por curso, con las dictadas de parrilla.
-  const porCurso = new Map<string, Linea[]>();
+  // Incentivo por horario, con las dictadas de parrilla. Una recuperación
+  // trae el horario de la clase que recupera.
+  const porHorario = new Map<string, Linea[]>();
   for (const l of lineas) {
     if (l.tipo !== "dictada") continue;
-    porCurso.set(l.cursoId, [...(porCurso.get(l.cursoId) ?? []), l]);
+    porHorario.set(l.horarioId, [...(porHorario.get(l.horarioId) ?? []), l]);
   }
-  const incentivos = [...porCurso.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([cursoId, dictadas]): IncentivoDeCurso => {
-      const incentivo = incentivoDeCurso(cursoId, dictadas.map((l) => l.creditosConsumidos));
+  // El día y la hora vienen del horario, también en una recuperación: son los
+  // mismos en todas las del grupo.
+  const grupos = [...porHorario.values()].map((dictadas) => ({
+    dictadas,
+    curso: dictadas[0].curso,
+    diaSemana: dictadas[0].diaSemana,
+    hora: dictadas[0].hora,
+  }));
+  // Con dos horarios del mismo curso el mismo día, el día no alcanza: va la hora.
+  const repetida = (g: (typeof grupos)[number]) =>
+    grupos.filter((x) => x.curso === g.curso && x.diaSemana === g.diaSemana).length > 1;
+  const incentivos = grupos
+    .map((grupo): IncentivoDeHorario => {
+      const { dictadas, curso, diaSemana, hora } = grupo;
+      const incentivo = incentivoDeHorario(dictadas[0].horarioId, dictadas.map((l) => l.creditosConsumidos));
       // Mismo orden que `mejores`; en un empate entra la primera del mes.
-      const ordenadas = [...dictadas].sort(
-        (a, b) => b.creditosConsumidos - a.creditosConsumidos || a.inicio.localeCompare(b.inicio),
-      );
+      const ordenadas = [...dictadas]
+        .sort((a, b) => b.creditosConsumidos - a.creditosConsumidos || a.inicio.localeCompare(b.inicio))
+        .map((l) => ({ claseId: l.claseId, inicio: l.inicio, creditos: l.creditosConsumidos }));
       return {
         ...incentivo,
-        curso: dictadas[0].curso,
-        clasesDelPromedio: ordenadas.slice(0, incentivo.mejores.length).map((l) => ({
-          claseId: l.claseId,
-          inicio: l.inicio,
-          creditos: l.creditosConsumidos,
-        })),
+        cursoId: dictadas[0].cursoId,
+        curso,
+        diaSemana,
+        hora,
+        etiqueta: etiquetaDeHorario(curso, diaSemana, repetida(grupo) ? hora : null),
+        clasesDictadas: ordenadas,
+        clasesDelPromedio: ordenadas.slice(0, incentivo.mejores.length),
       };
-    });
+    })
+    .sort((a, b) => (a.diaSemana ?? 8) - (b.diaSemana ?? 8) || (a.hora ?? "").localeCompare(b.hora ?? "") || a.horarioId.localeCompare(b.horarioId));
 
   const baseClp = lineas.reduce((t, l) => t + l.baseClp, 0);
   const variableClp = lineas.reduce((t, l) => t + l.variableClp, 0);
