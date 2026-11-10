@@ -15,9 +15,13 @@
 | **Liquidación (PRD-0010 parte 3)** | ⏸ Sin publicar. Felipe revisó la pantalla en staging y pidió un cambio de regla y tres de pantalla **antes de aprobar producción**. Hechos en la rama `prd-0010-incentivo-por-horario`: **el incentivo es por horario, no por curso** (la recuperativa cuenta en el horario que recupera), Variable y Objetivos desplegables antes del total, y el texto de "optar" dice a qué se opta y cuántas faltan. Migración `20261110130000_incentivo_por_horario.sql` **sin aplicar en ninguna parte**. Escenario rehecho como un mes real: **Pau $127.000**, calculado a mano (PRD §12.4) |
 | **Reloj de staging** | 🔴 `hoy_santiago()` sigue en el **2/12/2026** para la revisión. Se devuelve cuando Felipe apruebe (SQL en `supabase/README.md`) |
 
-**Pendiente, en orden:** (1) aprobación para aplicar `20261110130000` en staging y correr
-`scripts/rehacer-noviembre-pau.mjs --aplicar`; (2) que Felipe vuelva a mirar la pantalla; (3) con su
-aprobación, producción con `20261105140000`, `20261106130000` y `20261110130000`. El pago es el 1/12.
+`20261110130000` **aplicada en staging** y el noviembre de Pau rehecho ahí (10/11, con aprobación).
+El sitio local corre con esta rama.
+
+**Pendiente, en orden:** (1) que Felipe vuelva a mirar la pantalla; (2) 🔴 **crear la recuperativa de
+Pau del viernes 27/11 en producción**: sin ella, los martes tienen 3 dictadas y Pau pierde los $7.500
+del objetivo; (3) con su aprobación, producción con `20261105140000`, `20261106130000` y
+`20261110130000`, más lo que haga falta para el punto 2. El pago es el 1/12.
 
 ---
 
