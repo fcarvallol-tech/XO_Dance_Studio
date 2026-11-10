@@ -72,6 +72,8 @@ type Insumo = {
   creditos_consumidos: number;
   recuperacion_inicio: string | null;
   recupera_inicio: string | null;
+  /** Solo si la marca cae en el mes que se mira o antes: lo filtra la base. */
+  no_se_recupera_at: string | null;
 };
 
 const YO = "yo";
@@ -92,6 +94,7 @@ function aClase(i: Insumo): ClaseLiquidable {
     recuperada: i.recuperada,
     recuperacionInicio: i.recuperacion_inicio,
     recuperaInicio: i.recupera_inicio,
+    noSeRecuperaAt: i.no_se_recupera_at ?? null,
     creditosConsumidos: i.creditos_consumidos,
   };
 }

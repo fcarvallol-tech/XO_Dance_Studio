@@ -105,11 +105,18 @@ export type ClaseLiquidable = {
   recuperacionInicio: string | null;
   /** Si esta clase recupera a otra, cuándo era esa otra. */
   recuperaInicio: string | null;
+  /**
+   * Cuándo el owner marcó que **no se va a recuperar** (Felipe, 07/11/2026), o
+   * null. La base se paga **en el mes de la marca**, no en el de la clase. La
+   * base lo entrega solo cuando cae en el mes que se liquida o antes: una
+   * marca de diciembre sobre una clase de noviembre no existe para noviembre.
+   */
+  noSeRecuperaAt: string | null;
   /** Reservas con crédito y sin devolver (el mismo hecho que atribuye ingreso). */
   creditosConsumidos: number;
 };
 
-export type Efecto = "base" | "nada";
+export type Efecto = "base" | "nada" | "pendiente";
 
 export type TipoLinea =
   /** Programada y ya empezó: se presume dictada y paga base más variable. */
@@ -140,6 +147,10 @@ export type Linea = {
   totalClp: number;
   /** Por qué paga lo que paga, en palabras: lo lee el owner y la profesora. */
   explicacion: string;
+  /** Solo en una no dictada con causa: base, nada o pendiente. */
+  efecto: Efecto | null;
+  /** Cuándo se marcó que no se va a recuperar, si se marcó. */
+  noSeRecuperaAt: string | null;
 };
 
 /** Una clase de las que se promediaron para el incentivo. */
@@ -219,40 +230,38 @@ export function variableDeClase(creditos: number, tarifa: Tarifa): number {
 }
 
 /**
- * Qué paga una clase que no se dictó (CONTEXT.md §5.b, decisión 1 del
- * 04/11/2026, la regla del 03/11/2026 y las correcciones del 05/11/2026):
+ * Qué paga una clase que no se dictó. **Lo que separa los casos es de quién fue
+ * la culpa, no si se recuperó** (Felipe, 07/11/2026).
  *
- * - **`sala_no_disponible` y la profesora se presentó: la base**, aunque se haya
- *   recuperado. Lo que paga el viaje perdido es que el problema fue de XO y ella
- *   no podía saberlo. En las otras causas el campo no cambia nada: en
- *   `sin_alumnas` y `asistencia_insuficiente` ella sí sabía que iba a dar clase,
- *   lo que falló fue la demanda, y eso se resuelve con la recuperación
- *   (Felipe, 06/11/2026).
- * - Si no, **recuperada, por la causa que sea: nada.** Se paga una sola vez, en
- *   la recuperación, que es una clase dictada más.
- * - Si no, sin recuperar:
- *   - `sala_no_disponible`: la base. El problema fue de XO.
- *   - `cambio_de_parrilla`: nada. Esa clase nunca estuvo en su semana.
- *   - `ausencia_profesora`: nada.
- *   - `sin_alumnas` y `asistencia_insuficiente`: la base, porque organizó su día
- *     en torno a esa clase y traer alumnas es trabajo de XO.
+ * - **`sala_no_disponible` y la profesora se presentó: la base**, aunque se
+ *   recupere. La culpa fue de XO y ella perdió el viaje: se le paga el viaje
+ *   que le hicimos perder (Felipe, 06/11/2026). En las otras causas el campo no
+ *   cambia nada.
+ * - **Recuperada: nada.** Se paga una sola vez, en la recuperación, que es una
+ *   clase dictada más.
+ * - **`cambio_de_parrilla` y `ausencia_profesora`: nada.** No hay nada que
+ *   recuperar ni que pagar.
+ * - **Marcada "no se va a recuperar": la base**, en el mes en que se marcó.
+ * - **Si no: pendiente, $0 este mes.** "No pago una clase que no se hizo": se
+ *   paga cuando se dicte la recuperación, o cuando el owner marque que no se va
+ *   a recuperar. **No bloquea el cierre del mes** (Felipe, 07/11/2026).
  *
  * No hay reloj: cuándo se canceló no cambia nada (Felipe, 05/11/2026).
  */
 export function efectoDeCausa(
   causa: Causa,
-  contexto: { recuperada: boolean; profesoraSePresento: boolean },
+  contexto: { recuperada: boolean; profesoraSePresento: boolean; noSeRecupera?: boolean },
 ): Efecto {
   if (causa === "sala_no_disponible" && contexto.profesoraSePresento) return "base";
   if (contexto.recuperada) return "nada";
   switch (causa) {
-    case "sala_no_disponible":
-    case "sin_alumnas":
-    case "asistencia_insuficiente":
-      return "base";
     case "cambio_de_parrilla":
     case "ausencia_profesora":
       return "nada";
+    case "sala_no_disponible":
+    case "sin_alumnas":
+    case "asistencia_insuficiente":
+      return contexto.noSeRecupera ? "base" : "pendiente";
   }
 }
 
@@ -265,13 +274,20 @@ export const NOMBRE_CAUSA: Record<Causa, string> = {
 };
 
 /** Qué paga una clase, con la explicación que se lee en pantalla. */
-export function lineaDeClase(clase: ClaseLiquidable, tarifa: Tarifa, ahora: Date): Linea {
+export function lineaDeClase(
+  clase: ClaseLiquidable,
+  tarifa: Tarifa,
+  ahora: Date,
+  /** El mes que se liquida. Sin él, la marca vale siempre que exista. */
+  mes: string | null = null,
+): Linea {
   const h = horas(clase.inicio, clase.fin);
   const linea = (
     tipo: TipoLinea,
     baseClp: number,
     variableClp: number,
     explicacion: string,
+    efecto: Efecto | null = null,
   ): Linea => ({
     claseId: clase.id,
     cursoId: clase.cursoId,
@@ -288,6 +304,8 @@ export function lineaDeClase(clase: ClaseLiquidable, tarifa: Tarifa, ahora: Date
     variableClp,
     totalClp: baseClp + variableClp,
     explicacion,
+    efecto,
+    noSeRecuperaAt: clase.noSeRecuperaAt ?? null,
   });
 
   if (clase.tipo === "especial") {
@@ -313,12 +331,17 @@ export function lineaDeClase(clase: ClaseLiquidable, tarifa: Tarifa, ahora: Date
     return linea("sin_causa", 0, 0, "Falta decir por qué no se dictó. Hasta entonces no se puede pagar el mes.");
   }
 
+  // `?? null`: un insumo que no trae el campo cuenta como sin marca.
+  const marca = clase.noSeRecuperaAt ?? null;
+  const marcaVale = marca !== null && (mes === null || mesEnSantiago(marca) <= mes);
   const efecto = efectoDeCausa(clase.causa, {
     recuperada: clase.recuperada,
     profesoraSePresento: clase.profesoraSePresento,
+    noSeRecupera: marcaVale,
   });
   const porque = NOMBRE_CAUSA[clase.causa];
   const viajePerdido = clase.causa === "sala_no_disponible" && clase.profesoraSePresento;
+  const deOtroMes = mes !== null && mesEnSantiago(clase.inicio) !== mes;
   const explicacion = viajePerdido
     ? clase.recuperada
       ? `No se dictó (${porque}), pero la profesora se presentó: se paga la base, además de la recuperación.`
@@ -326,12 +349,16 @@ export function lineaDeClase(clase: ClaseLiquidable, tarifa: Tarifa, ahora: Date
     : clase.recuperada
       ? `No se dictó (${porque}) y se recuperó: se paga una sola vez, en la recuperación.`
       : efecto === "base"
-        ? `No se dictó (${porque}): se paga la base, sin variable.`
-        : `No se dictó (${porque}): no se paga.`;
+        ? deOtroMes
+          ? `Clase de ${nombreDeMes(mesEnSantiago(clase.inicio))} que no se dictó (${porque}). Se marcó que no se va a recuperar, así que la base se paga en este mes.`
+          : `No se dictó (${porque}) y se marcó que no se va a recuperar: se paga la base, sin variable.`
+        : efecto === "pendiente"
+          ? `No se dictó (${porque}) y está pendiente de recuperación: no se paga hasta que se recupere, o hasta que se marque que no se va a recuperar.`
+          : `No se dictó (${porque}): no se paga.`;
 
   // Sin variable aunque haya tenido reservas: al no dictarse, los créditos
   // vuelven a las alumnas, y una que no vuelve —cancelada tarde— no la dictó.
-  return linea("no_dictada", efecto === "base" ? baseDeClase(h, tarifa) : 0, 0, explicacion);
+  return linea("no_dictada", efecto === "base" ? baseDeClase(h, tarifa) : 0, 0, explicacion, efecto);
 }
 
 /**
@@ -409,11 +436,18 @@ export function liquidar(entrada: {
   const { profesoraId, mes, ahora } = entrada;
   const tarifa = entrada.tarifa ?? { baseHoraClp: 0, variableCreditoClp: 0, umbralVariable: 0 };
 
+  // Las del mes, más las de meses anteriores que se marcaron "no se va a
+  // recuperar" en este mes: su base se paga acá (Felipe, 07/11/2026).
   const delMes = entrada.clases
-    .filter((c) => c.profesoraId === profesoraId && mesEnSantiago(c.inicio) === mes)
+    .filter(
+      (c) =>
+        c.profesoraId === profesoraId &&
+        (mesEnSantiago(c.inicio) === mes ||
+          (mesEnSantiago(c.inicio) < mes && c.noSeRecuperaAt != null && mesEnSantiago(c.noSeRecuperaAt) === mes)),
+    )
     .sort((a, b) => a.inicio.localeCompare(b.inicio));
 
-  const lineas = delMes.map((c) => lineaDeClase(c, tarifa, ahora));
+  const lineas = delMes.map((c) => lineaDeClase(c, tarifa, ahora, mes));
 
   // Incentivo por curso, con las dictadas de parrilla.
   const porCurso = new Map<string, Linea[]>();
@@ -488,8 +522,8 @@ export type RazonDeNoPago =
   | "se_paga_otro_mes"
   /** Se recupera dentro del mes: ya está pagada, en la línea de la recuperación. */
   | "se_paga_en_la_recuperacion"
-  /** No tiene fecha de recuperación. */
-  | "sin_fecha"
+  /** Pendiente de recuperación: $0 hasta que se recupere o se marque que no se va a recuperar. */
+  | "pendiente"
   /** Falta decir por qué no se dictó. */
   | "sin_causa"
   /** La causa no paga, y no hay nada que recuperar. */
@@ -554,11 +588,14 @@ export function noEntraEnEstePago(lineas: Linea[], mes: string): NoPagada[] {
       continue;
     }
 
+    if (l.totalClp > 0) continue; // marcada "no se va a recuperar": esa sí paga
+    if (l.causa === "ausencia_profesora") {
+      fila("no_paga", "Ausencia de la profesora: no se paga. Si se recupera, se paga la recuperación.");
+      continue;
+    }
     fila(
-      "sin_fecha",
-      l.totalClp > 0
-        ? "Sin fecha de recuperación. Si se cierra así, se paga la base y después ya no se puede recuperar."
-        : "Sin fecha de recuperación, y hoy no paga nada.",
+      "pendiente",
+      "Pendiente de recuperación: no se paga este mes. Se paga cuando se dicte la recuperación, o en el mes en que marques que no se va a recuperar.",
     );
   }
   return salida;

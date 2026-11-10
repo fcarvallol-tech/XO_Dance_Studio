@@ -4,6 +4,7 @@ import { TituloPortal } from "@/components/Portal";
 import { ErrorDeLectura } from "@/components/ErrorDeLectura";
 import { AccionesLiquidacion } from "@/components/AccionesLiquidacion";
 import { ClasificarClase } from "@/components/ClasificarClase";
+import { MarcarNoSeRecupera } from "@/components/MarcarNoSeRecupera";
 import { DetalleLiquidacion } from "@/components/DetalleLiquidacion";
 import { requiereNivel } from "@/lib/sesion";
 import { cuandoLegible } from "@/lib/compras";
@@ -94,11 +95,16 @@ export default async function Liquidaciones({ searchParams }: { searchParams: Pr
                         p.fila
                           ? undefined
                           : (l) => (
-                              <ClasificarClase
-                                claseId={l.claseId}
-                                causa={l.causa}
-                                etiqueta={l.tipo === "dictada" ? "No se dictó" : l.causa ? "Cambiar la causa" : "Decir por qué"}
-                              />
+                              <>
+                                <ClasificarClase
+                                  claseId={l.claseId}
+                                  causa={l.causa}
+                                  etiqueta={l.tipo === "dictada" ? "No se dictó" : l.causa ? "Cambiar la causa" : "Decir por qué"}
+                                />
+                                {l.efecto === "pendiente" || (l.efecto === "base" && l.noSeRecuperaAt) ? (
+                                  <MarcarNoSeRecupera claseId={l.claseId} marcada={l.efecto === "base"} />
+                                ) : null}
+                              </>
                             )
                       }
                     />

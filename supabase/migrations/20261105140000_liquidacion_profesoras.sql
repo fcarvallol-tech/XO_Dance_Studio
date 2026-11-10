@@ -40,6 +40,13 @@
 --     anular_liquidacion.
 --  8. La clase de Pau del 03/11 queda clasificada como
 --     `asistencia_insuficiente` (CONTEXT.md, 03/11/2026).
+--  8b. La marca "no se va a recuperar" (Felipe, 07/11/2026): una clase no
+--     dictada por sala, sin alumnas o asistencia, sin recuperar, paga $0
+--     —pendiente— hasta que se recupere o el owner marque que no se va a
+--     recuperar; ahí paga la base **en el mes de la marca**. La marca vive en
+--     causas_de_clase; marcar_no_se_recupera() la pone y la quita, y una clase
+--     marcada no se puede recuperar. Los insumos que la leen están en
+--     20261106130000, que es donde se rehacen.
 --  9. metricas_finanzas y metricas_demanda: dictada pasa a ser `programada` y
 --     pasada. Con "distinta de cancelada" una `no_dictada` se contaba dictada.
 --     `metricas_resumen` NO se toca acá: la redefine también la migración de
@@ -122,6 +129,16 @@ create table if not exists public.causas_de_clase (
   updated_at timestamptz not null default now(),
   deleted_at timestamptz
 );
+
+-- La marca "no se va a recuperar" (Felipe, 07/11/2026). Null: pendiente de
+-- recuperación, paga $0. Con fecha: paga la base en el mes de esa fecha, no en
+-- el de la clase. Se escribe solo con marcar_no_se_recupera().
+alter table public.causas_de_clase
+  add column if not exists no_se_recupera_at timestamptz,
+  add column if not exists no_se_recupera_por uuid references public.perfiles (id);
+
+comment on column public.causas_de_clase.no_se_recupera_at is
+  'Cuándo el owner marcó que esta clase no se va a recuperar. Paga la base en el mes de esta fecha (Felipe, 07/11/2026). Null: pendiente, $0.';
 
 drop trigger if exists causas_de_clase_updated_at on public.causas_de_clase;
 create trigger causas_de_clase_updated_at before update on public.causas_de_clase
@@ -712,6 +729,122 @@ begin
 end;
 $$;
 
+/**
+ * "No se va a recuperar" (Felipe, 07/11/2026). Solo el owner: decide pagar una
+ * clase que no se hizo.
+ *
+ * - Solo en `sala_no_disponible`, `sin_alumnas` y `asistencia_insuficiente`:
+ *   son las que quedan pendientes. Parrilla y ausencia no pagan nunca.
+ * - No en una clase que ya tiene recuperación en pie: esa se paga en la
+ *   recuperación. Y al revés, una marcada no se puede recuperar (disparador
+ *   de abajo): sería pagarla dos veces.
+ * - Marcar: el mes de hoy no puede estar cerrado para esa profesora, porque
+ *   la base cae en el mes de la marca.
+ * - Quitar: solo si el mes de la marca no se cerró. Si ya se cerró, la base se
+ *   pagó ahí: primero se anula ese cierre.
+ * - Idempotente: marcar una marcada o quitar una sin marca no cambia nada.
+ */
+create or replace function public.marcar_no_se_recupera(
+  p_actor_user_id uuid,
+  p_clase_id uuid,
+  p_marcar boolean
+)
+returns public.causas_de_clase
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_actor public.perfiles;
+  v_clase public.clases;
+  v_fila public.causas_de_clase;
+begin
+  select * into v_actor from public.perfiles
+  where user_id = p_actor_user_id and deleted_at is null;
+  if v_actor is null or public.nivel_rol(v_actor.rol) < public.nivel_rol('owner') then
+    raise exception 'Solo el owner marca que una clase no se va a recuperar' using errcode = '42501';
+  end if;
+
+  select * into v_clase from public.clases where id = p_clase_id for update;
+  if v_clase is null then
+    raise exception 'Esa clase no existe' using errcode = 'P0002';
+  end if;
+  select * into v_fila from public.causas_de_clase
+  where clase_id = p_clase_id and deleted_at is null for update;
+  if v_fila is null then
+    raise exception 'Esa clase no tiene causa: primero di por qué no se dictó' using errcode = '22023';
+  end if;
+  if v_fila.causa not in ('sala_no_disponible', 'sin_alumnas', 'asistencia_insuficiente') then
+    raise exception 'Con esa causa la clase no se paga ni se recupera: no hay nada que marcar' using errcode = '22023';
+  end if;
+
+  if coalesce(p_marcar, false) then
+    if v_fila.no_se_recupera_at is not null then
+      return v_fila;
+    end if;
+    if exists (
+      select 1 from public.clases r
+      where r.recupera_clase_id = v_clase.id and r.estado not in ('cancelada', 'no_dictada')
+    ) then
+      raise exception 'Esa clase ya tiene recuperación: se paga una vez, en la recuperación' using errcode = '22023';
+    end if;
+    if public.mes_pagado(v_clase.profesora_id, now()) then
+      raise exception 'Este mes ya está cerrado para esa profesora: la base no tendría dónde pagarse' using errcode = '22023';
+    end if;
+    update public.causas_de_clase
+       set no_se_recupera_at = now(), no_se_recupera_por = v_actor.id
+     where clase_id = v_clase.id
+    returning * into v_fila;
+  else
+    if v_fila.no_se_recupera_at is null then
+      return v_fila;
+    end if;
+    if public.mes_pagado(v_clase.profesora_id, v_fila.no_se_recupera_at) then
+      raise exception 'La base de esa clase ya entró en un cierre. Para quitar la marca, primero anula ese cierre'
+        using errcode = '22023';
+    end if;
+    update public.causas_de_clase
+       set no_se_recupera_at = null, no_se_recupera_por = null
+     where clase_id = v_clase.id
+    returning * into v_fila;
+  end if;
+
+  return v_fila;
+end;
+$$;
+
+/** Una clase marcada "no se va a recuperar" no se recupera: se pagaría dos veces. */
+create or replace function public.no_recuperar_una_marcada()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.recupera_clase_id is not null
+     and (tg_op = 'INSERT' or new.recupera_clase_id is distinct from old.recupera_clase_id)
+     and exists (
+       select 1 from public.causas_de_clase
+       where clase_id = new.recupera_clase_id
+         and deleted_at is null
+         and no_se_recupera_at is not null
+     ) then
+    raise exception 'Esa clase se marcó que no se va a recuperar y ya se le paga la base. Quita la marca antes de recuperarla'
+      using errcode = '22023';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists clases_no_recuperar_una_marcada on public.clases;
+create trigger clases_no_recuperar_una_marcada
+  before insert or update of recupera_clase_id on public.clases
+  for each row execute function public.no_recuperar_una_marcada();
+
+revoke all on function public.marcar_no_se_recupera(uuid, uuid, boolean) from public, anon, authenticated;
+grant execute on function public.marcar_no_se_recupera(uuid, uuid, boolean) to service_role;
+revoke all on function public.no_recuperar_una_marcada() from public, anon, authenticated;
+
 revoke all on function public.registrar_no_dictada(uuid, uuid, text, text, boolean) from public, anon, authenticated;
 grant execute on function public.registrar_no_dictada(uuid, uuid, text, text, boolean) to service_role;
 revoke all on function public.marcar_recuperacion(uuid, uuid, uuid) from public, anon, authenticated;
@@ -1245,6 +1378,7 @@ begin
   if has_function_privilege('authenticated', 'public.pagar_liquidacion(uuid, uuid, date, int, jsonb, text, text)', 'execute')
      or has_function_privilege('authenticated', 'public.registrar_no_dictada(uuid, uuid, text, text, boolean)', 'execute')
      or has_function_privilege('authenticated', 'public.reasignar_clase(uuid, uuid, uuid)', 'execute')
+     or has_function_privilege('authenticated', 'public.marcar_no_se_recupera(uuid, uuid, boolean)', 'execute')
      or has_function_privilege('authenticated', 'public.insumos_del_mes(date)', 'execute')
      or has_function_privilege('anon', 'public.mis_insumos_liquidacion(date)', 'execute')
      or has_function_privilege('anon', 'public.insumos_liquidacion(date)', 'execute') then

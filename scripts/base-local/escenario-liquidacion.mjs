@@ -8,7 +8,7 @@
 // node scripts/base-local/escenario-liquidacion.mjs   (ver base.mjs para instalar PGlite)
 import { base } from "./base.mjs";
 import { paso, resumen, assert, persona, como, servidor, falla, uno, filas } from "./util.mjs";
-import { liquidar } from "../../lib/dominio/liquidacion.ts";
+import { liquidar, noEntraEnEstePago } from "../../lib/dominio/liquidacion.ts";
 
 const db = await base();
 const owner = await persona(db, "owner@xo.test", "Felipe", "owner");
@@ -83,12 +83,12 @@ const registrar = (actor, claseId, causa, detalle = "Lo que pasó, con detalle",
   sv("select * from public.registrar_no_dictada($1, $2, $3, $4, $5)", [actor.userId, claseId, causa, detalle, seP]);
 
 /** Lo que haría la pantalla del owner: insumos + tarifa → lib/dominio. */
-async function calcular(profesoraId, ahora = new Date("2026-12-02T12:00:00-03:00")) {
-  const insumos = await como(db, owner, (tx) => filas(tx, "select * from public.insumos_liquidacion('2026-11-01')"));
+async function calcular(profesoraId, ahora = new Date("2026-12-02T12:00:00-03:00"), mes = "2026-11") {
+  const insumos = await como(db, owner, (tx) => filas(tx, "select * from public.insumos_liquidacion($1)", [`${mes}-01`]));
   const t = await uno(db, "select * from costos_profesoras where profesora_id = $1", [profesoraId]);
   return liquidar({
     profesoraId,
-    mes: "2026-11",
+    mes,
     ahora,
     tarifa: t ? { baseHoraClp: t.base_hora_clp, variableCreditoClp: t.variable_credito_clp, umbralVariable: t.umbral_variable } : null,
     clases: insumos.map((i) => ({
@@ -100,6 +100,7 @@ async function calcular(profesoraId, ahora = new Date("2026-12-02T12:00:00-03:00
       curso: i.curso, sede: i.sede,
       recuperacionInicio: i.recuperacion_inicio ? new Date(i.recuperacion_inicio).toISOString() : null,
       recuperaInicio: i.recupera_inicio ? new Date(i.recupera_inicio).toISOString() : null,
+      noSeRecuperaAt: i.no_se_recupera_at ? new Date(i.no_se_recupera_at).toISOString() : null,
     })),
   });
 }
@@ -197,17 +198,19 @@ let liqPau;
 //   A4 20/11 dictada, 14 (recupera a A2) ..... 18.000 +  9 × 250 = 20.250
 //   A5 24/11 dictada, 14 ..................... 18.000 +  9 × 250 = 20.250
 //   S  01/11 sin sala, se presentó, recuperada 18.000 (antes del 05/11: 0)
-//   T  27/11 sin alumnas, avisada, no recup. . 18.000 (antes del 05/11: 0)
+//   T  27/11 sin alumnas, sin recuperar ..... 0, pendiente (Felipe, 07/11; antes 18.000)
 //   Incentivo: 16 + 14 + 14 + 12 = 56 → promedio 14 → 7.500
-//   Total: 81.000 + 36.000 + 7.500 = 124.500
-await paso("Pau: $124.500 = 20.750 + 0 + 0 + 19.750 + 20.250 + 20.250 + 18.000 + 18.000 + incentivo 7.500", async () => {
+//   Total: base 72.000 + variable 9.000 + viaje S 18.000 + incentivo 7.500 = 106.500
+await paso("Pau: $106.500 = 20.750 + 0 + 0 + 19.750 + 20.250 + 20.250 + 18.000 (S) + 0 (T pendiente) + incentivo 7.500", async () => {
   liqPau = await calcular(PAU);
   const porClase = Object.fromEntries(liqPau.lineas.map((l) => [l.claseId, l.totalClp]));
   assert.deepEqual([porClase[A1], porClase[A2], porClase[D], porClase[A3], porClase[A4], porClase[A5], porClase[S], porClase[T]],
-    [20_750, 0, 0, 19_750, 20_250, 20_250, 18_000, 18_000]);
+    [20_750, 0, 0, 19_750, 20_250, 20_250, 18_000, 0]);
+  assert.equal(liqPau.baseClp, 72_000 + 18_000);
+  assert.equal(liqPau.variableClp, 9_000);
   assert.equal(porClase[C], undefined, "la de Drimy no está en la de Pau");
   assert.equal(liqPau.incentivoClp, 7_500);
-  assert.equal(liqPau.totalClp, 124_500);
+  assert.equal(liqPau.totalClp, 106_500);
 });
 await paso("Drimy: $18.750 por la clase que cubrió (8 créditos → 3 sobre el umbral)", async () => {
   const r = await calcular(DRIMY);
@@ -215,14 +218,67 @@ await paso("Drimy: $18.750 por la clase que cubrió (8 créditos → 3 sobre el 
   assert.equal(r.incentivoClp, 0);
 });
 
+console.log("\n4b. Pendiente y 'no se va a recuperar' (Felipe, 07/11)");
+const marcar = (actor, claseId, si) => sv("select * from public.marcar_no_se_recupera($1, $2, $3)", [actor.userId, claseId, si]);
+await paso("T pendiente: $0 y en 'lo que no entra' como pendiente; no bloquea el mes", async () => {
+  const r = await calcular(PAU);
+  const n = noEntraEnEstePago(r.lineas, "2026-11").find((x) => x.claseId === T);
+  assert.equal(n.razon, "pendiente");
+  assert.deepEqual(r.bloqueos, []);
+});
+await paso("admin no marca; una sesión no llama la función", async () => {
+  await falla(marcar(admin, T, true), /Solo el owner/);
+  await falla(como(db, owner, (tx) => tx.query("select public.marcar_no_se_recupera($1, $2, true)", [owner.userId, T])), /permission denied/);
+});
+await paso("no se marca una recuperada (A2) ni una de cambio de parrilla (D)", async () => {
+  await falla(marcar(owner, A2, true), /ya tiene recuperación/);
+  await falla(marcar(owner, D, true), /nada que marcar/);
+});
+let huellaSinMarca;
+await paso("owner marca T en noviembre: paga la base acá, Pau sube a $124.500 y la huella cambia", async () => {
+  huellaSinMarca = await huella(PAU);
+  const f = await marcar(owner, T, true);
+  assert.ok(f.no_se_recupera_at);
+  assert.equal(f.no_se_recupera_por, owner.perfilId);
+  const r = await calcular(PAU);
+  assert.equal(r.lineas.find((l) => l.claseId === T).totalClp, 18_000);
+  assert.equal(r.totalClp, 124_500);
+  assert.notEqual(await huella(PAU), huellaSinMarca);
+});
+await paso("marcar dos veces no cambia la fecha", async () => {
+  const antes = (await uno(db, "select no_se_recupera_at t from causas_de_clase where clase_id = $1", [T])).t;
+  const f = await marcar(owner, T, true);
+  assert.equal(new Date(f.no_se_recupera_at).getTime(), new Date(antes).getTime());
+});
+await paso("una marcada no se recupera: ni con marcar_recuperacion ni escribiendo la columna", async () => {
+  await falla(sv("select id from public.marcar_recuperacion($1, $2, $3)", [admin.userId, A5, T]), /no se va a recuperar/);
+  await falla(db.query("update clases set recupera_clase_id = $1 where id = $2", [T, A5]), /no se va a recuperar/);
+});
+await paso("quitar la marca la devuelve a pendiente: $106.500 y la misma huella de antes", async () => {
+  const f = await marcar(owner, T, false);
+  assert.equal(f.no_se_recupera_at, null);
+  assert.equal((await calcular(PAU)).totalClp, 106_500);
+  assert.equal(await huella(PAU), huellaSinMarca);
+});
+await paso("marcada en diciembre: noviembre sigue en $106.500 con la misma huella, y la base va en diciembre", async () => {
+  await db.query("update causas_de_clase set no_se_recupera_at = '2026-12-03 12:00-03' where clase_id = $1", [T]);
+  assert.equal((await calcular(PAU)).totalClp, 106_500);
+  assert.equal(await huella(PAU), huellaSinMarca);
+  const dic = await calcular(PAU, new Date("2027-01-02T12:00:00-03:00"), "2026-12");
+  const l = dic.lineas.find((x) => x.claseId === T);
+  assert.equal(l.totalClp, 18_000);
+  assert.match(l.explicacion, /noviembre/);
+  await db.query("update causas_de_clase set no_se_recupera_at = null where clase_id = $1", [T]);
+});
+
 console.log("\n5. Cerrar y pagar");
 await paso("con el mes en curso (hoy real) no se cierra", async () => {
-  await falla(cerrar(owner, PAU, 124_500, await huella(PAU)), /todavía no termina/);
+  await falla(cerrar(owner, PAU, 106_500, await huella(PAU)), /todavía no termina/);
 });
 // Desde acá, "hoy" es el 2 de diciembre.
 await db.exec("create or replace function public.hoy_santiago() returns date language sql stable as $$ select date '2026-12-02' $$");
 await paso("admin no puede cerrar; una sesión no llama la función", async () => {
-  await falla(cerrar(admin, PAU, 124_500, await huella(PAU)), /Solo el owner/);
+  await falla(cerrar(admin, PAU, 106_500, await huella(PAU)), /Solo el owner/);
   await falla(como(db, owner, (tx) => tx.query("select public.cerrar_liquidacion($1, $2, '2026-11-01', 1, '{}', 'x')", [owner.userId, PAU])), /permission denied/);
 });
 await paso("octubre no se cierra: se pagó a mano", async () => {
@@ -234,37 +290,37 @@ await paso("si algo cambió desde que se miró (la huella), rebota", async () =>
   // Una reserva más en A5, de una alumna que no estaba (reservar() usa las primeras).
   const extra = alumnas[15];
   await db.query("insert into reservas (perfil_id, clase_id, credito_id) values ($1, $2, $3)", [extra.perfilId, A5, extra.creditoId]);
-  await falla(cerrar(owner, PAU, 124_500, vieja), /cambió mientras lo mirabas/);
+  await falla(cerrar(owner, PAU, 106_500, vieja), /cambió mientras lo mirabas/);
   // Se deshace para seguir con los montos de arriba.
   await db.query("delete from reservas where perfil_id = $1 and clase_id = $2", [extra.perfilId, A5]);
 });
 let pagoId;
-await paso("A2 con el campo prendido: asistencia no cobra el viaje, Pau sigue en $124.500 (Felipe, 06/11)", async () => {
+await paso("A2 con el campo prendido: asistencia no cobra el viaje, Pau sigue en $106.500 (Felipe, 06/11)", async () => {
   await registrar(admin, A2, "asistencia_insuficiente", "No llegaron alumnas suficientes", true);
-  assert.equal((await calcular(PAU)).totalClp, 124_500);
+  assert.equal((await calcular(PAU)).totalClp, 106_500);
   await registrar(admin, A2, "asistencia_insuficiente", "No llegaron alumnas suficientes");
 });
 await paso("prender o apagar profesora_se_presento mueve la huella: el cierre viejo rebota", async () => {
   const vieja = await huella(PAU);
   await registrar(admin, D, "cambio_de_parrilla", "El horario se movió al jueves", true);
   assert.notEqual(await huella(PAU), vieja);
-  await falla(cerrar(owner, PAU, 124_500, vieja), /cambió mientras lo mirabas/);
+  await falla(cerrar(owner, PAU, 106_500, vieja), /cambió mientras lo mirabas/);
   await registrar(admin, D, "cambio_de_parrilla", "El horario se movió al jueves", false);
   assert.equal(await huella(PAU), vieja);
 });
-await paso("cerrar a Pau: fila de $124.500 con su huella, sin pago ni egreso todavía", async () => {
-  const r = await cerrar(owner, PAU, 124_500, await huella(PAU));
+await paso("cerrar a Pau: fila de $106.500 con su huella, sin pago ni egreso todavía", async () => {
+  const r = await cerrar(owner, PAU, 106_500, await huella(PAU));
   pagoId = r.id;
-  assert.deepEqual([r.monto_clp, r.pagada_at, r.egreso_id, r.comprobante_path], [124_500, null, null, null]);
+  assert.deepEqual([r.monto_clp, r.pagada_at, r.egreso_id, r.comprobante_path], [106_500, null, null, null]);
   assert.ok(r.cerrada_at);
 });
 await paso("cerrar dos veces el mismo mes no duplica: devuelve la misma fila", async () => {
-  const r = await cerrar(owner, PAU, 124_500, await huella(PAU));
+  const r = await cerrar(owner, PAU, 106_500, await huella(PAU));
   assert.equal(r.id, pagoId);
   assert.equal((await uno(db, "select count(*)::int n from liquidaciones_profesoras where profesora_id = $1", [PAU])).n, 1);
 });
 await paso("cerrar con otro cálculo rebota", async () => {
-  await falla(cerrar(owner, PAU, 124_500, "otra-huella"), /ya está cerrado/);
+  await falla(cerrar(owner, PAU, 106_500, "otra-huella"), /ya está cerrado/);
 });
 await paso("el libro no se edita: ni el monto, ni el detalle, ni borrar", async () => {
   await falla(db.query("update liquidaciones_profesoras set monto_clp = 1 where id = $1", [pagoId]), /no se cambia/);
@@ -288,10 +344,10 @@ await paso("si los insumos cambiaron desde el cierre, pagar rebota", async () =>
 });
 await paso("pagar a Pau: agrega comprobante y un egreso igual, y lo congelado no se mueve", async () => {
   const r = await pagar(owner, pagoId);
-  assert.equal(r.monto_clp, 124_500);
+  assert.equal(r.monto_clp, 106_500);
   assert.ok(r.pagada_at);
   const e = await uno(db, "select categoria, monto_clp, comprobante_path, fecha::text from egresos where id = $1", [r.egreso_id]);
-  assert.deepEqual([e.categoria, e.monto_clp, e.comprobante_path, e.fecha], ["sueldo_profesora", 124_500, "liquidaciones/x.png", "2026-12-02"]);
+  assert.deepEqual([e.categoria, e.monto_clp, e.comprobante_path, e.fecha], ["sueldo_profesora", 106_500, "liquidaciones/x.png", "2026-12-02"]);
 });
 await paso("pagar dos veces rebota, y un pago registrado no se cambia", async () => {
   await falla(pagar(owner, pagoId), /ya está pagado/);
@@ -314,7 +370,7 @@ await paso("Pau ve profesora_se_presento de las suyas: lo necesita para calcular
 await paso("Pau ve lo que se le pagó, sin comprobante ni quién pagó", async () => {
   const r = await como(db, pau, (tx) => filas(tx, "select * from public.mis_liquidaciones()"));
   assert.equal(r.length, 1);
-  assert.equal(r[0].monto_clp, 124_500);
+  assert.equal(r[0].monto_clp, 106_500);
   assert.ok(!("comprobante_path" in r[0]) && !("pagada_por" in r[0]) && !("egreso_id" in r[0]));
 });
 await paso("Drimy ve solo la clase que cubrió, y nada pagado", async () => {
