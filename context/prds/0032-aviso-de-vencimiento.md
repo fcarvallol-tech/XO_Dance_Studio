@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | ✅ **Aprobado por Felipe el 10/11/2026**, con el texto del §8.2 y **sin** distinción por grupo (el §8.4 anterior se borró). En construcción en la rama `prd-0032-aviso-de-vencimiento`. **Vivo el 22/11/2026** |
+| **Estado** | ✅ **Aprobado por Felipe el 10/11/2026**, con el texto del §8.2 y **sin** distinción por grupo (el §8.4 anterior se borró). **Construido el 10/11** en la rama `prd-0032-aviso-de-vencimiento`, con la migración `20261110120000` escrita y **sin aplicar en ningún lado**. Falta: probarlo en staging con un correo real y el texto final aprobado. **Vivo el 22/11/2026** |
 | **Autor** | Claude, a pedido de Felipe Carvallo |
 | **Fecha** | 9 de noviembre de 2026 |
 | **Hito** | Hito 2 — Venta de clases (créditos) |
@@ -37,7 +37,8 @@ clases y fechas, y no de lo que "perderías".
      suma. La clave es `vencimiento:<perfil>:<fecha>`.
    - Si vencen en días distintos, van dos correos, cada uno en su día.
 3. **Dice cuántas clases le quedan en ese vencimiento y la fecha exacta**, en hora de Chile:
-   "Te quedan 3 clases. Vencen el miércoles 3 de diciembre". **Lleva al calendario**, con un solo
+   "Te quedan 3 clases. Vencen el jueves 3 de diciembre" (el 3/12/2026 es jueves; el ejemplo decía
+  miércoles). **Lleva al calendario**, con un solo
    botón: "Reservar una clase".
 4. **No se manda a quien ya no tiene nada disponible** en ese lote. Se mira al encolar y otra vez
    al enviar o reintentar: si las usó entre medio, la fila queda `descartado`.
@@ -68,8 +69,8 @@ clases y fechas, y no de lo que "perderías".
 2. Agrupa por persona y fecha. Encola una fila por grupo, con la clave `vencimiento:<perfil>:<fecha>`
    y la caducidad en el vencimiento.
 3. Intenta mandarlas, como cualquier otro correo de la cola.
-4. En la mañana, Camila lee: **"Te quedan 3 clases en XO. Vencen el miércoles 3 de
-   diciembre"**. Aprieta "Reservar una clase" y llega a `/calendario`.
+4. En la mañana, Camila lee: **"Te quedan 3 clases en XO: vencen el 3 de diciembre"**, y adentro,
+   "Camila, te quedan 3 clases. Vencen el jueves 3 de diciembre." Aprieta "Reservar una clase" y llega a `/calendario`.
 5. Reserva. La reserva genera su propio correo, como siempre.
 
 ## 6. Casos borde y errores
@@ -136,20 +137,28 @@ se migró, no un hecho sobre la persona. Por eso el correo no lleva ningún dato
 
 ## 9. Criterios de aceptación
 
+Marcado ✅ = probado en la base local (`escenario-vencimiento.mjs`, 20 de 20) o en tests de
+`lib/dominio`. **Ninguno está probado todavía contra Supabase ni con Resend**: la migración no está
+aplicada en ningún lado.
+
 - [ ] Con un lote que vence en 10 días, 2 clases disponibles y rol alumna, el barrido encola y
-      manda **un** correo con "2 clases" y la fecha correcta en hora de Chile.
-- [ ] Correr el barrido dos veces el mismo día no manda dos.
-- [ ] Dos lotes de la misma persona que vencen el mismo día: un correo con la suma. Con fechas
-      distintas: dos correos, cada uno en su día.
-- [ ] Disponible 0 al encolar: no hay fila. Disponible 0 al enviar: la fila queda `descartado`.
-- [ ] Profesora con créditos: no recibe aviso.
-- [ ] Un barrido saltado: al día siguiente se encola, con 9 días por delante. Con 2 días, no.
-- [ ] Un fallo de Resend se reintenta, y después del vencimiento queda `descartado`.
+      manda **un** correo con "2 clases" y la fecha correcta en hora de Chile. ✅ la selección y la
+      fecha; ⏳ el envío
+- [x] Correr el barrido dos veces el mismo día no manda dos (la clave; local)
+- [x] Dos lotes de la misma persona que vencen el mismo día: un correo con la suma. Con fechas
+      distintas: dos correos, cada uno en su día (local)
+- [ ] Disponible 0 al encolar: no hay fila ✅. Disponible 0 al enviar: la fila queda `descartado`
+      ✅ la función responde 0 filas; ⏳ el descarte en `alEnviar`, sin probar contra la cola real
+- [x] Profesora con créditos: no recibe aviso (local)
+- [x] Un barrido saltado: al día siguiente se encola, con 9 días por delante. Con 2 días, no (local)
+- [ ] Un fallo de Resend se reintenta, y después del vencimiento queda `descartado`. ✅ `caducaAt`
+      con test; ⏳ el reintento real
 - [ ] 🔴 **Probado con el correo real en staging**: un correo que alguien abre en el teléfono, con
       el botón apretado **sin sesión**. Tiene que llevar a `/calendario` y, al reservar, pedir
       entrar y volver a la clase. Es el mismo camino que falló con el pack de amigas el 08/11.
 - [ ] `avisos_de_vencimiento_pendientes` no la ejecuta ninguna sesión: preguntado con la de owner,
-      admin, alumna y anon.
+      admin, alumna y anon. ✅ local, también profesora; ⏳ **en staging**, porque PGlite no tiene
+      los privilegios por defecto de Supabase, que le dan EXECUTE a anon y authenticated
 - [ ] El conteo de `/admin/correos` cuadra con las filas.
 - [ ] **Vivo en producción el 22/11/2026**, con su migración aprobada por nombre.
 
@@ -188,4 +197,31 @@ medir hoy la línea base: qué fracción de los lotes que vencieron antes se us�
 
 ## 12. Notas de implementación
 
-Se llena al terminar.
+Construido el 10/11/2026. La sesión anterior se cayó al crear la rama: no quedó nada escrito, y se
+partió de cero.
+
+| Fase | Qué | Estado |
+|---|---|---|
+| 1 | `lib/dominio/vencimientos.ts`: clave, fecha en palabras, asunto y frase. `caducaAt` del aviso | ✅ con tests |
+| 2 | Migración `20261110120000_aviso_de_vencimiento.sql` y `scripts/base-local/escenario-vencimiento.mjs` | ✅ escrita, 20 de 20 en local, **sin aplicar** |
+| 3 | `lib/correo.ts`, `/api/correos`, `/admin/correos` | ✅ tsc, lint, 241 tests y build |
+| 4 | Staging: aplicar la migración, permisos por rol con sesión, un correo real abierto en el teléfono con el botón sin sesión, 30 filas seguidas | ⏳ **espera la aprobación de Felipe para aplicar en staging** |
+| 5 | Texto final aprobado por Felipe | ⏳ antes del 20/11 |
+| 6 | Producción, con la migración aprobada por nombre | ⏳ el 22/11 |
+
+**Cómo quedó:**
+
+- **Una función, dos preguntas.** `avisos_de_vencimiento_pendientes(p_hoy, p_perfil_id, p_vence)`:
+  sin persona, qué encolar hoy; con persona y fecha, cuánto le queda ahora. Solo `service_role`.
+  La regla de qué se avisa vive en la base porque es un filtro sobre los lotes de todas.
+- **`datos` lleva `vence` (la fecha en Chile, `2026-12-03`) y no `venceAt`**, como decía el §7: el
+  texto necesita el día en Chile, y el instante va en `caduca_at`, que es donde se usa.
+- **Se cuenta al enviar, también en el primer envío.** `alEnviar()` en `lib/correo.ts` pregunta lo
+  que le queda antes de cada intento: 0 → `descartado` ("Ya no le quedan clases en ese
+  vencimiento"); si no se pudo contar → `fallido`, y se reintenta. No se manda a ciegas.
+- **Sin fila no hay correo.** Si `encolar_correo` falla, los demás avisos salen igual sin registro;
+  este no, porque sin la clave el barrido del día siguiente lo volvería a mandar.
+- **Pausa de 600 ms entre avisos**: Resend acepta 2 por segundo en el plan de entrada, y el 23/11
+  son 28 seguidos. 53 avisos son ~35 segundos dentro del barrido.
+- **El ejemplo del PRD tenía el día mal**: el 3/12/2026 es jueves, no miércoles. El día de la
+  semana sale de la fecha.
