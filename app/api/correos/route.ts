@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { clienteAdmin } from "@/lib/supabase/admin";
-import { reintentarEnvioRegistrado } from "@/lib/correo";
+import { avisarVencimientos, reintentarEnvioRegistrado } from "@/lib/correo";
 import { caduco, debeReintentar } from "@/lib/dominio/envios";
 
 /**
@@ -35,6 +35,7 @@ type Fila = {
   created_at: string;
   enviado_at: string | null;
   purgado_at: string | null;
+  perfil_id: string | null;
 };
 
 const aDominio = (f: Fila) => ({
@@ -63,6 +64,12 @@ async function barrer(request: Request) {
   if (cabecera !== esperado) {
     return NextResponse.json({ mensaje: "No autorizado." }, { status: 401 });
   }
+
+  // PRD-0032: los avisos de vencimiento del día, antes de reintentar. Van
+  // primero para que el reintento de abajo no los vuelva a tomar: los que
+  // salieron quedan `enviado`, y los que fallaron, con su próximo intento.
+  // Si la lectura falla, el barrido sigue: el reintento no depende de esto.
+  const vencimientos = await avisarVencimientos();
 
   const admin = clienteAdmin();
   const { data, error } = await admin.rpc("envios_por_intentar", { p_limite: 200 });
@@ -111,6 +118,7 @@ async function barrer(request: Request) {
     reintentados,
     salieron,
     purgados: typeof purga.data === "number" ? purga.data : null,
+    vencimientos,
   });
 }
 

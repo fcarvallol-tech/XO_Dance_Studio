@@ -3,7 +3,11 @@ import { TituloPortal } from "@/components/Portal";
 import { BandejaCorreos } from "@/components/BandejaCorreos";
 import { ErrorDeLectura } from "@/components/ErrorDeLectura";
 import { requiereNivel } from "@/lib/sesion";
-import { getEnviosDescartados, getEnviosFallidos } from "@/lib/envios-consultas";
+import {
+  contarAvisosDeVencimientoHoy,
+  getEnviosDescartados,
+  getEnviosFallidos,
+} from "@/lib/envios-consultas";
 
 export const metadata: Metadata = {
   title: "Correos — XO Dance Studio",
@@ -20,9 +24,10 @@ export const metadata: Metadata = {
 export default async function Correos() {
   await requiereNivel("admin", "admin");
 
-  const [fallidos, descartados] = await Promise.all([
+  const [fallidos, descartados, avisos] = await Promise.all([
     getEnviosFallidos(),
     getEnviosDescartados(),
+    contarAvisosDeVencimientoHoy(),
   ]);
 
   return (
@@ -35,6 +40,14 @@ export default async function Correos() {
 
       <ErrorDeLectura que="los correos fallidos" error={fallidos.error} />
       <ErrorDeLectura que="los correos descartados" error={descartados.error} />
+      <ErrorDeLectura que="los avisos de vencimiento" error={avisos.error} />
+
+      {/* PRD-0032 §3.8: si el barrido de las 03:30 corrió, acá se ve. */}
+      {avisos.error ? null : (
+        <p className="mb-8 text-xo-negro">
+          Avisos de vencimiento enviados hoy: <strong>{avisos.datos}</strong>
+        </p>
+      )}
 
       {fallidos.error ? null : (
         <BandejaCorreos fallidos={fallidos.datos} descartados={descartados.datos} />

@@ -1,6 +1,8 @@
 import { clienteServidor } from "./supabase/servidor";
 import { comoTexto, type Lectura } from "./compras-consultas";
 import type { EnvioFallido } from "./envios";
+import { instanteEnSantiago } from "./dominio/periodo";
+import { hoyEnSantiago } from "./dominio/vencimientos";
 
 /**
  * Los correos que no salieron. **Solo servidor.**
@@ -101,4 +103,23 @@ export async function contarEnviosFallidos(): Promise<number> {
     return 0;
   }
   return count ?? 0;
+}
+
+/**
+ * Cuántos avisos de vencimiento salieron hoy, en hora de Chile (PRD-0032 §3.8).
+ * Es la línea que dice si el barrido de las 03:30 hizo lo suyo: el 23/11
+ * tendría que decir 28.
+ */
+export async function contarAvisosDeVencimientoHoy(): Promise<Lectura<number>> {
+  const supabase = await clienteServidor();
+  const desde = instanteEnSantiago(`${hoyEnSantiago(new Date())}T00:00`);
+  const { count, error } = await supabase
+    .from("envios_correo")
+    .select("id", { count: "exact", head: true })
+    .eq("plantilla", "vencimientoProximo")
+    .eq("estado", "enviado")
+    .gte("enviado_at", desde!.toISOString())
+    .is("deleted_at", null);
+
+  return { datos: count ?? 0, error: comoTexto(error) };
 }

@@ -10,6 +10,13 @@ import {
   proximoIntento,
   type Plantilla,
 } from "./dominio/envios";
+import {
+  asuntoDeVencimiento,
+  claveDeVencimiento,
+  fraseDeVencimiento,
+  hoyEnSantiago,
+  nombreDePila,
+} from "./dominio/vencimientos";
 
 /**
  * Correo transaccional. Resend, por ADR-0007.
@@ -62,6 +69,8 @@ type Orden = {
   /** Para calcular la caducidad. Lo que no aplique va en null. */
   expiraAt?: string | null;
   inicioClase?: string | null;
+  /** Del aviso de vencimiento: cuándo vencen esas clases (PRD-0032). */
+  venceAt?: string | null;
   perfilId?: string | null;
   compraId?: string | null;
   reservaId?: string | null;
@@ -90,6 +99,7 @@ async function despachar(orden: Orden): Promise<boolean> {
         expiraAt: orden.expiraAt ? new Date(orden.expiraAt) : null,
         inicioClase: orden.inicioClase ? new Date(orden.inicioClase) : null,
         encoladoAt: ahora,
+        venceAt: orden.venceAt ? new Date(orden.venceAt) : null,
       })?.toISOString() ?? null,
     // Las alumnas importadas sin correo real: se registra que había algo que
     // decirles, y no se intenta. Antes ni siquiera quedaba la fila.
@@ -105,6 +115,10 @@ async function despachar(orden: Orden): Promise<boolean> {
     // quedar anotado es mejor que uno que no sale.
     console.error("No se pudo encolar el correo:", error.message);
     if (!real) return false;
+    // Salvo el aviso de vencimiento: sin la fila no queda la clave, y el
+    // barrido de mañana lo volvería a encontrar y lo mandaría otra vez. Mejor
+    // que salga mañana una vez que hoy dos (PRD-0032 §8.3).
+    if (orden.plantilla === "vencimientoProximo") return false;
     return (await intentar(orden.plantilla, orden.para!, orden.datos)) === null;
   }
 
@@ -113,7 +127,39 @@ async function despachar(orden: Orden): Promise<boolean> {
   // Ya estaba enviado: el mismo hecho, un solo correo.
   if (fila.estado === "enviado") return true;
 
-  return intentarYMarcar(fila.id, orden.plantilla, orden.para!, orden.datos, 0, ahora);
+  return intentarYMarcar(fila.id, orden.plantilla, orden.para!, orden.datos, 0, ahora, orden.perfilId);
+}
+
+/**
+ * Lo que un aviso dice, contado **al enviarlo** y no al encolarlo (PRD-0032
+ * §3.4 y §6). Hoy solo lo necesita el de vencimiento: entre que se encola y se
+ * manda —o se reintenta al otro día— la alumna puede haber reservado, y el
+ * correo no puede decirle "te quedan 3" si le queda 1, ni escribirle si ya no
+ * le queda nada.
+ *
+ * Devuelve los datos con el número de ahora, el motivo para no mandarlo nunca,
+ * o un error para reintentar: si no se pudo contar, no se manda a ciegas.
+ */
+async function alEnviar(
+  plantilla: Plantilla,
+  datos: Record<string, unknown>,
+  perfilId: string | null | undefined,
+): Promise<{ datos: Record<string, unknown> } | { descartar: string } | { error: string }> {
+  if (plantilla !== "vencimientoProximo") return { datos };
+  if (!perfilId || typeof datos.vence !== "string") {
+    return { descartar: "Aviso de vencimiento sin persona o sin fecha" };
+  }
+
+  const { data, error } = await clienteAdmin().rpc("avisos_de_vencimiento_pendientes", {
+    p_hoy: hoyEnSantiago(new Date()),
+    p_perfil_id: perfilId,
+    p_vence: datos.vence,
+  });
+  if (error) return { error: `No se pudo contar lo que le queda: ${error.message}` };
+
+  const clases = Number((data as { clases: number }[] | null)?.[0]?.clases ?? 0);
+  if (clases <= 0) return { descartar: "Ya no le quedan clases en ese vencimiento" };
+  return { datos: { ...datos, clases } };
 }
 
 /** Manda de verdad. Devuelve el error, o `null` si salió. */
@@ -153,9 +199,16 @@ async function intentarYMarcar(
   datos: Record<string, unknown>,
   intentosPrevios: number,
   ahora: Date,
+  perfilId?: string | null,
 ): Promise<boolean> {
   const admin = clienteAdmin();
-  const fallo = await intentar(plantilla, para, datos);
+
+  const previo = await alEnviar(plantilla, datos, perfilId);
+  if ("descartar" in previo) {
+    await admin.rpc("descartar_envio", { p_id: id, p_motivo: previo.descartar });
+    return false;
+  }
+  const fallo = "error" in previo ? previo.error : await intentar(plantilla, para, previo.datos);
 
   if (fallo === null) {
     await admin.rpc("marcar_enviado", { p_id: id });
@@ -183,6 +236,8 @@ export async function reintentarEnvioRegistrado(fila: {
   destinatario: string | null;
   datos: Record<string, unknown> | null;
   intentos: number;
+  /** El aviso de vencimiento lo necesita para volver a contar (PRD-0032). */
+  perfil_id?: string | null;
 }): Promise<boolean> {
   if (!esCorreoReal(fila.destinatario) || !(fila.plantilla in CUERPOS)) {
     await clienteAdmin().rpc("descartar_envio", {
@@ -201,6 +256,7 @@ export async function reintentarEnvioRegistrado(fila: {
     fila.datos ?? {},
     fila.intentos,
     new Date(),
+    fila.perfil_id ?? null,
   );
 }
 
@@ -393,6 +449,27 @@ const CUERPOS: Cuerpos = {
        <p style="margin:20px 0 0;font-size:13px;color:#f7f7f7;opacity:.6;">Si no puedes ir, avísanos: el cupo se libera para otra persona. La devolución del dinero la vemos caso a caso por WhatsApp.</p>`,
     ),
   }),
+
+  // PRD-0032 §8.2. Sin urgencia inventada ni "no las pierdas": la cuenta suele
+  // ser de una menor y el correo lo lee su mamá. `clases` es lo que le queda
+  // al momento de enviarlo: lo pone `alEnviar`, no el encolado.
+  vencimientoProximo: (d) => {
+    const clases = Number(d.clases ?? 0);
+    const vence = String(d.vence ?? "");
+    if (clases <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(vence)) {
+      throw new Error("Aviso de vencimiento sin clases o sin fecha");
+    }
+    const nombre = d.nombre ? escapar(String(d.nombre)) : null;
+    return {
+      asunto: asuntoDeVencimiento(clases, vence),
+      html: plantilla(
+        clases === 1 ? "Te queda 1 clase" : `Te quedan ${clases} clases`,
+        `<p ${P}>${fraseDeVencimiento(clases, vence, nombre)}</p>
+       <p style="margin:24px 0 0;"><a href="${sitio()}/calendario" style="display:inline-block;background:#f7adbf;color:#1a1a1a;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;">Reservar una clase</a></p>
+       <p style="margin:20px 0 0;font-size:13px;color:#f7f7f7;opacity:.6;">Si ya reservaste, ignora este correo.</p>`,
+      ),
+    };
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -632,4 +709,55 @@ export async function avisarEspecialConfirmada(datos: {
     compraId,
     perfilId,
   });
+}
+
+/** Resend acepta 2 envíos por segundo en el plan de entrada. */
+const PAUSA_ENTRE_AVISOS_MS = 600;
+const pausa = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * PRD-0032: encola y manda los avisos de vencimiento del día. Lo llama el
+ * barrido diario de `/api/correos`, **antes** de reintentar: sin cron nuevo.
+ *
+ * Quién recibe lo decide la base —alumna, le queda algo, vence en 10 a 3 días,
+ * sin aviso previo con esa clave— y acá solo se despacha, de a uno y con una
+ * pausa, porque el 23/11 son 28 seguidos (§11).
+ *
+ * La clave es por persona y fecha: correr esto dos veces el mismo día no manda
+ * dos. Caduca en el vencimiento: un reintento que llegaría tarde se descarta.
+ */
+export async function avisarVencimientos(
+  ahora: Date = new Date(),
+): Promise<{ encontrados: number; salieron: number; error: string | null }> {
+  const { data, error } = await clienteAdmin().rpc("avisos_de_vencimiento_pendientes", {
+    p_hoy: hoyEnSantiago(ahora),
+  });
+  if (error) {
+    console.error("No se pudo leer los vencimientos:", error.message);
+    return { encontrados: 0, salieron: 0, error: error.message };
+  }
+
+  const filas = (data ?? []) as {
+    perfil_id: string;
+    correo: string | null;
+    nombre: string | null;
+    vence: string;
+    vence_at: string;
+    clases: number;
+  }[];
+
+  let salieron = 0;
+  for (const [i, f] of filas.entries()) {
+    if (i > 0) await pausa(PAUSA_ENTRE_AVISOS_MS);
+    const salio = await despachar({
+      plantilla: "vencimientoProximo",
+      para: f.correo,
+      datos: { nombre: nombreDePila(f.nombre), clases: f.clases, vence: f.vence },
+      clave: claveDeVencimiento(f.perfil_id, f.vence),
+      venceAt: f.vence_at,
+      perfilId: f.perfil_id,
+    });
+    if (salio) salieron++;
+  }
+  return { encontrados: filas.length, salieron, error: null };
 }
