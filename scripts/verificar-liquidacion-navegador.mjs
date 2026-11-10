@@ -1,5 +1,6 @@
 /**
- * El paso E desde la pantalla, en staging. Antes: sembrar-noviembre-liquidacion.mjs
+ * El paso E desde la pantalla, en staging. Antes: sembrar-noviembre-liquidacion.mjs,
+ * rehacer-noviembre-pau.mjs (el martes con sus 4 clases, Felipe 10/11)
  * y el sitio en :3000. Para ver el mes terminado, `hoy_santiago()` se reemplaza por
  * el 2 de diciembre y **se restaura al final**, pase lo que pase.
  *   node scripts/verificar-liquidacion-navegador.mjs <comprobante.png> <carpeta de capturas>
@@ -18,6 +19,8 @@ async function abrir(p, nombre) {
   await p.goto(`${SITIO}${URL_MES}`, { waitUntil: "domcontentloaded" });
   await p.waitForTimeout(1200);
   await tarjeta(p, nombre).locator("summary").click();
+  // Variable y Objetivos se despliegan: abiertos, para leer lo que sustentan.
+  await tarjeta(p, nombre).locator("details details").evaluateAll((ds) => ds.forEach((d) => { d.open = true; }));
   return tarjeta(p, nombre);
 }
 const resumen = async (p, nombre) => (await tarjeta(p, nombre).locator("summary").innerText()).replace(/\s+/g, " ");
@@ -73,7 +76,6 @@ try {
   await clasificar(p, "Lina", "de noviembre", "Decir por qué", "asistencia_insuficiente", "No llegaron alumnas suficientes");
   await clasificar(p, "Pau", "12 de noviembre", "Decir por qué", "sala_no_disponible", "Llegó y la sala estaba ocupada", true);
   await clasificar(p, "Pau", "26 de noviembre", "Decir por qué", "sin_alumnas", "No hubo alumnas");
-  await clasificar(p, "Pau", "17 de noviembre", "Decir por qué", "cambio_de_parrilla", "Salió de la parrilla");
   await clasificar(p, "Pau", "5 de noviembre", "No se dictó", "cambio_de_parrilla", "Salió de la parrilla");
   for (const f of ["2 de noviembre", "12 de noviembre", "16 de noviembre", "19 de noviembre", "26 de noviembre"]) {
     await clasificar(p, "Drimy", f, "Decir por qué", "cambio_de_parrilla", "Salió de la parrilla");
@@ -84,26 +86,31 @@ try {
   let t = await abrir(p, "Pau");
   const pau = await resumen(p, "Pau");
   console.log("    Pau:", pau);
-  caso("Pau $124.500", pau.includes("$124.500"), true);
+  caso("Pau $127.000", pau.includes("$127.000"), true);
   const tp = await textoDe(t);
   await p.screenshot({ path: `${CAPTURAS}/owner-pau.png`, fullPage: true });
   for (const [n, s] of [
     ["10/11 con base y variable", "16 créditos · base $18.000 · variable $2.750"],
     ["causa con pago", "$18.000"],
     ["la que no paga lo dice", "No paga"],
-    ["el promedio", "Promedio 14 en sus 4 mejores: primer tramo"],
-    ["las 4 del promedio", "12 créditos"],
+    ["el bloque de objetivos, por horario y con el día", "Reggaeton Femme, martes"],
+    ["el otro horario, aparte", "Reggaeton Femme, jueves"],
+    ["el promedio de los martes", "Promedio 14,25 en las 4 mejores clases de este horario"],
+    ["el primer objetivo, obtenido", "Obtenido · $7.500"],
+    ["el segundo, no", "No obtenido"],
+    ["los jueves: cuántas faltan de verdad", "faltan 3 para optar a los objetivos del mes"],
+    ["la recuperativa del viernes cuenta en los martes", "12 créditos"],
     ["recuperada, una sola vez", "se paga una sola vez, en la recuperación"],
     ["sin fecha, avisa", "Sin fecha de recuperación"],
     ["recupera a otra", "Recupera la del"],
   ]) caso(n, tp.includes(s), true);
-  console.log("    incentivo:", tp.match(/INCENTIVO.{0,300}/i)?.[0]);
+  console.log("    objetivos:", tp.match(/Objetivos.{0,400}/)?.[0]);
   console.log("    no entra:", tp.match(/LO QUE NO ENTRA.{0,420}/i)?.[0]);
   t = await abrir(p, "Drimy");
   const dr = await resumen(p, "Drimy");
   console.log("    Drimy:", dr);
   caso("Drimy $18.750", dr.includes("$18.750"), true);
-  caso("Drimy: por qué no hay incentivo", (await textoDe(t)).includes("hacen falta 4 para optar"), true);
+  caso("Drimy: a qué opta y cuántas le faltan", (await textoDe(t)).includes("1 clase dictada en este horario: faltan 3 para optar a los objetivos del mes."), true);
   t = await abrir(p, "Lina");
   const tl = await textoDe(t);
   console.log("    Lina no entra:", tl.match(/LO QUE NO ENTRA.{0,300}/i)?.[0]);
@@ -122,7 +129,7 @@ try {
   ]);
   await p.waitForTimeout(3500);
   const filas = await sql(`select id, monto_clp, pagada_at, egreso_id from liquidaciones_profesoras where profesora_id = $1 and mes = '2026-11-01' and deleted_at is null`, [pauId.id]);
-  caso("una sola fila, $124.500, sin pago", filas.map((f) => [f.monto_clp, f.pagada_at, f.egreso_id]), [[124500, null, null]]);
+  caso("una sola fila, $127.000, sin pago", filas.map((f) => [f.monto_clp, f.pagada_at, f.egreso_id]), [[127000, null, null]]);
   await otra.close();
   const [{ n: total }] = await sql(`select count(*)::int n from liquidaciones_profesoras where profesora_id = $1`, [pauId.id]);
   caso("tampoco una anulada de más", total, 1);
@@ -143,7 +150,7 @@ try {
   const [pago] = await sql(
     `select l.monto_clp, l.pagada_at is not null pagada, e.categoria, e.monto_clp egreso from liquidaciones_profesoras l
      join egresos e on e.id = l.egreso_id where l.profesora_id = $1 and l.deleted_at is null`, [pauId.id]);
-  caso("pagada, con su egreso igual", pago, { monto_clp: 124500, pagada: true, categoria: "sueldo_profesora", egreso: 124500 });
+  caso("pagada, con su egreso igual", pago, { monto_clp: 127000, pagada: true, categoria: "sueldo_profesora", egreso: 127000 });
 
   }
 
@@ -167,7 +174,7 @@ try {
 
   console.log("\n8. Lo que ve la profesora");
   const contacto = await sql(`select email, nombre, telefono from perfiles where rol = 'alumna' and deleted_at is null`);
-  for (const [email, total2, nombre] of [["profe.pau@ejemplo.invalid", "$124.500", "Pau"], ["profe.drimy@ejemplo.invalid", "$18.750", "Drimy"]]) {
+  for (const [email, total2, nombre] of [["profe.pau@ejemplo.invalid", "$127.000", "Pau"], ["profe.drimy@ejemplo.invalid", "$18.750", "Drimy"]]) {
     const s = await sesion(email, "/profesora/liquidacion?mes=2026-11", 390);
     caso(`${nombre}: llega`, new URL(s.pagina.url()).pathname, "/profesora/liquidacion");
     const vista = await texto(s.pagina);
@@ -179,7 +186,7 @@ try {
     caso(`${nombre}: sin correos`, /[a-z0-9.]+@(?!ejemplo)[a-z]/i.test(vista), false);
     caso(`${nombre}: sin botones de owner`, await s.pagina.getByRole("button", { name: /Cerrar \$|Marcar pagada|Anular|No se dictó/ }).count(), 0);
     if (nombre === "Pau") await s.pagina.screenshot({ path: `${CAPTURAS}/profesora-pau.png`, fullPage: true });
-    if (nombre === "Drimy") caso("Drimy no ve el total de Pau", vista.includes("$124.500"), false);
+    if (nombre === "Drimy") caso("Drimy no ve el total de Pau", vista.includes("$127.000"), false);
     await s.pagina.goto(`${SITIO}/owner/liquidaciones`, { waitUntil: "domcontentloaded" });
     caso(`${nombre}: no entra a la del owner`, new URL(s.pagina.url()).pathname === "/owner/liquidaciones", false);
     await s.contexto.close();
