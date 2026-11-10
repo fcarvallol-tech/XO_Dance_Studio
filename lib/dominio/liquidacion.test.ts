@@ -20,7 +20,7 @@ import {
   TARIFA_GENERAL as T,
   baseDeClase,
   efectoDeCausa,
-  incentivoDeCurso,
+  incentivoDeHorario,
   lineaDeClase,
   liquidar,
   mesEnSantiago,
@@ -40,10 +40,15 @@ const DIC_1 = new Date("2026-12-01T12:00:00-03:00");
 let n = 0;
 /** Una clase de parrilla de una hora, dictada salvo que se diga otra cosa. */
 function clase(dia: string, extra: Partial<ClaseLiquidable> = {}): ClaseLiquidable {
+  const cursoId = extra.cursoId ?? "reggaeton";
   return {
     id: `c${++n}`,
     profesoraId: P1,
-    cursoId: "reggaeton",
+    cursoId,
+    // Un horario por curso, salvo que se diga otro: el de los martes.
+    horarioId: `h-${cursoId}`,
+    diaSemana: 2,
+    hora: "19:00:00",
     curso: "Reggaeton",
     sede: "Los Leones",
     inicio: `${dia}T19:00:00-03:00`,
@@ -253,40 +258,40 @@ test("una pasada sin reservas se paga como dictada: la base (respuesta 1 del 04/
 // ---------------------------------------------------------------------------
 
 test("incentivo: con menos clases que el piso (3), nada aunque estén llenas", () => {
-  const i = incentivoDeCurso("x", [30, 30, 30]);
+  const i = incentivoDeHorario("x", [30, 30, 30]);
   assert.equal(i.montoClp, 0);
   assert.equal(i.promedio, null);
-  assert.match(i.explicacion, /hacen falta 4/);
+  assert.match(i.explicacion, /falta 1 para optar a los objetivos/);
 });
 
 test("incentivo: justo en el límite del primer tramo, promedio 14 exacto → $7.500", () => {
-  assert.equal(incentivoDeCurso("x", [14, 14, 14, 14]).montoClp, 7_500);
-  assert.equal(incentivoDeCurso("x", [20, 8, 14, 14]).montoClp, 7_500); // suma 56
+  assert.equal(incentivoDeHorario("x", [14, 14, 14, 14]).montoClp, 7_500);
+  assert.equal(incentivoDeHorario("x", [20, 8, 14, 14]).montoClp, 7_500); // suma 56
 });
 
 test("incentivo: una alumna menos, promedio 13,75 → nada (no se redondea)", () => {
-  const i = incentivoDeCurso("x", [14, 14, 14, 13]);
+  const i = incentivoDeHorario("x", [14, 14, 14, 13]);
   assert.equal(i.montoClp, 0);
   assert.equal(i.promedio, 13.75);
 });
 
 test("incentivo: justo en el segundo tramo, promedio 22 exacto → los dos, $15.000", () => {
-  const i = incentivoDeCurso("x", [22, 22, 22, 22]);
+  const i = incentivoDeHorario("x", [22, 22, 22, 22]);
   assert.equal(i.montoClp, 15_000);
   assert.equal(i.tramos, 2);
 });
 
 test("incentivo: promedio 21,75 → solo el primer tramo, $7.500", () => {
-  assert.equal(incentivoDeCurso("x", [22, 22, 22, 21]).montoClp, 7_500);
+  assert.equal(incentivoDeHorario("x", [22, 22, 22, 21]).montoClp, 7_500);
 });
 
 test("incentivo: los tramos se suman, con 25 cobra $15.000 y no $10.000 ni $7.500", () => {
-  assert.equal(incentivoDeCurso("x", [25, 25, 25, 25]).montoClp, 15_000);
+  assert.equal(incentivoDeHorario("x", [25, 25, 25, 25]).montoClp, 15_000);
 });
 
 test("incentivo: con 5 clases se descarta la peor", () => {
   // Las 4 mejores son 22: los dos tramos. Con la peor adentro serían 17,6 → uno.
-  const i = incentivoDeCurso("x", [22, 4, 22, 22, 22]);
+  const i = incentivoDeHorario("x", [22, 4, 22, 22, 22]);
   assert.deepEqual(i.mejores, [22, 22, 22, 22]);
   assert.equal(i.montoClp, 15_000);
 });
@@ -312,11 +317,11 @@ test("incentivo: una profe con dos cursos gana en los dos ($7.500 + $15.000)", (
   const cursoA = [14, 14, 14, 14].map((c, i) => clase(`2026-11-0${i + 2}`, { cursoId: "a", creditosConsumidos: c }));
   const cursoB = [22, 23, 22, 24].map((c, i) => clase(`2026-11-1${i + 2}`, { cursoId: "b", creditosConsumidos: c }));
   const r = liquidar({ profesoraId: P1, mes: "2026-11", tarifa: T, ahora: DIC_1, clases: [...cursoA, ...cursoB] });
-  assert.deepEqual(r.incentivos.map((i) => [i.cursoId, i.montoClp]), [["a", 7_500], ["b", 15_000]]);
+  assert.deepEqual(r.incentivos.map((i) => [i.cursoId, i.montoClp]).sort(), [["a", 7_500], ["b", 15_000]]);
   assert.equal(r.incentivoClp, 22_500);
 });
 
-test("incentivo: es por curso, no se juntan dos cursos para llegar al piso", () => {
+test("incentivo: dos cursos distintos tampoco se juntan para llegar al piso", () => {
   const r = liquidar({
     profesoraId: P1,
     mes: "2026-11",
@@ -529,7 +534,119 @@ test("el incentivo dice cuáles 4 clases usó, de mayor a menor, y deja afuera l
 test("menos de 4 dictadas: no hay clases del promedio y dice por qué", () => {
   const r = liquidar({ profesoraId: P1, mes: "2026-11", tarifa: T, ahora: DIC_1, clases: [clase("2026-11-03", { creditosConsumidos: 20 })] });
   assert.deepEqual(r.incentivos[0].clasesDelPromedio, []);
-  assert.match(r.incentivos[0].explicacion, /hacen falta 4/);
+  // Con 1 dictada y un piso de 4 faltan 3, no 4; y dice a qué se opta (Felipe, 10/11).
+  assert.equal(r.incentivos[0].faltan, 3);
+  assert.equal(
+    r.incentivos[0].explicacion,
+    "1 clase dictada en este horario: faltan 3 para optar a los objetivos del mes.",
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Por horario, no por curso (Felipe, 10/11/2026)
+// ---------------------------------------------------------------------------
+
+// Pau: Reggaeton Femme los martes en Los Leones y los jueves en Diaguitas.
+// Es el mismo curso en la base, con dos horarios.
+const MARTES = { cursoId: "femme", curso: "Reggaeton Femme", horarioId: "h-martes", diaSemana: 2, hora: "18:00:00" };
+const JUEVES = { cursoId: "femme", curso: "Reggaeton Femme", horarioId: "h-jueves", diaSemana: 4, hora: "19:30:00" };
+
+test("por horario: los martes se promedian solo con los martes, aunque el jueves sea el mismo curso", () => {
+  const r = liquidar({
+    profesoraId: P1, mes: "2026-11", tarifa: T, ahora: DIC_1,
+    clases: [
+      clase("2026-11-03", { ...MARTES, creditosConsumidos: 20 }),
+      clase("2026-11-10", { ...MARTES, creditosConsumidos: 20 }),
+      clase("2026-11-05", { ...JUEVES, creditosConsumidos: 20 }),
+      clase("2026-11-12", { ...JUEVES, creditosConsumidos: 20 }),
+    ],
+  });
+  // Por curso eran 4 dictadas y promedio 20; por horario son 2 y 2.
+  assert.deepEqual(r.incentivos.map((i) => [i.horarioId, i.dictadas, i.faltan]), [["h-martes", 2, 2], ["h-jueves", 2, 2]]);
+  assert.equal(r.incentivoClp, 0);
+});
+
+test("por horario: el caso de Pau en noviembre — martes 10, 17 y 24 más la recuperación del viernes 27 son 4", () => {
+  const r = liquidar({
+    profesoraId: P1, mes: "2026-11", tarifa: T, ahora: DIC_1,
+    clases: [
+      noDictada("2026-11-03", "asistencia_insuficiente", { ...MARTES, recuperada: true, recuperacionInicio: "2026-11-27T18:00:00-03:00" }),
+      clase("2026-11-10", { ...MARTES, creditosConsumidos: 16 }),
+      clase("2026-11-17", { ...MARTES, creditosConsumidos: 15 }),
+      clase("2026-11-24", { ...MARTES, creditosConsumidos: 14 }),
+      // La recuperativa se dicta un viernes y lleva el horario de los martes.
+      clase("2026-11-27", { ...MARTES, creditosConsumidos: 12, recuperaInicio: "2026-11-03T18:00:00-03:00" }),
+    ],
+  });
+  const martes = r.incentivos[0];
+  assert.equal(r.incentivos.length, 1);
+  assert.equal(martes.dictadas, 4);
+  // 16 + 15 + 14 + 12 = 57 → 14,25: el primer objetivo, no el segundo.
+  assert.equal(martes.promedio, 14.25);
+  assert.deepEqual(martes.objetivos.map((o) => o.logrado), [true, false]);
+  assert.equal(martes.etiqueta, "Reggaeton Femme, martes");
+  assert.equal(r.incentivoClp, 7_500);
+});
+
+test("por horario: si la recuperación cae el mes siguiente, ese horario queda con 3 y no opta (consecuencia conocida)", () => {
+  const clases = [
+    noDictada("2026-11-24", "sala_no_disponible", { ...MARTES, recuperada: true, recuperacionInicio: "2026-12-04T18:00:00-03:00" }),
+    clase("2026-11-03", { ...MARTES, creditosConsumidos: 22 }),
+    clase("2026-11-10", { ...MARTES, creditosConsumidos: 22 }),
+    clase("2026-11-17", { ...MARTES, creditosConsumidos: 22 }),
+    clase("2026-12-04", { ...MARTES, creditosConsumidos: 22, recuperaInicio: "2026-11-24T18:00:00-03:00" }),
+  ];
+  const nov = liquidar({ profesoraId: P1, mes: "2026-11", tarifa: T, ahora: DIC_1, clases });
+  assert.equal(nov.incentivos[0].dictadas, 3);
+  assert.equal(nov.incentivos[0].faltan, 1);
+  assert.equal(nov.incentivoClp, 0);
+  assert.match(nov.incentivos[0].explicacion, /falta 1 para optar a los objetivos/);
+});
+
+test("etiqueta: el día distingue dos horarios del mismo curso (Carli: Girly viernes y sábados)", () => {
+  const girly = { cursoId: "girly", curso: "Girly" };
+  const r = liquidar({
+    profesoraId: P1, mes: "2026-11", tarifa: T, ahora: DIC_1,
+    clases: [
+      clase("2026-11-06", { ...girly, horarioId: "h-vie", diaSemana: 5, hora: "20:30:00", creditosConsumidos: 10 }),
+      clase("2026-11-07", { ...girly, horarioId: "h-sab", diaSemana: 6, hora: "18:30:00", creditosConsumidos: 10 }),
+    ],
+  });
+  assert.deepEqual(r.incentivos.map((i) => i.etiqueta), ["Girly, viernes", "Girly, sábados"]);
+});
+
+test("etiqueta: dos horarios del mismo curso el mismo día llevan la hora", () => {
+  const girly = { cursoId: "girly", curso: "Girly", diaSemana: 6 };
+  const r = liquidar({
+    profesoraId: P1, mes: "2026-11", tarifa: T, ahora: DIC_1,
+    clases: [
+      clase("2026-11-07", { ...girly, horarioId: "h-1", hora: "11:00:00" }),
+      clase("2026-11-07", { ...girly, horarioId: "h-2", hora: "18:30:00" }),
+    ],
+  });
+  assert.deepEqual(r.incentivos.map((i) => i.etiqueta), ["Girly, sábados 11:00", "Girly, sábados 18:30"]);
+});
+
+test("objetivos: los dos, con su piso y su monto, logrados o no", () => {
+  const dos = incentivoDeHorario("h", [22, 22, 22, 22]);
+  assert.deepEqual(dos.objetivos, [
+    { desdePromedio: 14, montoClp: 7_500, logrado: true },
+    { desdePromedio: 22, montoClp: 7_500, logrado: true },
+  ]);
+  const ninguno = incentivoDeHorario("h", [30, 30]);
+  assert.deepEqual(ninguno.objetivos.map((o) => o.logrado), [false, false]);
+  assert.equal(ninguno.faltan, 2);
+});
+
+test("optar: el texto dice cuántas faltan de verdad, en singular y en plural", () => {
+  assert.equal(incentivoDeHorario("h", []).explicacion, "0 clases dictadas en este horario: faltan 4 para optar a los objetivos del mes.");
+  assert.equal(incentivoDeHorario("h", [9, 9, 9]).explicacion, "3 clases dictadas en este horario: falta 1 para optar a los objetivos del mes.");
+});
+
+test("las clases dictadas del horario se ven aunque no lleguen al piso", () => {
+  const r = liquidar({ profesoraId: P1, mes: "2026-11", tarifa: T, ahora: DIC_1, clases: [clase("2026-11-21", { ...JUEVES, creditosConsumidos: 14 })] });
+  assert.deepEqual(r.incentivos[0].clasesDictadas.map((c) => c.creditos), [14]);
+  assert.deepEqual(r.incentivos[0].clasesDelPromedio, []);
 });
 
 const noEntra = (cs: ClaseLiquidable[]) =>

@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | **En desarrollo** (05/11/2026). Las siete preguntas de §13 están contestadas (Felipe, 04/11/2026, en `CONTEXT.md` §5.b). Pasos A–D en la rama `prd-0010-parte-3-liquidacion`: §13 cerrado, ADR-0008, funciones puras con tests y migración escrita **sin aplicar**. El portal (paso E) no está empezado. Ver §12.3 |
+| **Estado** | **En desarrollo.** 10/11/2026: revisión de Felipe en staging → el incentivo pasa a ser **por horario**, con Variable y Objetivos antes del total; migración `20261110130000` sin aplicar, ver §12.4. Antes, 05/11/2026: Las siete preguntas de §13 están contestadas (Felipe, 04/11/2026, en `CONTEXT.md` §5.b). Pasos A–D en la rama `prd-0010-parte-3-liquidacion`: §13 cerrado, ADR-0008, funciones puras con tests y migración escrita **sin aplicar**. El portal (paso E) no está empezado. Ver §12.3 |
 | **Autor** | Claude, a pedido de Felipe |
 | **Fecha** | 20 de octubre de 2026 |
 | **Hito** | Hito 5 |
@@ -226,18 +226,27 @@ fila con la regla general —$18.000 y $250— **si Felipe confirma que es su ta
 De `CONTEXT.md` §5.b, "Incentivo por promedio — regla del 04/11/2026, en dos tramos". Es la tercera
 versión en tres días, y **reemplaza a las dos anteriores**.
 
-| Promedio de las 4 mejores clases del mes, por curso | Incentivo |
+| Promedio de las 4 mejores clases del mes, **por horario** | Incentivo |
 |---|---|
 | **≥ 14** | **$7.500** |
 | **≥ 22** | **$7.500 más: $15.000 en total** |
 
 1. **Las 4 mejores del mes, no las 4 últimas.** Con 5 clases en el mes se descarta la peor.
 2. **Mes calendario**, en `America/Santiago`. No cruza meses.
-3. **Por curso.** Una profesora con dos cursos tiene dos promedios **y puede ganar en los dos**.
+3. **Por horario, no por curso** (Felipe, 10/11/2026; decía "por curso"). Cuando Felipe dice
+   "curso" se refiere al horario semanal. Los martes y los jueves de Pau son el mismo curso en la
+   base, con dos horarios, y la pantalla del 10/11 los mezcló: el promedio salió con un martes, un
+   sábado, otro martes y un miércoles. **El promedio de los martes se saca solo con los martes.**
+   Una profesora con dos horarios tiene dos promedios **y puede ganar en los dos**.
 4. **Solo cuentan las dictadas.** Una no dictada no entra como cero.
 5. **Los tramos se suman.** El 22 exacto cobra los dos.
-6. **Con menos de 4 dictadas en el mes, no hay incentivo**, salvo que recupere una y llegue a cuatro.
-   La recuperación es una clase dictada más del mes en que se dicta.
+6. **Con menos de 4 dictadas en el mes, en ese horario, no hay incentivo**, salvo que recupere una
+   y llegue a cuatro. La recuperación es una clase dictada más del mes en que se dicta, y **cuenta en
+   el horario que recupera**, no en el día en que se dicta: la de Pau del 3/11, recuperada el
+   viernes 27/11, es una clase de los martes. Martes 10, 17 y 24 más esa son 4 dictadas.
+7. **El piso de 4 se queda** (Felipe, 10/11/2026). Es exigente a propósito. **Consecuencia conocida,
+   no un error:** si una clase se cae y su recuperación queda en el mes siguiente, ese horario tiene
+   3 ese mes y no opta. No se "arregla".
 
 **Lo que tuve que leer yo**, porque la regla no lo dice (§12.3):
 
@@ -617,9 +626,8 @@ recuperó.
 - Los insumos entregan la marca solo si cae en el mes que se mira o antes. Una marca de diciembre no
   mueve la huella de un noviembre ya cerrado. Las clases de meses anteriores marcadas en un mes
   entran en los insumos de ese mes.
-- Escenario: **Pau $106.500**. Son $72.000 de base por las cuatro dictadas, $9.000 de variable,
-  $18.000 por la del 1/11 (viaje perdido, recuperada) y $7.500 de incentivo. La del 27/11 queda
-  pendiente en $0, y si se marca pasa a $18.000.
+- Escenario: ~~Pau $106.500~~ → **Pau $127.000** desde el 10/11 (ver §12.4: el escenario se
+  rehízo como un mes real cuando el incentivo pasó a ser por horario).
 - Va **dentro** de las migraciones de la liquidación, que no estaban en producción: la columna, la
   función y el disparador en `20261105140000`; los insumos y la huella en `20261106130000`, que es
   donde ya se rehacían.
@@ -759,7 +767,76 @@ Más una tercera, P3, **sin fila en `costos_profesoras`**: "Sin costo cargado", 
 | D | Migración `20261105140000_liquidacion_profesoras.sql`: escrita, `--dry-run` contra producción lista **solo esa**, **sin aplicar**. Escenario en base local: **37 de 37** | ✅ | ver el log de la rama |
 | E | Pantallas: `/owner/liquidaciones` y `/profesora/liquidacion`, cerrar y pagar (§8.7). Rama `prd-0010-parte-3-pantallas`. Migración `20261106130000_cerrar_liquidacion.sql`, aplicada en staging, **sin aplicar en producción**. Probado desde la pantalla: Pau $124.500, Drimy $18.750 | ✅ | `9071e81` y siguientes |
 | E | `/owner/liquidaciones`, "Mi liquidación" en el portal, el Route Handler del comprobante | ⏸ No empezado, a propósito | — |
+| F | **Revisión de Felipe del 10/11**: incentivo por horario, Variable y Objetivos antes del total, el texto de "optar". Rama `prd-0010-incentivo-por-horario`. Migración `20261110130000_incentivo_por_horario.sql` **sin aplicar en ninguna parte**. Base local 55/55, 304 tests. Ver §12.4 | ✅ código · ⏳ staging | `a04b4fb` y siguientes |
 | — | Aviso de diferencia y ajustes (§8.6) | ⏸ Fase 7, como estaba | — |
+
+### 12.4 Revisión de Felipe del 10/11/2026: el incentivo es por horario
+
+Felipe revisó la pantalla en staging y pidió **un cambio de regla y tres de pantalla** antes de
+aprobar producción.
+
+**1. El promedio es por horario, no por curso.** Ver §6.5, puntos 3, 6 y 7, y `CONTEXT.md` §5.b.
+- `lib/dominio/liquidacion.ts`: `incentivoDeCurso()` pasa a ser `incentivoDeHorario()`, y agrupa
+  por `horarioId`. Cada grupo trae su `etiqueta` ("Girly, sábados"; con la hora solo si hay dos
+  horarios del mismo curso el mismo día), sus dos `objetivos` con `logrado`, `faltan` y las clases
+  dictadas del horario.
+- Migración `20261110130000_incentivo_por_horario.sql`: los insumos entregan `horario_id`,
+  `dia_semana` y `hora` del horario **al que cuenta** cada clase. En una recuperativa es el de la
+  original (`coalesce(ori.horario_id, cl.horario_id)`). `crear_recuperativa` ya le pone el mismo
+  horario, pero `marcar_recuperacion` acepta cualquier clase del mismo curso, así que no se confía
+  en eso. El horario entra en la huella. No hay liquidaciones cerradas en ninguna base, así que no
+  hay huellas viejas que dejen de calzar.
+
+**2. Variable y Objetivos, antes del total.** En `components/DetalleLiquidacion.tsx`: Base;
+**Variable**, que se despliega clase por clase; **Objetivos**, un solo bloque agrupado por horario,
+donde cada objetivo dice si se obtuvo y se despliega con el promedio y las clases que lo componen.
+Sale la sección suelta "Incentivo". Son `<details>`, sin JavaScript.
+- **Fuera de alcance:** apretar una clase del desglose y ver quiénes fueron. Queda para cuando esté
+  el PRD-0031.
+
+**3. El texto de "optar".** Decía *"1 clase dictada: hacen falta 4 para optar"*: no decía a qué se
+optaba, y con 1 dictada faltan 3, no 4. Ahora: *"1 clase dictada en este horario: faltan 3 para
+optar a los objetivos del mes."* (y "falta 1" en singular).
+
+**El escenario, rehecho.** Por horario, el escenario de staging de Pau ya no optaba: sus clases
+estaban repartidas entre martes, miércoles y sábado. **El problema eran los datos de prueba, no la
+regla.** Se rehízo para que el horario de los martes tenga sus 4 clases del mes, como el caso real
+que dio Felipe, y el total se recalculó a mano:
+
+| Clase | Horario | Paga |
+|---|---|---|
+| Mar 03/11, asistencia insuficiente, recuperada | martes | $0 (se paga en la recuperación) |
+| Mar 10/11, 16 créditos | martes | 18.000 + 11 × 250 = **$20.750** |
+| Mar 17/11, 15 créditos | martes | 18.000 + 10 × 250 = **$20.500** |
+| Mar 24/11, 14 créditos | martes | 18.000 + 9 × 250 = **$20.250** |
+| **Vie 27/11**, recupera la del 3/11, 12 créditos | **martes** | 18.000 + 7 × 250 = **$19.750** |
+| Jue 05/11, cambio de parrilla | jueves | $0 |
+| Jue 12/11, sin sala, Pau se presentó, recuperada | jueves | **$18.000** (viaje perdido) |
+| Jue 19/11 | jueves | La dicta Drimy: no es de Pau |
+| **Sáb 21/11**, recupera la del 12/11, 14 créditos | **jueves** | 18.000 + 9 × 250 = **$20.250** |
+| Jue 26/11, sin alumnas, sin recuperar | jueves | $0, pendiente |
+
+- **Objetivos de los martes:** 4 dictadas; 16 + 15 + 14 + 12 = 57 ≥ 56 → promedio **14,25** →
+  primer objetivo, **$7.500**. El segundo pide 88 (promedio 22): no.
+- **Objetivos de los jueves:** 1 dictada → faltan 3 → **$0**.
+- **Total: base $108.000** (5 × 18.000 + el viaje del 12/11) **+ variable $11.500 + objetivos
+  $7.500 = $127.000.** Con la del 26/11 marcada "no se va a recuperar": $145.000.
+
+En la base local (`escenario-liquidacion.mjs`, 55/55) es exactamente este mes. En staging lo deja
+`scripts/rehacer-noviembre-pau.mjs`, **que escribe en staging y no se ha corrido**: descancela el
+martes 17/11 y lo llena con 15 reservas, y lleva la recuperación del 3/11 del miércoles 18/11 al
+viernes 27/11. Con los datos de staging de hoy y la regla nueva, Pau daría **$99.000**: los martes
+con 3 dictadas, los jueves con 1, y ningún objetivo.
+
+| Fase | Qué | Estado |
+|---|---|---|
+| 1 | Dominio y tests: por horario, objetivos, texto de optar | ✅ `a04b4fb` |
+| 2 | Migración `20261110130000` y escenario local rehecho, 55/55 | ✅ `34ac62b` |
+| 3 | Pantalla: Variable y Objetivos desplegables antes del total | ✅ `729925f` |
+| 4 | Scripts de staging: rehacer el mes de Pau, verificador con $127.000 | ✅ `c3ff365`, sin correr |
+| 5 | Aplicar `20261110130000` en staging y correr `rehacer-noviembre-pau.mjs --aplicar` | ⏳ Necesita aprobación de Felipe |
+| 6 | Felipe vuelve a mirar la pantalla | ⏳ |
+| 7 | Producción: `20261105140000`, `20261106130000` y `20261110130000` | ⏳ Necesita aprobación de Felipe |
 
 **Correcciones de Felipe del 05/11/2026, ya aplicadas:** se borró el corte por anticipación y se
 agregó `profesora_se_presento` (§6.6). Salieron `canceladaConAnticipacion()` y
@@ -839,7 +916,7 @@ Las respuestas salen de `CONTEXT.md` §5.b ("Las cinco decisiones que destraban 
 
 8. 🔴 **¿Se promedia con 3 cuando las clases no se dictaron por decisión de la academia?** Felipe
    lo nombró como posibilidad, no como regla. **No está implementado**: con menos de 4 dictadas no
-   hay incentivo, sin excepción. Si se aprueba, son una condición y un test en `incentivoDeCurso()`.
+   hay incentivo, sin excepción. Si se aprueba, son una condición y un test en `incentivoDeHorario()`.
 
 **Lo que quedó sin decidir y no bloquea:** el tramo alto para Studio 98, el incentivo por 100% de
 ocupación y el umbral relativo a la capacidad (§6.5).

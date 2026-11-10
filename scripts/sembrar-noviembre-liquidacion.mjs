@@ -1,6 +1,8 @@
 /**
  * Noviembre en staging con las cantidades del escenario de la liquidación, para
- * ver $124.500 y $18.750 en la pantalla. **Por el camino real:** las alumnas
+ * ver $127.000 y $18.750 en la pantalla. El martes de Pau con sus 4 clases del
+ * mes (10, 17, 24 y la recuperación del 3/11 el viernes 27) lo deja
+ * rehacer-noviembre-pau.mjs (Felipe, 10/11/2026). **Por el camino real:** las alumnas
  * reciben créditos con regalar_creditos() y reservan con reservar(), sin escribir
  * reservas a mano. Las clases se cancelan con el mismo update de la clase de Pau.
  * Las causas NO se ponen acá: se ponen desde la pantalla.
@@ -63,9 +65,12 @@ async function llenar(claseId, cuantas) {
 }
 
 await llenar(await clase("pau", "2026-11-10"), 16);
+await llenar(await clase("pau", "2026-11-17"), 15);
 await llenar(await clase("pau", "2026-11-24"), 14);
 await llenar(await clase("pau", "2026-11-21"), 14);
-await llenar(await clase("pau", "2026-11-18"), 12);
+// La recuperación del 3/11: el viernes 27 desde rehacer-noviembre-pau.mjs.
+const recuperacion = await clase("pau", "2026-11-27").catch(() => null);
+if (recuperacion) await llenar(recuperacion, 12);
 const reemplazo = await clase("pau", "2026-11-19").catch(() => clase("drimy", "2026-11-19"));
 await llenar(reemplazo, 8);
 
@@ -79,7 +84,6 @@ if (r.error) throw new Error(r.error.message);
 const cancelar = (id) => sql(
   `update public.clases set estado = 'cancelada', motivo_cancelacion = 'Cancelada'
    where id = $1 and estado = 'programada'`, [id]);
-await cancelar(await clase("pau", "2026-11-17"));
 await cancelar(await clase("pau", "2026-11-26"));
 const propias = await sql(
   `select cl.id from clases cl join profesoras p on p.id = cl.profesora_id

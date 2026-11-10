@@ -74,6 +74,10 @@ type Insumo = {
   recupera_inicio: string | null;
   /** Solo si la marca cae en el mes que se mira o antes: lo filtra la base. */
   no_se_recupera_at: string | null;
+  /** El horario al que cuenta: en una recuperativa, el de la clase que recupera. */
+  horario_id: string;
+  dia_semana: number | null;
+  hora: string | null;
 };
 
 const YO = "yo";
@@ -83,6 +87,9 @@ function aClase(i: Insumo): ClaseLiquidable {
     id: i.clase_id,
     profesoraId: i.profesora_id ?? YO,
     cursoId: i.curso_id,
+    horarioId: i.horario_id,
+    diaSemana: i.dia_semana,
+    hora: i.hora,
     curso: i.curso,
     sede: i.sede,
     inicio: i.inicio,
