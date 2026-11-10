@@ -1,8 +1,23 @@
 # ROADMAP.md — XO Dance Studio
 
 > Qué se construye, en qué orden y por qué.
-> Última actualización: **6 de noviembre de 2026**.
+> Última actualización: **10 de noviembre de 2026**.
 > ⚠️ Replanificado tras el cambio a modelo de paquetes y reservas.
+
+---
+
+## Estado al 10 de noviembre de 2026 — liquidación
+
+**Último deploy:** sin cambios. **Nada a producción el 10/11.**
+
+| Qué | Estado |
+|---|---|
+| **Liquidación (PRD-0010 parte 3)** | ⏸ Sin publicar. Felipe revisó la pantalla en staging y pidió un cambio de regla y tres de pantalla **antes de aprobar producción**. Hechos en la rama `prd-0010-incentivo-por-horario`: **el incentivo es por horario, no por curso** (la recuperativa cuenta en el horario que recupera), Variable y Objetivos desplegables antes del total, y el texto de "optar" dice a qué se opta y cuántas faltan. Migración `20261110130000_incentivo_por_horario.sql` **sin aplicar en ninguna parte**. Escenario rehecho como un mes real: **Pau $127.000**, calculado a mano (PRD §12.4) |
+| **Reloj de staging** | 🔴 `hoy_santiago()` sigue en el **2/12/2026** para la revisión. Se devuelve cuando Felipe apruebe (SQL en `supabase/README.md`) |
+
+**Pendiente, en orden:** (1) aprobación para aplicar `20261110130000` en staging y correr
+`scripts/rehacer-noviembre-pau.mjs --aplicar`; (2) que Felipe vuelva a mirar la pantalla; (3) con su
+aprobación, producción con `20261105140000`, `20261106130000` y `20261110130000`. El pago es el 1/12.
 
 ---
 
@@ -371,6 +386,7 @@ Modelo profesor-cliente: comisiones, rentabilidad por profesora, marca personal.
 
 | Fecha | Cambio |
 |---|---|
+| 10 nov 2026 | **Liquidación: el incentivo es por horario, no por curso** (Felipe, 10/11, tras revisar la pantalla en staging). Cuando Felipe dice "curso" se refiere al horario semanal: los martes de Pau se promedian solo con los martes, y la recuperativa cuenta en el horario que recupera. El piso de 4 se queda; si la recuperación cae el mes siguiente, ese horario no opta, como consecuencia conocida. Pantalla: Variable y Objetivos desplegables antes del total, cada grupo con su horario y su día ("Girly, sábados"). El texto de optar decía "hacen falta 4" con 1 dictada: ahora dice a qué se opta y que faltan 3. El escenario de Pau se rehízo como un mes real y dio **$127.000** a mano (antes $106.500). `CONTEXT.md` §5.b y PRD-0010 parte 3 §6.5 y §12.4 al día. Migración `20261110130000` escrita, sin aplicar. Rama `prd-0010-incentivo-por-horario` |
 | 6 nov 2026 | **Staging al día con las cuatro ramas, probadas desde la página.** Decisiones de Felipe: `profesora_se_presento` solo paga en `sala_no_disponible`, la recuperación no es opcional, la sala de la recuperación se cobra y el cupo de la recuperativa es por orden de llegada. PRD-0027 suma el selector de categoría y "otra sala". Nada a producción |
 | 5 nov 2026 | **PRD-0025 en producción: Personas se filtra por nombre o correo y dice siempre el total** (`3cb80f7`), sin migración. `pedidos-de-uso` a `main` (`ef2bb1e`), solo documentos. Falta la prueba desde la página con sesión de admin y con una alumna. Se anota el pedido 8: el umbral de 5 no está en `/owner/finanzas` |
 | 4 nov 2026 | **Preventa revertida, lote vencido descartado y ramas en orden.** (1) `20261104120000_fin_preventa_noviembre.sql` pasó de `supabase/pendientes/` a `migrations/` y se aplicó con aprobación de Felipe por nombre; el dry-run listó esa sola. Terminó sin abortar, así que los cuatro precios de lista coinciden con los que la migración comprueba. En el sitio publicado, `/comprar` y los cuatro `/comprar/<oferta>` muestran $8.500, $16.000, $28.000 y $48.000 sin tachado ni plazo; `/comprar/pack-8` siguió mostrando la preventa unos minutos pasada la medianoche, hasta que su caché de una hora se renovó. (2) **Consulta de solo lectura**, aprobada para eso y nada más, por la API de administración: las 2 reservas de la clase de Pau del 3/11 están canceladas con el crédito devuelto, y los dos lotes vencen el 03/12: **ninguno volvió vencido**. Cierra lo que el `db push` del 3/11 no mostró. (3) `pau-3-nov-y-leones-16` mergeada a `main`: hasta ahora `main` tenía dos migraciones menos que producción. De `rescate-20-octubre` se trajo **solo** `0010-parte-3-liquidacion-de-profesoras.md`; el resto choca con `main` y se queda en la rama. La CLI quedó vinculada de vuelta a staging |

@@ -437,12 +437,23 @@ Lo que no cambió de la versión anterior:
 1. **Las 4 mejores del mes, no las 4 últimas.** Con 5 clases en el mes se **descarta la peor**.
    La favorece a propósito: trabajó más.
 2. **No cruza meses.** Es el mes calendario.
-3. **Es por curso.** Una profesora con dos cursos tiene dos promedios, **y puede ganar el
-   incentivo en los dos** (Felipe, 04/11/2026). Esto cierra la pregunta que estaba abierta.
+3. **Es por horario** (Felipe, 10/11/2026; antes decía "por curso"). Cuando Felipe dice "curso"
+   se refiere al **horario semanal**. Las dos clases de Pau —martes en Los Leones y jueves en
+   Diaguitas— son el mismo curso en la base, con dos horarios, y promediarlas juntas mezclaba un
+   martes, un sábado, otro martes y un miércoles. **El promedio de los martes se saca solo con los
+   martes**: las 4 mejores de cada horario. Una profesora con dos horarios tiene dos promedios, **y
+   puede ganar el incentivo en los dos** (Felipe, 04/11/2026).
+   - **La recuperativa cuenta en el horario que recupera**, no en el día en que se dicta. La clase
+     de Pau del 3/11 se recupera el **viernes 27/11** y cuenta como clase de los martes: martes 10,
+     17 y 24 más esa recuperación son **4 dictadas**, y con eso opta ese mes.
 4. **Solo cuentan las dictadas.** Una clase no dictada no entra como cero.
 
-**Con menos de 4 clases en el mes no hay incentivo** (Felipe, 04/11/2026), salvo que recupere una
-y llegue a cuatro. ⚠️ **Caso borde declarado y no resuelto:** si las clases no se dictaron
+**Con menos de 4 clases en el mes, en ese horario, no hay incentivo** (Felipe, 04/11/2026), salvo
+que recupere una y llegue a cuatro. **El piso se queda en 4 a propósito** (Felipe, 10/11/2026): es
+exigente —de 16 cupos tienen que llegar cerca de 14, y el mes pasado Carla lo logró con una vara más
+alta—. Si una clase se cae y se recupera dentro del mismo mes, no hay problema. **Consecuencia
+conocida, no un error:** si la recuperación pasa al mes siguiente, ese horario queda con 3 ese mes y
+no opta. ⚠️ **Caso borde declarado y no resuelto:** si las clases no se dictaron
 **por decisión de la academia**, podría promediarse con 3. Felipe lo nombró como posibilidad, no
 como regla; el PRD tiene que preguntarlo antes de implementarlo.
 
