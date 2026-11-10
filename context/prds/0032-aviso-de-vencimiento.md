@@ -2,11 +2,11 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | Borrador, espera a Felipe. **Se construye después de que la liquidación esté en producción**, con fecha propia: **vivo el 22/11/2026** |
+| **Estado** | ✅ **Aprobado por Felipe el 10/11/2026**, con el texto del §8.2 y **sin** distinción por grupo (el §8.4 anterior se borró). En construcción en la rama `prd-0032-aviso-de-vencimiento`. **Vivo el 22/11/2026** |
 | **Autor** | Claude, a pedido de Felipe Carvallo |
 | **Fecha** | 9 de noviembre de 2026 |
 | **Hito** | Hito 2 — Venta de clases (créditos) |
-| **PRDs relacionados** | PRD-0019 (la cola de correo y su barrido diario) · PRD-0017 (lotes con vencimiento) · PRD-0023 (regalos) · ROADMAP, pedido 10 (la conversión de diciembre) · `context/correo-y-preventa-09-11.md` (la cuota) · PRD-0012 (preventa, sin escribir) |
+| **PRDs relacionados** | PRD-0019 (la cola de correo y su barrido diario) · PRD-0017 (lotes con vencimiento) · PRD-0023 (regalos) · ROADMAP, pedido 10 (la renovación de diciembre) · `context/correo-y-preventa-09-11.md` (la cuota) · PRD-0012 (preventa, sin escribir) |
 
 ---
 
@@ -52,7 +52,9 @@ clases y fechas, y no de lo que "perderías".
 
 ## 4. Fuera de alcance
 
-- **Un mensaje distinto para las 25 que nunca compraron.** Ver §8.4: queda preparado, no escrito.
+- **Un mensaje distinto según si la persona compró por la página.** No va (Felipe, 10/11): las que
+  viven de créditos de regalo **sí pagaron**, antes de que existiera la página, y el crédito es XO
+  honrando esa plata. Ver §8.4.
 - **El precio de la preventa en el aviso.** El orden es usar primero y el precio después. Y el
   precio de diciembre no existe todavía (PRD-0012 sin escribir; `CLAUDE.md` no permite inventarlo).
 - **Un segundo recordatorio** a los 3 días. Si el primero funciona, se evalúa en diciembre.
@@ -91,7 +93,7 @@ Sin tablas nuevas.
   como exige el barrido: `{ nombre, clases, venceAt }`.
 - **Una función de la base**, `avisos_de_vencimiento_pendientes(p_hoy date)`:
   - `security definer`, con grant **solo a `service_role`**;
-  - devuelve `perfil_id`, `correo`, `nombre`, `vence` (la fecha en Chile), `clases` y `compro_alguna_vez`;
+  - devuelve `perfil_id`, `correo`, `nombre`, `vence` (la fecha en Chile) y `clases`;
   - aplica las reglas de §3: rol alumna, disponible > 0, de 10 a 3 días y sin una fila con esa
     clave.
 - **El chequeo al enviar** reusa la misma función, preguntada por una persona y una fecha.
@@ -124,23 +126,13 @@ Sin tablas nuevas.
 - La clave `vencimiento:<perfil>:<fecha>` es única en `envios_correo`: **un aviso por persona y por
   vencimiento**, pase lo que pase con el barrido.
 
-### 8.4 Las 25 que nunca compraron
+### 8.4 Un solo mensaje para todas (Felipe, 10/11/2026)
 
-Para ellas el aviso es otra cosa: es **el momento de la conversión de diciembre** (pedido 10).
-
-**¿Complica la primera versión?** En código, no: es un campo `compro_alguna_vez` en los datos y
-un párrafo condicional. **En contenido, sí.** Lo natural es decirles "y después, esto cuesta tanto",
-y ese precio es el de la preventa, que todavía no tiene PRD. Escribirlo ahora sería inventar un
-precio.
-
-**Propuesta:**
-- **v1 (22/11):** el mismo mensaje para todas. El campo `compro_alguna_vez` **ya viaja en los
-  datos**.
-- **v2:** cuando PRD-0012 fije la preventa, el párrafo para ese grupo es solo texto. Puede salir con
-  los avisos de los lotes que vencen después.
-
-Para el 23/11 hay una consecuencia: el primer aviso de las 25 va a decir lo mismo que el de las
-demás.
+**Todas reciben el mismo correo.** Una primera versión de este PRD proponía separar a las 25 alumnas
+que "nunca compraron" y viven de créditos de regalo. **Estaba mal planteado.** Esas 25 **sí
+pagaron**: lo hicieron en el modelo de mensualidad, antes de que existiera la página, y su crédito
+de regalo es XO honrando esa plata. Que la base diga "sin compras" es un artefacto de que octubre no
+se migró, no un hecho sobre la persona. Por eso el correo no lleva ningún dato de si compró.
 
 ## 9. Criterios de aceptación
 

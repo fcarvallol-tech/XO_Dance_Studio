@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | Borrador, espera a Felipe. **Solo el PRD: no se construye hasta que esté aprobado** |
+| **Estado** | ✅ **Aprobado por Felipe el 10/11/2026**, con las cuatro categorías como están. **La reclasificación de los regalos viejos se aprueba fila por fila**: se arma la lista con una propuesta por cada uno y no se escribe nada hasta que Felipe la devuelva. Sin construir |
 | **Autor** | Claude, a pedido de Felipe Carvallo |
 | **Fecha** | 9 de noviembre de 2026 |
 | **Hito** | Hito 2 — Venta de clases (créditos) |
