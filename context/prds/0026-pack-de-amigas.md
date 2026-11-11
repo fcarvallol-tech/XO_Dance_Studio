@@ -294,3 +294,19 @@ Felipe las pidió en este orden, de peor a menos malo. Van dentro de este PRD.
 | 2 | El `volver` se perdía en el enlace del correo | **Era la plantilla, no el código.** `FormularioEntrar` ya mandaba `emailRedirectTo` con el `volver`, y la plantilla del panel lo ignoraba. La nueva arma el enlace con `{{ .RedirectTo }}`: ver `supabase/plantillas-correo/` | ⏳ Se aplica en el panel de Supabase |
 | 3 | Asunto en inglés, "Your sign-in link" | El asunto pasa a "Tu enlace para entrar a XO", en Magic Link y en Confirm signup | ⏳ Se aplica en el panel, junto con el 2 |
 
+**El motivo de fondo del punto 2 (Felipe, 11/11/2026):** hoy el enlace del correo no lleva el
+`volver`, así que la alumna que apretó "Reservar" en una clase vuelve a la pantalla genérica y tiene
+que buscar la clase de nuevo. No es solo el pack de amigas: es cualquier reserva sin sesión.
+
+**Estado al 11/11:**
+- Las plantillas vivas de los dos proyectos quedaron guardadas, leídas con la API de administración, en
+  `supabase/plantillas-correo/ANTERIOR-*.html`. Son el camino de vuelta.
+- Un solo lugar del código pide estos correos, `FormularioEntrar` (`signInWithOtp`), y siempre pasa
+  `emailRedirectTo`.
+- Asuntos: Magic Link "Tu enlace para entrar a XO"; Confirm signup "Confirma tu correo".
+- Producción: Redirect URLs con `https://xodancestudio.cl/**`, `https://xo-dance-studio.vercel.app/**`
+  y `http://localhost:3000/**`. Rate Limits: **30 correos de Auth por hora**.
+- 🔴 **Staging no deja cambiar las plantillas** mientras use el correo interno de Supabase: la API
+  responde "Email template modification is not available for free tier projects using the default
+  email provider". La prueba del enlace real espera a que Felipe encienda el SMTP de staging.
+
