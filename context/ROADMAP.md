@@ -1,8 +1,28 @@
 # ROADMAP.md — XO Dance Studio
 
 > Qué se construye, en qué orden y por qué.
-> Última actualización: **10 de noviembre de 2026**.
+> Última actualización: **11 de noviembre de 2026**.
 > ⚠️ Replanificado tras el cambio a modelo de paquetes y reservas.
+
+---
+
+## Estado al 11 de noviembre de 2026 — liquidación en producción
+
+**Migraciones aplicadas en producción el 11/11**, aprobadas por Felipe por su nombre y con el
+`--dry-run` listando solo esas: `20261105140000_liquidacion_profesoras`,
+`20261106130000_cerrar_liquidacion`, `20261106140000_duracion_en_horarios` y
+`20261110130000_incentivo_por_horario`. Producción queda en 46. Comprobado de solo lectura: las 142
+clases de parrilla tienen `fin`, y ninguna función de la liquidación es de `anon`. Código a `main`
+desde la rama `produccion-liquidacion-noviembre` (`main` + liquidación por horario + duración).
+
+**Recuperativa de Pau en producción (11/11):** `20261111120000_recuperativa_pau_27_11`, aprobada
+por su nombre después de que Felipe revisara la pantalla y clasificara las causas (la del 3/11:
+asistencia insuficiente; ninguna de noviembre quedó sin causa). Viernes 27/11, 20:00 a 21:00, Los
+Leones, cupo 16, horario de los martes, ligada a la del 3/11. Producción queda en 47.
+
+**Pendiente, en orden:** (1) PRD-0030, reserva retroactiva, antes de cerrar noviembre; (2) PRD-0032,
+aviso de vencimiento, vivo el 22/11; las dos sin probar en staging, y la segunda necesita devolver
+el reloj de staging. Las alumnas del 3/11 las avisa Felipe por mensaje.
 
 ---
 
@@ -32,7 +52,8 @@ del objetivo; (3) con su aprobación, producción con `20261105140000`, `2026110
 | Qué | Estado |
 |---|---|
 | **Staging al día** | ✅ Las tres de `main` y las de las cuatro ramas aplicadas: 45 migraciones, ninguna pendiente. Producción sigue sin ellas |
-| **Liquidación (PRD-0010 parte 3)** | ⏸ Sin publicar. `profesora_se_presento` solo paga en `sala_no_disponible`. 🔴 **Falta el paso E: no hay pantalla**, y el plazo del 1/12 depende de ella |
+| **Liquidación (PRD-0010 parte 3)** | ⏸ Sin publicar. **Paso E hecho** en `prd-0010-parte-3-pantallas`: `/owner/liquidaciones` y `/profesora/liquidacion`, con cerrar y pagar separados. En pantalla, en staging: Pau $124.500 y Drimy $18.750. Falta aprobar sus migraciones para producción antes del 1/12 |
+| **Duración de las clases** | ⏸ Sin publicar, rama `duracion-de-clases`. `horarios.duracion_min`, `clases.fin` lleno y una parrilla no puede quedar sin `fin`. Los montos de noviembre no cambian. **Aplicar antes de cerrar noviembre** |
 | **Recuperativa, categoría y "otra sala" (PRD-0027)** | ⏸ Sin publicar. Probado desde la página en staging. Hallazgos en su §12.1 |
 | **Revocar (PRD-0024) y pack de amigas (PRD-0026)** | ⏸ Sin publicar. Probados desde la página en staging |
 
@@ -210,6 +231,8 @@ en pausa por decisión suya.
 | 6 | ✅ **Hecho, PRD-0025.** **Filtrar el listado de personas, por nombre o correo** | Es el pedido 2, que estaba "para más adelante". El 04/11 Felipe dijo que ya está buscando a mano en un listado grande todos los días | 04/11/2026 |
 | 7 | **Pack de amigas** 🔴 **la promo ya salió** | Comprar 2 créditos por **$16.000** —uno para ti y uno para tu amiga—. El precio **ya existe**: el pack de 2 cuesta exactamente eso. Lo que no existe es que **los dos créditos caigan en dos cuentas distintas**. Decidido el 04/11 que va por la vía simple: créditos normales en dos cuentas, **no** créditos atados a una clase. ⚠️ **Se anunció antes de existir y hay gente preguntando**: hasta que esté, se atiende a mano con `regalar_creditos` más la revocación del pedido 5 | 04/11/2026 |
 | 8 | **El umbral de 5 en `/owner/finanzas`** 🐛 **es un bug** | `costoClase()` (`lib/dominio/finanzas.ts`) sigue cobrando $250 por cada crédito, sin el umbral del 21/10: **el margen sobrestima el costo hasta en $1.250 por clase**. La liquidación sí lo aplica, así que las dos pantallas van a dar números distintos | 05/11/2026 |
+| 9 | **"Con compra" del tablero tiene que filtrar por rol** | `metricas_resumen` cuenta en `con_compra` a toda cuenta con una compra `pagada`, **sin mirar el rol**: el 08/11 contó al owner por la compra de prueba del pack de amigas (43 → 44). `cuentas` sí filtra `rol = 'alumna'`, así que hoy las dos cifras no hablan de la misma población. **Cualquier compra de prueba o de staff infla ese número**. Va en una migración propia, no ahora | 08/11/2026 |
+| 10 | **Los regalos se regularizan desde diciembre: es una conversión, no margen** | Los créditos de regalo **no son pérdida de margen**: son clases de meses anteriores que ya estaban pagadas antes de que el sistema existiera, y se honraron para que nadie perdiera lo suyo. Desde diciembre se dejan de regalar, así que quien vive de regalo tiene que **comprar por primera vez en el sistema**. Al 08/11, sin la cuenta de prueba felipe@motex.ai: **73 créditos de regalo vivos en 32 alumnas**, casi todos otorgados en noviembre, y todos vencen entre el 3 y el 7/12. **25 de esas 32 (63 créditos) todavía no han comprado nunca**: ese es el tamaño exacto de la conversión de diciembre. Aparte, **5 profesoras tienen 21 créditos de regalo** que vencen el 3/12. **Decidido el 08/11 (Felipe): se dejan vencer el 3/12 y no se renuevan.** Una profesora que toma un cupo en Los Leones, con 16 lugares, desplaza a una alumna que paga. **Los motivos sí distinguen la deuda de la cortesía:** de los 72 créditos vivos de alumnas que quedaban el 08/11, 68 dicen "clases de meses anteriores/pasados", con variantes de redacción y uno "por lesión". Los otros 4 no son deuda: "Compensación", "Clase cancelada por error" y uno mixto, "Clase pasada, compensación por clase no realizada y ganadora de halloween", que tiene 2 vivos | 08/11/2026 |
 
 > **Los tres son el mismo hueco visto desde tres ángulos**, y conviene resolverlos juntos y no
 > de a parches: **el portal de administración no tiene reservas en ninguna parte.** El 1 las pide
@@ -390,7 +413,10 @@ Modelo profesor-cliente: comisiones, rentabilidad por profesora, marca personal.
 
 | Fecha | Cambio |
 |---|---|
+| 11 nov 2026 | **La recuperativa de Pau del 27/11 en producción** (`20261111120000`, aprobada por su nombre): viernes 20:00 a 21:00 en Los Leones, ligada a la del 3/11. Ninguna clase de noviembre sin causa |
+| 11 nov 2026 | **Liquidación en producción.** Las cuatro migraciones (`20261105140000`, `20261106130000`, `20261106140000`, `20261110130000`) aplicadas con aprobación por nombre, y a `main`. Pantalla: "Marcar como no dictada", y Variable y Objetivos como apartados (revisado por Felipe). La recuperativa de Pau del 27/11 queda escrita en `supabase/pendientes/`, para después de que Felipe clasifique las causas |
 | 10 nov 2026 | **Liquidación: el incentivo es por horario, no por curso** (Felipe, 10/11, tras revisar la pantalla en staging). Cuando Felipe dice "curso" se refiere al horario semanal: los martes de Pau se promedian solo con los martes, y la recuperativa cuenta en el horario que recupera. El piso de 4 se queda; si la recuperación cae el mes siguiente, ese horario no opta, como consecuencia conocida. Pantalla: Variable y Objetivos desplegables antes del total, cada grupo con su horario y su día ("Girly, sábados"). El texto de optar decía "hacen falta 4" con 1 dictada: ahora dice a qué se opta y que faltan 3. El escenario de Pau se rehízo como un mes real y dio **$127.000** a mano (antes $106.500). `CONTEXT.md` §5.b y PRD-0010 parte 3 §6.5 y §12.4 al día. Migración `20261110130000` escrita, sin aplicar. Rama `prd-0010-incentivo-por-horario` |
+| 6 nov 2026 | **Paso E de la liquidación y duración en los datos.** Pantallas de owner y profesora, cerrar antes de pagar, y el libro no se edita. La duración pasa a `horarios`, con los 15 confirmados por Felipe. Staging: Pau $124.500 y Drimy $18.750, iguales antes y después del relleno. Nada a producción |
 | 6 nov 2026 | **Staging al día con las cuatro ramas, probadas desde la página.** Decisiones de Felipe: `profesora_se_presento` solo paga en `sala_no_disponible`, la recuperación no es opcional, la sala de la recuperación se cobra y el cupo de la recuperativa es por orden de llegada. PRD-0027 suma el selector de categoría y "otra sala". Nada a producción |
 | 5 nov 2026 | **PRD-0025 en producción: Personas se filtra por nombre o correo y dice siempre el total** (`3cb80f7`), sin migración. `pedidos-de-uso` a `main` (`ef2bb1e`), solo documentos. Falta la prueba desde la página con sesión de admin y con una alumna. Se anota el pedido 8: el umbral de 5 no está en `/owner/finanzas` |
 | 4 nov 2026 | **Preventa revertida, lote vencido descartado y ramas en orden.** (1) `20261104120000_fin_preventa_noviembre.sql` pasó de `supabase/pendientes/` a `migrations/` y se aplicó con aprobación de Felipe por nombre; el dry-run listó esa sola. Terminó sin abortar, así que los cuatro precios de lista coinciden con los que la migración comprueba. En el sitio publicado, `/comprar` y los cuatro `/comprar/<oferta>` muestran $8.500, $16.000, $28.000 y $48.000 sin tachado ni plazo; `/comprar/pack-8` siguió mostrando la preventa unos minutos pasada la medianoche, hasta que su caché de una hora se renovó. (2) **Consulta de solo lectura**, aprobada para eso y nada más, por la API de administración: las 2 reservas de la clase de Pau del 3/11 están canceladas con el crédito devuelto, y los dos lotes vencen el 03/12: **ninguno volvió vencido**. Cierra lo que el `db push` del 3/11 no mostró. (3) `pau-3-nov-y-leones-16` mergeada a `main`: hasta ahora `main` tenía dos migraciones menos que producción. De `rescate-20-octubre` se trajo **solo** `0010-parte-3-liquidacion-de-profesoras.md`; el resto choca con `main` y se queda en la rama. La CLI quedó vinculada de vuelta a staging |

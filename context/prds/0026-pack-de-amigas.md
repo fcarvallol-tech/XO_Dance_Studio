@@ -12,7 +12,7 @@
 
 ## 1. Problema
 
-La promo **ya salió** y hay gente preguntando: comprar 2 clases por **$16.000**, una para ti y una
+La promo **ya salió** y hay gente preguntando: comprar 2 clases por **$15.000**, una para ti y una
 para tu amiga. El precio ya existe, porque el pack de 2 cuesta eso. Lo que no existe es que **los dos
 créditos caigan en dos cuentas distintas**. Hasta ahora se atendía a mano, regalando el crédito de la
 amiga con `regalar_creditos`. Eso tiene un costo: el tablero lo cuenta como **regalado**, cuando en
@@ -26,7 +26,7 @@ igual que cualquier otra.
 
 ## 3. Alcance — las decisiones de Felipe
 
-1. **Plan nuevo `pack-amigas`**: 2 clases, $16.000, `vigencia_dias` 30, activo. Se llama **"Pack de
+1. **Plan nuevo `pack-amigas`**: 2 clases, **$15.000** (Felipe, 07/11/2026; era $15.000: a $7.500 la clase contra $8.500 la suelta se lee como promo, y a $15.000 casi no se notaba), `vigencia_dias` 30, activo. Se llama **"Pack de
    amigas"**, que es como ya circula la promo (lo elegí yo, §8.6).
 2. **En la compra, un campo para el correo de la amiga**, obligatorio para este plan y solo para
    este.
@@ -45,7 +45,7 @@ igual que cualquier otra.
    `compra`.
 9. **A la amiga le llega un correo** cuando su clase aterriza, **por la cola de PRD-0019**.
 10. Anular, rechazar y el link de PRD-0020: ver §6.
-11. **`metricas_resumen` lo cuenta como una compra de $16.000 y dos créditos vendidos.** No cambia, y
+11. **`metricas_resumen` lo cuenta como una compra de $15.000 y dos créditos vendidos.** No cambia, y
     está comprobado (§12).
 
 ## 4. Fuera de alcance
@@ -123,7 +123,7 @@ Migración `20261105120000_pack_de_amigas.sql`.
 | Qué | Cambio |
 |---|---|
 | `planes.clases_para_invitada` | `int not null default 0`, entre 0 y `cantidad_clases − 1`. Hoy 0 en todos los planes y 1 en `pack-amigas` |
-| `planes` (fila nueva) | `pack-amigas` · "Pack de amigas" · 2 clases · $16.000 · 30 días · `orden` al final · activo · 1 para la amiga |
+| `planes` (fila nueva) | `pack-amigas` · "Pack de amigas" · 2 clases · $15.000 · 30 días · `orden` al final · activo · 1 para la amiga |
 | `compras.perfil_invitada_id` | `uuid` anulable, FK `compras_perfil_invitada_id_fkey` → `perfiles`, con nombre fijo porque PostgREST lo necesita para el embed |
 | `compras.cantidad_invitada` | `int not null default 0`. **Congelado al declarar**, como el monto: si mañana el plan cambia, la compra no se recalcula |
 | Checks en `compras` | Sin amiga → `cantidad_invitada` = 0. Con amiga → al menos una clase para cada una. La amiga ≠ quien paga |
@@ -185,7 +185,7 @@ ajustar sin migración.
 
 ## 9. Criterios de aceptación
 
-- [x] El plan existe con 2 clases, $16.000, 30 días y 1 para la amiga, y anon lo ve. *Base local.*
+- [x] El plan existe con 2 clases, $15.000, 30 días y 1 para la amiga, y anon lo ve. *Base local.*
 - [x] Correo de la propia compradora: rechazado. Sin cuenta: no. Con cuenta: sí, sin importar
       mayúsculas ni espacios. *Base local.*
 - [x] El 6.º intento en una hora y el 11.º en el día se rechazan. *Base local.*
@@ -194,7 +194,7 @@ ajustar sin migración.
 - [x] Aprobar crea **dos** lotes con el mismo `compra_id` y una clase cada uno, el mismo vencimiento a
       30 días, y dos movimientos `compra` con el saldo de cada dueña. Libro = lotes. *Base local.*
 - [x] Aprobar dos veces no duplica nada. *Base local.*
-- [x] `metricas_resumen`: **1 compra, $16.000, 2 vendidas, 0 regaladas**, y `por_plan` muestra
+- [x] `metricas_resumen`: **1 compra, $15.000, 2 vendidas, 0 regaladas**, y `por_plan` muestra
       `pack-amigas` con 1 compra. *Base local, con sesión de owner.*
 - [x] Rechazar antes de aprobar: ningún lote. Anular una compra pendiente: se puede. *Base local.*
 - [x] Un pack de 2 normal sigue funcionando igual: un lote de 2. *Base local.*
@@ -211,7 +211,7 @@ ajustar sin migración.
 ## 10. Métrica de éxito
 
 Que el pack se venda sin intervención a mano y que el tablero muestre cada uno como una venta de
-$16.000 y dos clases vendidas.
+$15.000 y dos clases vendidas.
 
 ## 11. Riesgos y supuestos
 
@@ -221,7 +221,7 @@ $16.000 y dos clases vendidas.
   - **la bandeja de compras sí falla**, porque pide `cantidad_invitada` y la amiga.
 - **El correo de la amiga** usa el nombre de pila de quien compró. Si alguien escribe el correo de
   una desconocida, esa persona recibe un correo con ese nombre. El riesgo es bajo: hay que pagar
-  $16.000 para mandarlo.
+  $15.000 para mandarlo.
 - **`saldo_creditos` no está abierta a una sesión.** La amiga ve su saldo sumando sus lotes, como
   todas.
 - **Hallazgo de paso, no arreglado:** las plantillas de correo anteriores interpolan el nombre de la
@@ -243,7 +243,7 @@ $16.000 y dos clases vendidas.
 | 7 | Bandeja de admin: "1 clase para su amiga: <nombre>" | ✅ |
 | 8 | Prueba desde la página en staging, con los dos correos | ⏳ Necesita la migración en staging, con aprobación |
 
-**Lo que dijo `metricas_resumen`** en el escenario, con sesión de owner:
+**Lo que dijo `metricas_resumen`** en el escenario del 05/11, con sesión de owner, cuando el pack costaba $16.000:
 
 ```json
 {"venta":{"compras":1,"ingresos":16000},"creditos":{"vendidas":2,"regaladas":0},"conciliacion":{"libro":2,"lotes":2},"con_compra":1}
@@ -256,3 +256,41 @@ compró. Si mañana interesa saber cuántas llegaron por un pack de amigas, eso 
 **Corregido de paso en `aprobarCompra`:** el vencimiento del correo de aprobación se leía con
 `.eq("compra_id").maybeSingle()`. Con dos lotes por compra eso da error, y el correo habría dicho
 un vencimiento genérico. Ahora busca el lote de cada una.
+
+### 12.1 Prueba en producción, 08/11/2026
+
+Felipe compró desde la página con su cuenta de owner, y la amiga fue `felipe@motex.ai`. **No se
+usaron** los alias que se habían acordado.
+
+- **Correo inexistente bloqueado, y el aviso aparece antes de elegir el plan.** Lo vio Felipe en la página.
+- **Lotes.** Quedaron dos lotes con el mismo `compra_id`, uno en cada cuenta, de 1 clase cada uno, con su movimiento `compra`, $15.000 y vencimiento exacto a 30 días de la aprobación.
+- **Correo a la amiga (`creditoDeAmiga`).** Llegó a la bandeja de entrada **2 segundos después de aprobar**, desde `XO Dance Studio <hola@xodancestudio.cl>`.
+  - Asunto: "Felipe te dejó una clase en XO".
+  - Cuerpo: "Prueba test, Felipe compró el pack de amigas y una de las clases es para ti. Ya está en tu cuenta… Vale hasta el martes 8 de diciembre".
+  - Trae el botón "Reservar mi clase".
+- **El copy del correo se queda así.** Saluda con el nombre del perfil de la amiga y nombra a la compradora por su primer nombre. Felipe lo revisó el 08/11.
+- **Anular antes de revocar falló, como debía.** El candado respondió: "Esta compra todavía tiene 2 clases sin usar en sus lotes".
+- 🔴 **El botón del correo, sin sesión, no vuelve a reservar.** Se probó con un navegador limpio, sin cookies, y el camino fue:
+  1. `/reservar` responde 307 a `/entrar?volver=%2Freservar`.
+  2. Se pide el enlace con el correo de la amiga.
+  3. El correo del enlace llega **sin `volver`**: `/auth/confirmar?token_hash=…&type=magiclink`.
+  4. Al abrirlo, va a `/entrar` y después a **`/mis-clases`**, no a `/reservar`.
+
+  La amiga queda dentro y ve "CLASES DISPONIBLES 2", pero tiene que buscar el botón Reservar de nuevo. Además, el correo del enlace llega con asunto en inglés, **"Your sign-in link"**: el cuerpo está en español, pero el asunto es la plantilla de Supabase.
+- **Lo que la amiga ve en `/mis-clases`.** El crédito del pack suma en el total ("2"), pero **no aparece explicado en ninguna parte**:
+  - "Clases de regalo" lista solo el regalo del 3/11;
+  - "Tus compras" lista solo lo que compró ella.
+
+  Una amiga sin otros créditos vería "1" sin saber de dónde viene.
+- **Revocar descuenta del lote que vence primero (PRD-0024), no del lote del pack.** En una amiga que ya tenía un regalo, quitar 1 se lleva el regalo, que vence el 3/12, y el lote del pack queda vivo. Para anular la compra hay que quitarle todo lo vigente.
+
+### 12.2 Correcciones del 08/11/2026, rama `prd-0026-correcciones`
+
+Felipe las pidió en este orden, de peor a menos malo. Van dentro de este PRD.
+
+| # | Qué | Cómo | Estado |
+|---|---|---|---|
+| 1 | La clase del pack no aparecía explicada en `/mis-clases` | Se agregó la sección **"Clases que te dejaron"**: "1 clase del pack de amigas · Te la dejó Ana el viernes 6 de noviembre · vence el…". Se arma con `getMisClasesDeAmiga`: los lotes se leen con su sesión, y la compra con la service role, filtrada por que el lote sea de ella y que ella sea la invitada. De la compradora sale solo el nombre de pila. Sin migración | ✅ Probado desde la página contra staging (`scripts/verificar-clases-de-amiga.mjs`, 5 de 5). Falta en producción |
+| 2 | El `volver` se perdía en el enlace del correo | **Era la plantilla, no el código.** `FormularioEntrar` ya mandaba `emailRedirectTo` con el `volver`, y la plantilla del panel lo ignoraba. La nueva arma el enlace con `{{ .RedirectTo }}`: ver `supabase/plantillas-correo/` | ⏳ Se aplica en el panel de Supabase |
+| 3 | Asunto en inglés, "Your sign-in link" | El asunto pasa a "Tu enlace para entrar a XO", en Magic Link y en Confirm signup | ⏳ Se aplica en el panel, junto con el 2 |
+

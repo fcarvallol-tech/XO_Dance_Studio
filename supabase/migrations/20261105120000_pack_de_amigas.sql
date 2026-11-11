@@ -58,12 +58,13 @@ end $$;
 comment on column public.planes.clases_para_invitada is
   'PRD-0026: cuántas clases del plan caen en la cuenta de otra persona que la compradora nombra por correo. 0 = plan normal.';
 
--- El precio y la vigencia son de Felipe (04/11/2026): 2 clases, $16.000, 30 días.
+-- El precio y la vigencia son de Felipe: 2 clases, $15.000 (bajó de $16.000 el 07/11/2026,
+-- para que se lea como promo: $7.500 la clase contra $8.500 la suelta), 30 días.
 -- Al final del orden, para no mover lo que ya se ve.
 insert into public.planes
   (slug, nombre, cantidad_clases, precio_clp, vigencia_dias, orden, activo, clases_para_invitada)
 values
-  ('pack-amigas', 'Pack de amigas', 2, 16000, 30,
+  ('pack-amigas', 'Pack de amigas', 2, 15000, 30,
    (select coalesce(max(orden), 0) + 1 from public.planes), true, 1)
 on conflict (slug) do nothing;
 
@@ -524,10 +525,10 @@ do $$
 begin
   if not exists (
     select 1 from public.planes
-    where slug = 'pack-amigas' and cantidad_clases = 2 and precio_clp = 16000
+    where slug = 'pack-amigas' and cantidad_clases = 2 and precio_clp = 15000
       and vigencia_dias = 30 and clases_para_invitada = 1
   ) then
-    raise exception 'El plan pack-amigas no quedó como lo pidió Felipe (2 clases, $16.000, 30 días, 1 para la amiga). Si ya existía distinto, revisarlo a mano.';
+    raise exception 'El plan pack-amigas no quedó como lo pidió Felipe (2 clases, $15.000, 30 días, 1 para la amiga). Si ya existía distinto, revisarlo a mano.';
   end if;
 
   if exists (
