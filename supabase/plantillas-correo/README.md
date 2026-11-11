@@ -26,3 +26,22 @@ enlace lleva el `token_hash` y no depende del navegador que lo pidió.
 ⚠️ **Supabase usa `RedirectTo` solo si está en Redirect URLs.** Si no está, lo cambia por el
 Site URL a secas y el enlace queda roto (`https://xodancestudio.cl&token_hash=…`). En
 **Authentication → URL Configuration** tiene que estar `https://xodancestudio.cl/**`.
+
+## Volver atrás
+
+`ANTERIOR-produccion-magic-link.html` es la Magic Link que tenía producción el 08/11/2026, con
+asunto **"Your sign-in link"**. Si al pegar la nueva alguien no puede entrar, **lo primero es
+pegar esa de vuelta**, no investigar.
+
+Falta la **Confirm signup** anterior de producción: no se ha recibido ese correo desde una casilla
+que se pueda leer, y la configuración del panel no se lee con la CLI.
+
+## Orden para cambiarlas (Felipe, 08/11/2026)
+
+1. Guardar las de producción como versión anterior.
+2. Revisar que `https://xodancestudio.cl/**` esté en Redirect URLs de producción. Si no está, no se
+   toca la plantilla.
+3. Pegarlas primero en **staging** y probar el camino completo con un navegador limpio:
+   `/reservar` → pedir enlace → abrir el del correo → termina en `/reservar`, con asunto en español.
+4. **El panel de producción lo toca Felipe**, con el OK de la prueba de staging.
+5. Apenas esté pegada, entrar de inmediato con una cuenta existente y con una nueva.
