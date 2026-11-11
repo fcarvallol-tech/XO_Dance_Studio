@@ -189,7 +189,7 @@ Para una profesora *P* y un mes *M*:
 | `no_dictada` o `cancelada` **sin causa** | **No se calcula.** La fila queda bloqueada hasta clasificarla |
 | `programada`, todavía no ocurre | No entra: el mes no se paga antes de terminar |
 
-- **Horas**: `fin − inicio`; sin `fin`, una hora. Es `horasDeClase()` de `lib/dominio/finanzas.ts`
+- **Horas**: `fin − inicio`. Desde `20261106140000` la duración vive en `horarios.duracion_min` y una clase de parrilla no puede quedar sin `fin`, así que la hora por defecto ya no se activa en parrilla (Felipe, 06/11/2026). Antes: sin `fin`, una hora. Es `horasDeClase()` de `lib/dominio/finanzas.ts`
   y se reutiliza. Una clase de 90 minutos paga $27.000 de base, como dice `CONTEXT.md` para EB.
 - **Pesos enteros.** Si la duración da fracción de peso, se redondea al peso por línea, no al total.
 - **El mes** se corta en `America/Santiago`, como en la parte 1 (PRD-0010 §16): una clase del 31

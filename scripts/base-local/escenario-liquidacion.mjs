@@ -50,13 +50,15 @@ for (let i = 0; i < 20; i++) {
 }
 
 /**
- * Una clase de ese horario de Pau en esa fecha, a la hora del horario. Una
- * recuperativa lleva el horario de la que recupera, aunque caiga otro día: así
- * la crea `crear_recuperativa`.
+ * Una clase de ese horario de Pau en esa fecha, a la hora del horario y de una
+ * hora (una de parrilla ya no queda sin fin, 20261106140000). Una recuperativa
+ * lleva el horario de la que recupera, aunque caiga otro día: así la crea
+ * `crear_recuperativa`.
  */
 async function clase(fecha, horario = MARTES) {
-  return (await uno(db, `insert into clases (horario_id, fecha, inicio, curso_id, profesora_id, sede_id, cupo_maximo)
-    values ($1, $2::date, ($2::date + $7::time) at time zone 'America/Santiago', $3, $4, $5, $6) returning id`,
+  return (await uno(db, `insert into clases (horario_id, fecha, inicio, fin, curso_id, profesora_id, sede_id, cupo_maximo)
+    values ($1, $2::date, ($2::date + $7::time) at time zone 'America/Santiago',
+            ($2::date + $7::time + interval '1 hour') at time zone 'America/Santiago', $3, $4, $5, $6) returning id`,
     [horario.id, fecha, horario.curso_id, PAU, horario.sede_id, capacidad, horario.hora])).id;
 }
 /** n reservas confirmadas que consumen crédito, con su asiento en el libro. */
