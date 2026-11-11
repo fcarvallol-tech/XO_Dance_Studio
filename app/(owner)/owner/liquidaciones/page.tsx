@@ -99,7 +99,7 @@ export default async function Liquidaciones({ searchParams }: { searchParams: Pr
                                 <ClasificarClase
                                   claseId={l.claseId}
                                   causa={l.causa}
-                                  etiqueta={l.tipo === "dictada" ? "No se dictó" : l.causa ? "Cambiar la causa" : "Decir por qué"}
+                                  etiqueta={l.tipo === "dictada" ? "Marcar como no dictada" : l.causa ? "Cambiar la causa" : "Decir por qué"}
                                 />
                                 {l.efecto === "pendiente" || (l.efecto === "base" && l.noSeRecuperaAt) ? (
                                   <MarcarNoSeRecupera claseId={l.claseId} marcada={l.efecto === "base"} />
