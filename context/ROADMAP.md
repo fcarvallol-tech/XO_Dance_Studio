@@ -1,8 +1,25 @@
 # ROADMAP.md — XO Dance Studio
 
 > Qué se construye, en qué orden y por qué.
-> Última actualización: **10 de noviembre de 2026**.
+> Última actualización: **11 de noviembre de 2026**.
 > ⚠️ Replanificado tras el cambio a modelo de paquetes y reservas.
+
+---
+
+## Estado al 11 de noviembre de 2026 — liquidación en producción
+
+**Migraciones aplicadas en producción el 11/11**, aprobadas por Felipe por su nombre y con el
+`--dry-run` listando solo esas: `20261105140000_liquidacion_profesoras`,
+`20261106130000_cerrar_liquidacion`, `20261106140000_duracion_en_horarios` y
+`20261110130000_incentivo_por_horario`. Producción queda en 46. Comprobado de solo lectura: las 142
+clases de parrilla tienen `fin`, y ninguna función de la liquidación es de `anon`. Código a `main`
+desde la rama `produccion-liquidacion-noviembre` (`main` + liquidación por horario + duración).
+
+**Pendiente, en orden:** (1) Felipe revisa `/owner/liquidaciones?mes=2026-11` en producción y
+clasifica las clases sin causa, entre ellas la del 3/11 de Pau; (2) con su aprobación por nombre,
+`supabase/pendientes/20261111120000_recuperativa_pau_27_11.sql` (viernes 27/11, 20:00 a 21:00, Los
+Leones), que se mueve a `migrations/` recién entonces; (3) PRD-0032 a staging, para el 22/11; (4)
+devolver el reloj de staging. Las alumnas del 3/11 las avisa Felipe por mensaje.
 
 ---
 
@@ -393,6 +410,7 @@ Modelo profesor-cliente: comisiones, rentabilidad por profesora, marca personal.
 
 | Fecha | Cambio |
 |---|---|
+| 11 nov 2026 | **Liquidación en producción.** Las cuatro migraciones (`20261105140000`, `20261106130000`, `20261106140000`, `20261110130000`) aplicadas con aprobación por nombre, y a `main`. Pantalla: "Marcar como no dictada", y Variable y Objetivos como apartados (revisado por Felipe). La recuperativa de Pau del 27/11 queda escrita en `supabase/pendientes/`, para después de que Felipe clasifique las causas |
 | 10 nov 2026 | **Liquidación: el incentivo es por horario, no por curso** (Felipe, 10/11, tras revisar la pantalla en staging). Cuando Felipe dice "curso" se refiere al horario semanal: los martes de Pau se promedian solo con los martes, y la recuperativa cuenta en el horario que recupera. El piso de 4 se queda; si la recuperación cae el mes siguiente, ese horario no opta, como consecuencia conocida. Pantalla: Variable y Objetivos desplegables antes del total, cada grupo con su horario y su día ("Girly, sábados"). El texto de optar decía "hacen falta 4" con 1 dictada: ahora dice a qué se opta y que faltan 3. El escenario de Pau se rehízo como un mes real y dio **$127.000** a mano (antes $106.500). `CONTEXT.md` §5.b y PRD-0010 parte 3 §6.5 y §12.4 al día. Migración `20261110130000` escrita, sin aplicar. Rama `prd-0010-incentivo-por-horario` |
 | 6 nov 2026 | **Paso E de la liquidación y duración en los datos.** Pantallas de owner y profesora, cerrar antes de pagar, y el libro no se edita. La duración pasa a `horarios`, con los 15 confirmados por Felipe. Staging: Pau $124.500 y Drimy $18.750, iguales antes y después del relleno. Nada a producción |
 | 6 nov 2026 | **Staging al día con las cuatro ramas, probadas desde la página.** Decisiones de Felipe: `profesora_se_presento` solo paga en `sala_no_disponible`, la recuperación no es opcional, la sala de la recuperación se cobra y el cupo de la recuperativa es por orden de llegada. PRD-0027 suma el selector de categoría y "otra sala". Nada a producción |
