@@ -122,10 +122,11 @@ export function DetalleLiquidacion({
 }
 
 /**
- * Lo que suma el mes, justo antes del total (Felipe, 10/11/2026): la base, el
- * **variable** —que se despliega clase por clase— y los **objetivos**, en un
- * solo bloque, agrupados por horario. Cada objetivo dice si se logró y se
- * despliega con el promedio que lo sustenta y las clases que lo componen.
+ * Lo que suma el mes, justo antes del total (Felipe, 10/11/2026). **Variable**
+ * y **Objetivos** son apartados como "Clases dictadas", con su encabezado, y se
+ * abren igual que la ficha de una profesora: apretando el encabezado. Variable
+ * se despliega clase por clase; Objetivos, por horario, con los dos objetivos
+ * adentro, cada uno con el promedio que lo sustenta.
  *
  * Fuera de alcance: apretar una clase y ver quiénes fueron. Esa pantalla no
  * existe todavía (PRD-0031).
@@ -135,49 +136,52 @@ function Resultados({ liquidacion }: { liquidacion: FotoLiquidacion }) {
   const incentivos = liquidacion.incentivos ?? [];
 
   return (
-    <div className="max-w-xl text-sm">
-      <div className="flex justify-between py-2 text-xo-negro">
-        <span>Base</span>
-        <span>{clp(liquidacion.baseClp)}</span>
-      </div>
-
-      <Desplegable titulo="Variable" valor={clp(liquidacion.variableClp)}>
+    <>
+      <Apartado titulo="Variable" valor={clp(liquidacion.variableClp)}>
         {dictadas.length === 0 ? (
-          <p className="text-xo-gris">Sin clases dictadas en este mes.</p>
+          <p className="mt-3 text-sm text-xo-gris">Sin clases dictadas en este mes.</p>
         ) : (
-          <ul className="divide-y divide-xo-negro/10">
+          <ul className="mt-3 divide-y divide-xo-negro/10 border-y border-xo-negro/10">
             {dictadas.map((l) => (
-              <li key={l.claseId} className="flex flex-wrap justify-between gap-x-4 py-2">
-                <span className="text-xo-negro">
-                  {cuandoLegible(l.inicio)} · {l.curso}
-                </span>
-                <span className="text-xo-gris">
-                  {l.creditosConsumidos} {l.creditosConsumidos === 1 ? "crédito" : "créditos"} ·{" "}
-                  <span className="text-xo-negro">{clp(l.variableClp)}</span>
-                </span>
+              <li key={l.claseId} className="py-3">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+                  <p className="font-semibold text-xo-negro">{l.curso}</p>
+                  <p className="font-semibold text-xo-negro">{clp(l.variableClp)}</p>
+                </div>
+                <p className="mt-1 text-sm text-xo-gris">
+                  {cuandoLegible(l.inicio)} · {l.creditosConsumidos}{" "}
+                  {l.creditosConsumidos === 1 ? "crédito" : "créditos"}
+                </p>
               </li>
             ))}
           </ul>
         )}
-      </Desplegable>
+      </Apartado>
 
-      <Desplegable titulo="Objetivos" valor={clp(liquidacion.incentivoClp)}>
+      <Apartado titulo="Objetivos" valor={clp(liquidacion.incentivoClp)}>
         {incentivos.length === 0 ? (
-          <p className="text-xo-gris">Sin clases dictadas: no hay objetivos que calcular.</p>
+          <p className="mt-3 text-sm text-xo-gris">Sin clases dictadas: no hay objetivos que calcular.</p>
         ) : (
-          <div className="space-y-5">
+          <ul className="mt-3 divide-y divide-xo-negro/10 border-y border-xo-negro/10">
             {incentivos.map((i) => (
-              <GrupoDeObjetivos key={i.horarioId ?? i.cursoId} incentivo={i} />
+              <li key={i.horarioId ?? i.cursoId} className="py-3">
+                <GrupoDeObjetivos incentivo={i} />
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </Desplegable>
+      </Apartado>
 
-      <div className="mt-2 flex justify-between border-t border-xo-negro/20 pt-3 text-base font-semibold text-xo-negro">
-        <span>Total</span>
-        <span>{clp(liquidacion.totalClp)}</span>
-      </div>
-    </div>
+      <dl className="max-w-sm text-sm">
+        <Fila nombre="Base" valor={clp(liquidacion.baseClp)} />
+        <Fila nombre="Variable" valor={clp(liquidacion.variableClp)} />
+        <Fila nombre="Objetivos" valor={clp(liquidacion.incentivoClp)} />
+        <div className="mt-2 flex justify-between border-t border-xo-negro/20 pt-2 text-base font-semibold text-xo-negro">
+          <dt>Total</dt>
+          <dd>{clp(liquidacion.totalClp)}</dd>
+        </div>
+      </dl>
+    </>
   );
 }
 
@@ -185,25 +189,29 @@ function Resultados({ liquidacion }: { liquidacion: FotoLiquidacion }) {
 function GrupoDeObjetivos({ incentivo: i }: { incentivo: IncentivoDeHorario }) {
   const objetivos = i.objetivos ?? [];
   return (
-    <section>
+    <div>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-        <h4 className="font-semibold text-xo-negro">{i.etiqueta ?? i.curso}</h4>
-        <span className="font-semibold text-xo-negro">{clp(i.montoClp)}</span>
+        <p className="font-semibold text-xo-negro">{i.etiqueta ?? i.curso}</p>
+        <p className="font-semibold text-xo-negro">{clp(i.montoClp)}</p>
       </div>
-      <ul className="mt-1">
+      <ul className="mt-2 space-y-2">
         {objetivos.map((o, n) => (
           <li key={o.desdePromedio}>
-            <Desplegable
-              titulo={`Objetivo ${n + 1}: promedio de ${o.desdePromedio} o más`}
-              valor={o.logrado ? `Obtenido · ${clp(o.montoClp)}` : "No obtenido"}
-              chico
-            >
-              <Sustento incentivo={i} />
-            </Desplegable>
+            <details>
+              <summary className="flex cursor-pointer flex-wrap items-baseline justify-between gap-x-4 text-sm">
+                <span className="text-xo-negro underline underline-offset-4">
+                  Objetivo {n + 1}: promedio de {o.desdePromedio} o más
+                </span>
+                <span className="text-xo-negro">{o.logrado ? `Obtenido · ${clp(o.montoClp)}` : "No obtenido"}</span>
+              </summary>
+              <div className="mt-2 border-l-2 border-xo-negro/20 pl-4 text-sm">
+                <Sustento incentivo={i} />
+              </div>
+            </details>
           </li>
         ))}
       </ul>
-    </section>
+    </div>
   );
 }
 
@@ -214,7 +222,9 @@ function Sustento({ incentivo: i }: { incentivo: IncentivoDeHorario }) {
   return (
     <div>
       <p className="text-xo-negro">
-        {opta ? `Promedio ${formatoPromedio(i.promedio as number)} en las ${clases.length} mejores clases de este horario.` : i.explicacion}
+        {opta
+          ? `Promedio ${formatoPromedio(i.promedio as number)} en las ${clases.length} mejores clases de este horario.`
+          : i.explicacion}
       </p>
       {clases.length > 0 ? (
         <ul className="mt-2 text-xo-gris">
@@ -229,34 +239,27 @@ function Sustento({ incentivo: i }: { incentivo: IncentivoDeHorario }) {
   );
 }
 
-/** Una fila que se aprieta y despliega lo que la sustenta. Sin JavaScript: `<details>`. */
-function Desplegable({
-  titulo,
-  valor,
-  chico = false,
-  children,
-}: {
-  titulo: string;
-  valor: string;
-  chico?: boolean;
-  children: ReactNode;
-}) {
+/**
+ * Un apartado con el encabezado de "Clases dictadas", que se abre al apretar el
+ * encabezado, como la ficha de una profesora. Sin JavaScript: `<details>`.
+ */
+function Apartado({ titulo, valor, children }: { titulo: string; valor: string; children: ReactNode }) {
   return (
-    <details className={chico ? "group" : "group border-t border-xo-negro/10"}>
-      <summary
-        className={`flex cursor-pointer list-none items-baseline justify-between gap-x-4 [&::-webkit-details-marker]:hidden ${
-          chico ? "py-1 text-xo-gris" : "py-2 text-xo-negro"
-        }`}
-      >
-        <span className="flex items-baseline gap-2">
-          <span aria-hidden className="inline-block motion-safe:transition-transform group-open:rotate-90">
-            ›
-          </span>
-          {titulo}
-        </span>
-        <span className={chico ? "text-xo-negro" : undefined}>{valor}</span>
+    <details>
+      <summary className="flex cursor-pointer flex-wrap items-baseline justify-between gap-x-4">
+        <h3 className="xo-eyebrow text-xo-gris">{titulo}</h3>
+        <span className="font-semibold text-xo-negro">{valor}</span>
       </summary>
-      <div className={chico ? "pb-2 pl-4" : "pb-3 pl-4"}>{children}</div>
+      {children}
     </details>
+  );
+}
+
+function Fila({ nombre, valor }: { nombre: string; valor: string }) {
+  return (
+    <div className="flex justify-between py-1 text-xo-gris">
+      <dt>{nombre}</dt>
+      <dd>{valor}</dd>
+    </div>
   );
 }

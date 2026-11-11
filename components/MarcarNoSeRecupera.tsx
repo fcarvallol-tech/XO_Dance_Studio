@@ -36,7 +36,7 @@ export function MarcarNoSeRecupera({ claseId, marcada }: { claseId: string; marc
         onClick={() => setConfirmando(true)}
         className="mt-2 block text-sm text-xo-gris underline underline-offset-4"
       >
-        {marcada ? "Quitar la marca: se va a recuperar" : "No se va a recuperar"}
+        {marcada ? "Quitar la marca «no se va a recuperar»" : "Marcar que no se va a recuperar"}
       </button>
     );
   }

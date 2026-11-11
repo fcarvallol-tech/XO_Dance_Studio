@@ -76,11 +76,11 @@ try {
   await clasificar(p, "Lina", "de noviembre", "Decir por qué", "asistencia_insuficiente", "No llegaron alumnas suficientes");
   await clasificar(p, "Pau", "12 de noviembre", "Decir por qué", "sala_no_disponible", "Llegó y la sala estaba ocupada", true);
   await clasificar(p, "Pau", "26 de noviembre", "Decir por qué", "sin_alumnas", "No hubo alumnas");
-  await clasificar(p, "Pau", "5 de noviembre", "No se dictó", "cambio_de_parrilla", "Salió de la parrilla");
+  await clasificar(p, "Pau", "5 de noviembre", "Marcar como no dictada", "cambio_de_parrilla", "Salió de la parrilla");
   for (const f of ["2 de noviembre", "12 de noviembre", "16 de noviembre", "19 de noviembre", "26 de noviembre"]) {
     await clasificar(p, "Drimy", f, "Decir por qué", "cambio_de_parrilla", "Salió de la parrilla");
   }
-  await clasificar(p, "Drimy", "5 de noviembre", "No se dictó", "cambio_de_parrilla", "Salió de la parrilla");
+  await clasificar(p, "Drimy", "5 de noviembre", "Marcar como no dictada", "cambio_de_parrilla", "Salió de la parrilla");
 
   console.log("\n4. Los montos en pantalla");
   let t = await abrir(p, "Pau");
