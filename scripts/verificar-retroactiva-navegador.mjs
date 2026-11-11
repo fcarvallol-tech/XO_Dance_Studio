@@ -60,6 +60,7 @@ console.log("\n4. La lista y la liquidación");
 await p.goto(`http://localhost:3000${URL_CLASE}`, { waitUntil: "load" });
 await p.waitForTimeout(1500);
 const t = await texto(p);
+caso("sin errores de lectura en la página", t.includes("No pudimos leer"), false);
 caso("las tres en 'Registradas este mes'", ["Bea Prueba", "Cata Prueba", "Prueba 5"].every((n) => t.includes(n)), true);
 caso(`la clase de Isi pasa de ${antes} a ${antes + 2} créditos en la liquidación`, await consumidos(), antes + 2);
 
