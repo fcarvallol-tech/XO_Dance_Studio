@@ -95,7 +95,10 @@ export default async function Asistencias({ searchParams }: Props) {
   if (elegida) {
     const { data, error } = await admin
       .from("reservas")
-      .select("perfil_id, origen, perfiles ( nombre )")
+      // Con nombre de relación: desde 20261112120000 `reservas` tiene dos claves a
+      // `perfiles` (la alumna y `creada_por`), y sin él PostgREST no sabe cuál
+      // usar y la consulta falla entera.
+      .select("perfil_id, origen, perfiles!reservas_perfil_id_fkey ( nombre )")
       .eq("clase_id", elegida.id)
       .in("estado", ["confirmada", "asistio"]);
     errorClase = error?.message ?? null;
