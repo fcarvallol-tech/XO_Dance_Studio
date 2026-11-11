@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | ✅ **Aprobado por Felipe el 10/11/2026**, con el texto del §8.2 y **sin** distinción por grupo (el §8.4 anterior se borró). **Construido el 10/11** en la rama `prd-0032-aviso-de-vencimiento`, con la migración `20261110120000` escrita y **sin aplicar en ningún lado**. Falta: probarlo en staging con un correo real y el texto final aprobado. **Vivo el 22/11/2026** |
+| **Estado** | ✅ **Aprobado por Felipe el 10/11/2026**, con el texto del §8.2 y **sin** distinción por grupo (el §8.4 anterior se borró). **Construido el 10/11** en la rama `prd-0032-aviso-de-vencimiento`, con la migración `20261112130000` escrita y **sin aplicar en ningún lado**. Falta: probarlo en staging con un correo real y el texto final aprobado. **Vivo el 22/11/2026** |
 | **Autor** | Claude, a pedido de Felipe Carvallo |
 | **Fecha** | 9 de noviembre de 2026 |
 | **Hito** | Hito 2 — Venta de clases (créditos) |
@@ -203,7 +203,7 @@ partió de cero.
 | Fase | Qué | Estado |
 |---|---|---|
 | 1 | `lib/dominio/vencimientos.ts`: clave, fecha en palabras, asunto y frase. `caducaAt` del aviso | ✅ con tests |
-| 2 | Migración `20261110120000_aviso_de_vencimiento.sql` y `scripts/base-local/escenario-vencimiento.mjs` | ✅ escrita, 20 de 20 en local, **sin aplicar** |
+| 2 | Migración `20261112130000_aviso_de_vencimiento.sql` y `scripts/base-local/escenario-vencimiento.mjs` | ✅ escrita, 20 de 20 en local, **sin aplicar** |
 | 3 | `lib/correo.ts`, `/api/correos`, `/admin/correos` | ✅ tsc, lint, 241 tests y build |
 | 4 | Staging: aplicar la migración, permisos por rol con sesión, un correo real abierto en el teléfono con el botón sin sesión, 30 filas seguidas | ⏳ **espera la aprobación de Felipe para aplicar en staging** |
 | 5 | Texto final aprobado por Felipe | ⏳ antes del 20/11 |
