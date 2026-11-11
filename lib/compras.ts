@@ -35,6 +35,11 @@ export type Compra = {
   /** Lo que ella escribió al declarar. Es con lo que se calza la cartola. */
   titularDeclarado?: string | null;
   notaAlumna?: string | null;
+  /**
+   * PRD-0026, solo en la bandeja de admin: a quién le llega la parte de la
+   * amiga, y cuántas clases. Admin sí ve el nombre; la compradora, nunca.
+   */
+  amiga?: { nombre: string | null; clases: number } | null;
 };
 
 export type ClaseDelCalendario = {

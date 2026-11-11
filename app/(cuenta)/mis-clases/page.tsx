@@ -7,6 +7,7 @@ import { requiereSesion } from "@/lib/sesion";
 import { clp } from "@/lib/planes";
 import { NOMBRE_ESTADO, cuandoLegible, type EstadoCompra } from "@/lib/compras";
 import {
+  getMisClasesDeAmiga,
   getMisCompras,
   getMisRegalos,
   getMisReservas,
@@ -22,12 +23,13 @@ export const metadata: Metadata = {
 export default async function MisClases() {
   const perfil = await requiereSesion("cuenta");
 
-  const [saldo, vence, reservas, compras, regalos] = await Promise.all([
+  const [saldo, vence, reservas, compras, regalos, deAmiga] = await Promise.all([
     getSaldo(perfil.id),
     getProximoVencimiento(perfil.id),
     getMisReservas(perfil.id),
     getMisCompras(perfil.id),
     getMisRegalos(perfil.id),
+    getMisClasesDeAmiga(perfil.id),
   ]);
 
   const ahora = new Date().toISOString();
@@ -94,6 +96,41 @@ export default async function MisClases() {
       <ErrorDeLectura que="tus reservas" error={reservas.error} />
       {reservas.error ? null : (
         <MisReservas proximas={proximas} pasadas={pasadas} />
+      )}
+
+      {/* PRD-0026 §12.1: lo que le dejó una amiga. Sin esto sumaba en el saldo
+          y no aparecía en ninguna parte, y para la amiga es su primera vez en
+          XO: el correo le dice que tiene una clase y la página tiene que
+          confirmárselo, con quién se la dejó. */}
+      <ErrorDeLectura que="las clases que te dejaron" error={deAmiga.error} />
+      {deAmiga.error || deAmiga.datos.length === 0 ? null : (
+        <>
+          <h2 className="xo-eyebrow mt-14 text-xo-gris">Clases que te dejaron</h2>
+          <ul className="mt-4 divide-y divide-xo-negro/10 border-y border-xo-negro/10" data-mis-clases-de-amiga>
+            {deAmiga.datos.map((l) => (
+              <li key={l.id} className="flex flex-wrap justify-between gap-3 py-4">
+                <div>
+                  <p className="text-xo-negro">
+                    {l.cantidad} {l.cantidad === 1 ? "clase" : "clases"} del{" "}
+                    {(l.planNombre ?? "pack de amigas").toLowerCase()}
+                  </p>
+                  <p className="text-sm text-xo-gris">
+                    {l.compradora
+                      ? `Te ${l.cantidad === 1 ? "la" : "las"} dejó ${l.compradora}`
+                      : "Te la dejó una amiga"}{" "}
+                    el {cuandoLegible(l.recibidoAt).split(",")[0]} ·{" "}
+                    {l.cantidad === 1 ? "vence" : "vencen"} el {cuandoLegible(l.vence).split(",")[0]}
+                  </p>
+                </div>
+                <p className="xo-eyebrow self-center text-xo-gris">
+                  {new Date(l.vence) <= new Date(ahora)
+                    ? "Vencida"
+                    : `${l.disponibles} sin usar`}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       {/* PRD-0023: lo regalado, aparte de lo comprado. Sin el motivo: es del

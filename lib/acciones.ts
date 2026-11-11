@@ -8,6 +8,7 @@ import { tieneNivel } from "./roles";
 import {
   avisarCompraAprobada,
   avisarCompraRechazada,
+  avisarCreditoDeAmiga,
   avisarEspecialConfirmada,
   avisarEspecialPendiente,
   avisarRegalo,
@@ -19,6 +20,7 @@ import { cuandoLegible } from "./compras";
 import { instanteEnSantiago } from "./dominio/periodo";
 import { montoDesdeTexto } from "./dominio/finanzas";
 import { resolverOferta } from "./ofertas-consultas";
+import { esParaAmiga } from "./dominio/ofertas";
 import { fechaLegible } from "./planes";
 import { diaEnSantiago } from "./semana";
 
@@ -56,6 +58,32 @@ function comoMensaje(error: { message: string; code?: string } | null): string {
   return "Algo falló de nuestro lado. Intenta de nuevo en un momento.";
 }
 
+/**
+ * PRD-0026: si el correo de la amiga tiene cuenta. **Responde solo sí o no**:
+ * ni nombre ni ningún otro dato de ella, porque son menores en su mayoría y
+ * esto ya le confirma a quien pregunta que esa persona es alumna de XO.
+ *
+ * La pregunta cuenta para el límite de intentos, que vive en la base
+ * (`buscar_invitada`): acá no hay un contador que se pueda saltar abriendo
+ * otra pestaña.
+ */
+export async function comprobarAmiga(
+  correo: string,
+): Promise<{ ok: true; tieneCuenta: boolean } | { ok: false; mensaje: string }> {
+  const perfil = await perfilActual();
+  if (!perfil) return { ok: false, mensaje: "Necesitas iniciar sesión." };
+
+  const { data, error } = await clienteAdmin().rpc("buscar_invitada", {
+    p_actor_user_id: perfil.userId,
+    p_correo: correo,
+  });
+  if (error) return { ok: false, mensaje: comoMensaje(error) };
+  return { ok: true, tieneCuenta: data !== null };
+}
+
+const SIN_CUENTA =
+  "Ese correo no tiene cuenta en XO. Pídele a tu amiga que se cree una con ese mismo correo y vuelve a intentarlo.";
+
 /** La alumna declara que transfirió. No mueve plata ni cupo: solo deja la fila. */
 export async function declararTransferencia(datos: FormData): Promise<Resultado> {
   const perfil = await perfilActual();
@@ -75,31 +103,52 @@ export async function declararTransferencia(datos: FormData): Promise<Resultado>
   }
 
   const supabase = await clienteServidor();
-  const { data: plan } = await supabase
-    .from("planes")
-    .select("id")
-    .eq("slug", oferta.planSlug)
-    .maybeSingle();
+  let creada: { id: string } | null = null;
 
-  if (!plan) return { ok: false, mensaje: "Ese plan no existe." };
+  if (esParaAmiga(oferta)) {
+    // PRD-0026. La amiga se busca **otra vez** en la base, aunque la pantalla
+    // ya la haya comprobado: lo que diga el navegador no vale. Y esa búsqueda
+    // cuenta como intento, para que declarar no sea un oráculo sin límite.
+    const { data, error } = await clienteAdmin().rpc("declarar_pack_amigas", {
+      p_actor_user_id: perfil.userId,
+      p_plan_slug: oferta.planSlug,
+      p_monto_clp: oferta.precioClp,
+      p_correo_invitada: String(datos.get("correo_amiga") ?? ""),
+      p_titular: titular,
+      p_nota: nota,
+    });
+    if (error) return { ok: false, mensaje: comoMensaje(error) };
+    const r = data as { ok: boolean; motivo?: string; compra_id?: string } | null;
+    if (!r?.ok || !r.compra_id) return { ok: false, mensaje: SIN_CUENTA };
+    creada = { id: r.compra_id };
+  } else {
+    const { data: plan } = await supabase
+      .from("planes")
+      .select("id")
+      .eq("slug", oferta.planSlug)
+      .maybeSingle();
 
-  // Se pide el id de vuelta: es la clave de idempotencia del aviso, y sin ella
-  // dos clics seguidos mandarían dos correos a la academia (PRD-0019 §8.5).
-  const { data: creada, error } = await supabase
-    .from("compras")
-    .insert({
-      perfil_id: perfil.id,
-      plan_id: plan.id,
-      cantidad_clases: oferta.clases,
-      monto_clp: oferta.precioClp,
-      medio_pago: "transferencia",
-      titular_declarado: titular,
-      nota_alumna: nota,
-    })
-    .select("id")
-    .maybeSingle();
+    if (!plan) return { ok: false, mensaje: "Ese plan no existe." };
 
-  if (error) return { ok: false, mensaje: comoMensaje(error) };
+    // Se pide el id de vuelta: es la clave de idempotencia del aviso, y sin ella
+    // dos clics seguidos mandarían dos correos a la academia (PRD-0019 §8.5).
+    const { data, error } = await supabase
+      .from("compras")
+      .insert({
+        perfil_id: perfil.id,
+        plan_id: plan.id,
+        cantidad_clases: oferta.clases,
+        monto_clp: oferta.precioClp,
+        medio_pago: "transferencia",
+        titular_declarado: titular,
+        nota_alumna: nota,
+      })
+      .select("id")
+      .maybeSingle();
+
+    if (error) return { ok: false, mensaje: comoMensaje(error) };
+    creada = data;
+  }
 
   const { data: destino } = await supabase
     .from("parametros")
@@ -159,6 +208,8 @@ export async function aprobarCompra(compraId: string): Promise<Resultado> {
     cantidad_clases: number;
     clase_id: string | null;
     estado: string;
+    perfil_invitada_id: string | null;
+    cantidad_invitada: number | null;
   } | null;
 
   // Lo que se le devuelve a la pantalla: la compra se acreditó igual, pero si
@@ -219,22 +270,58 @@ export async function aprobarCompra(compraId: string): Promise<Resultado> {
         });
       }
     } else {
-      const { data: lote } = await admin
+      // Con el pack de amigas (PRD-0026) la compra tiene **dos** lotes, uno por
+      // perfil: sin filtrar por dueña, `maybeSingle` devolvería error y el
+      // correo diría un vencimiento genérico.
+      const { data: lotes } = await admin
         .from("creditos")
-        .select("fecha_vencimiento")
-        .eq("compra_id", compraId)
-        .maybeSingle();
+        .select("id, perfil_id, cantidad_inicial, fecha_vencimiento")
+        .eq("compra_id", compraId);
+      const filas = (lotes ?? []) as {
+        id: string;
+        perfil_id: string;
+        cantidad_inicial: number;
+        fecha_vencimiento: string;
+      }[];
+      const suyo = filas.find((l) => l.perfil_id === compra.perfil_id);
+      const deLaAmiga = compra.perfil_invitada_id
+        ? filas.find((l) => l.perfil_id === compra.perfil_invitada_id)
+        : undefined;
+      const venceLegible = (l: { fecha_vencimiento: string } | undefined) =>
+        l ? fechaLegible(l.fecha_vencimiento.slice(0, 10)) : "vencimiento que ves en Mis reservas";
 
       correoEnviado = await avisarCompraAprobada({
         para: correo,
         nombre: alumna?.nombre ?? null,
-        clases: compra.cantidad_clases,
-        vence: lote?.fecha_vencimiento
-          ? fechaLegible(lote.fecha_vencimiento.slice(0, 10))
-          : "vencimiento que ves en Mis reservas",
+        clases: suyo?.cantidad_inicial ?? compra.cantidad_clases - (compra.cantidad_invitada ?? 0),
+        paraAmiga: compra.cantidad_invitada ?? 0,
+        vence: venceLegible(suyo),
         compraId,
         perfilId: compra.perfil_id,
       });
+
+      // Y a la amiga, por la cola de PRD-0019 como todos. Si no sale, la
+      // pantalla lo dice igual que con el de la compradora.
+      if (compra.perfil_invitada_id && deLaAmiga) {
+        const { data: amiga } = await admin
+          .from("perfiles")
+          .select("nombre, email")
+          .eq("id", compra.perfil_invitada_id)
+          .maybeSingle();
+
+        const salioElDeLaAmiga = await avisarCreditoDeAmiga({
+          para: amiga?.email ?? "",
+          nombre: amiga?.nombre ?? null,
+          // Solo el nombre de pila de quien compró, nunca su correo.
+          compradora: alumna?.nombre?.trim().split(/\s+/)[0] || null,
+          clases: deLaAmiga.cantidad_inicial,
+          vence: venceLegible(deLaAmiga),
+          creditoId: deLaAmiga.id,
+          compraId,
+          perfilId: compra.perfil_invitada_id,
+        });
+        correoEnviado = correoEnviado && salioElDeLaAmiga;
+      }
     }
   }
 
@@ -813,5 +900,59 @@ export async function regalarCreditos(
       0,
     ),
     vence,
+  };
+}
+
+/**
+ * Quitar clases a una persona (PRD-0024). El espejo del regalo: **solo el
+ * owner**, motivo obligatorio, del lote vigente que vence primero, y si el
+ * saldo no alcanza no se quita nada. Todo eso lo decide `revocar_creditos()`,
+ * que vuelve a verificar el rol adentro; esto responde antes y con el mensaje
+ * del formulario.
+ *
+ * Sin correo a la alumna (PRD-0024 §8.6.b): ve el saldo nuevo en Mis reservas.
+ * **No sirve para "fue a clase y no reservó"**: eso es una reserva que falta,
+ * no un crédito de más, y con una revocación la profesora no cobraría.
+ */
+export async function revocarCreditos(
+  perfilId: string,
+  cantidad: number,
+  motivo: string,
+): Promise<{ ok: true; saldo: number } | { ok: false; mensaje: string }> {
+  const actor = await perfilActual();
+  if (!actor || !tieneNivel(actor.rol, "owner")) {
+    return { ok: false, mensaje: "Solo el owner puede quitar clases." };
+  }
+  if (!Number.isInteger(cantidad) || cantidad < 1) {
+    return { ok: false, mensaje: "La cantidad tiene que ser al menos 1." };
+  }
+  if (motivo.trim().length < 5) {
+    return { ok: false, mensaje: "Escribe por qué se quitan (al menos 5 caracteres)." };
+  }
+
+  const admin = clienteAdmin();
+  const { error } = await admin.rpc("revocar_creditos", {
+    p_perfil_id: perfilId,
+    p_cantidad: cantidad,
+    p_motivo: motivo,
+    p_actor_user_id: actor.userId,
+  });
+  if (error) return { ok: false, mensaje: comoMensaje(error) };
+
+  const { data: lotes } = await admin
+    .from("creditos")
+    .select("cantidad_disponible")
+    .eq("perfil_id", perfilId)
+    .gt("fecha_vencimiento", new Date().toISOString());
+
+  revalidatePath("/admin");
+  revalidatePath("/mis-clases");
+  revalidatePath("/reservar");
+  return {
+    ok: true,
+    saldo: ((lotes ?? []) as { cantidad_disponible: number }[]).reduce(
+      (total, l) => total + l.cantidad_disponible,
+      0,
+    ),
   };
 }

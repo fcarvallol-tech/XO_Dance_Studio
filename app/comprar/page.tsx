@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MarcoSitio } from "@/components/MarcoSitio";
-import { porClaseDeOferta } from "@/lib/dominio/ofertas";
+import { esParaAmiga, porClaseDeOferta } from "@/lib/dominio/ofertas";
 import { getOfertas } from "@/lib/ofertas-consultas";
 import { clp } from "@/lib/planes";
 
@@ -80,6 +80,17 @@ export default async function Comprar() {
                     {oferta.vigenteHasta ? (
                       <p className="mt-1 text-sm text-xo-rosa-claro">
                         Precio para compras hasta el {oferta.vigenteHasta}
+                      </p>
+                    ) : null}
+                    {/* PRD-0026: se dice ANTES de elegir. Enterarse al
+                        transferir se siente trampa (Felipe, 05/11/2026). */}
+                    {esParaAmiga(oferta) ? (
+                      <p className="mt-2 max-w-sm text-sm leading-relaxed text-xo-rosa-claro">
+                        Una para ti y una para tu amiga.{" "}
+                        <strong className="font-semibold">
+                          Tu amiga tiene que tener cuenta en XO
+                        </strong>
+                        : te pedimos su correo al comprar.
                       </p>
                     ) : null}
                   </div>

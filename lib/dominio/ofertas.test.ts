@@ -13,7 +13,7 @@ import assert from "node:assert/strict";
 
 import { diaEnSantiago } from "../semana.ts";
 
-import { ofertaDePlan, porClaseDeOferta, promoVigente } from "./ofertas.ts";
+import { esParaAmiga, ofertaDePlan, porClaseDeOferta, promoVigente } from "./ofertas.ts";
 
 const PACK_4 = {
   slug: "pack-4",
@@ -24,6 +24,7 @@ const PACK_4 = {
   promoNombre: null,
   promoHasta: null,
   vigenciaDias: 60,
+  clasesParaAmiga: 0,
 };
 
 test("ofertaDePlan: sin promoción, el precio vigente es el de lista y no hay nada que tachar", () => {
@@ -98,4 +99,31 @@ test("promoVigente: el miércoles 4 a las 00:01 de Santiago ya no", () => {
 test("promoVigente: sin precio o sin fecha, no hay promo", () => {
   assert.equal(promoVigente(null, "2026-11-03", "2026-11-01"), false);
   assert.equal(promoVigente(26_000, null, "2026-11-01"), false);
+});
+
+// PRD-0026 — el pack de amigas es un plan más; lo único distinto es que una
+// parte de las clases va a otra cuenta, y eso la oferta lo tiene que llevar
+// hasta la vitrina y el paso de transferir.
+
+const PACK_AMIGAS = {
+  ...PACK_4,
+  slug: "pack-amigas",
+  nombre: "Pack de amigas",
+  clases: 2,
+  precio: 16_000,
+  vigenciaDias: 30,
+  clasesParaAmiga: 1,
+};
+
+test("ofertaDePlan: el pack de amigas lleva cuántas clases van a la amiga", () => {
+  const o = ofertaDePlan(PACK_AMIGAS);
+  assert.equal(o.clasesParaAmiga, 1);
+  assert.equal(esParaAmiga(o), true);
+  assert.equal(o.precioClp, 16_000);
+  // El precio por clase es el del pack entero: $8.000 cada una, la tuya y la de ella.
+  assert.equal(porClaseDeOferta(o), 8_000);
+});
+
+test("esParaAmiga: un pack normal no lo es", () => {
+  assert.equal(esParaAmiga(ofertaDePlan(PACK_4)), false);
 });

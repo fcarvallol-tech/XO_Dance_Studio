@@ -58,6 +58,8 @@ export const ADMIN_DE_COMPRA = "perfiles!compras_aprobada_por_fkey";
 export const ALUMNA_DE_MOVIMIENTO = "perfiles!movimientos_credito_perfil_id_fkey";
 /** Quién lo registró: admin en un regalo o un ajuste. */
 export const ACTOR_DE_MOVIMIENTO = "perfiles!movimientos_credito_creado_por_fkey";
+/** PRD-0026: la amiga del pack. Llave con nombre fijo en 20261105120000. */
+const AMIGA_DE_COMPRA = "amiga:perfiles!compras_perfil_invitada_id_fkey";
 
 export type DatosTransferencia = {
   banco: string;
@@ -155,6 +157,8 @@ type FilaCompra = {
   perfiles?: { nombre: string | null; email: string | null } | null;
   titular_declarado?: string | null;
   nota_alumna?: string | null;
+  cantidad_invitada?: number | null;
+  amiga?: { nombre: string | null } | null;
 };
 
 function aCompra(fila: FilaCompra): Compra {
@@ -180,6 +184,10 @@ function aCompra(fila: FilaCompra): Compra {
     correoAlumna: fila.perfiles?.email ?? null,
     titularDeclarado: fila.titular_declarado ?? null,
     notaAlumna: fila.nota_alumna ?? null,
+    amiga:
+      fila.cantidad_invitada && fila.cantidad_invitada > 0
+        ? { nombre: fila.amiga?.nombre ?? null, clases: fila.cantidad_invitada }
+        : null,
   };
 }
 
@@ -190,7 +198,7 @@ function aCompra(fila: FilaCompra): Compra {
 const CAMPOS_COMPRA =
   "id, cantidad_clases, monto_clp, estado, medio_pago, declarada_at, motivo_rechazo, clase_id, planes ( nombre ), clases ( titulo, inicio )";
 const CAMPOS_COMPRA_ADMIN =
-  `id, perfil_id, cantidad_clases, monto_clp, estado, medio_pago, declarada_at, motivo_rechazo, clase_id, titular_declarado, nota_alumna, planes ( nombre ), clases ( titulo, inicio ), ${ALUMNA_DE_COMPRA} ( nombre, email )`;
+  `id, perfil_id, cantidad_clases, monto_clp, estado, medio_pago, declarada_at, motivo_rechazo, clase_id, titular_declarado, nota_alumna, cantidad_invitada, planes ( nombre ), clases ( titulo, inicio ), ${ALUMNA_DE_COMPRA} ( nombre, email ), ${AMIGA_DE_COMPRA} ( nombre )`;
 
 export async function getMisCompras(perfilId: string): Promise<Lectura<Compra[]>> {
   const supabase = await clienteServidor();
@@ -568,6 +576,47 @@ export async function getRegalosRecientes(limite = 30): Promise<Lectura<Regalo[]
   };
 }
 
+export type Revocacion = {
+  revocadoAt: string;
+  perfilId: string;
+  alumna: string | null;
+  cantidad: number;
+  /** Cuántos lotes tocó: una revocación puede salir de varios. */
+  lotes: number;
+  motivo: string | null;
+  autor: string | null;
+};
+
+/**
+ * Las últimas revocaciones (PRD-0024), una por fila aunque hayan tocado varios
+ * lotes. **Solo owner**: la función lo verifica adentro, y la página no la
+ * llama para nadie más. Con la sesión, como los regalos.
+ */
+export async function getRevocacionesRecientes(limite = 30): Promise<Lectura<Revocacion[]>> {
+  const supabase = await clienteServidor();
+  const { data, error } = await supabase.rpc("revocaciones_recientes", { p_limite: limite });
+  return {
+    datos: ((data ?? []) as {
+      revocado_at: string;
+      perfil_id: string;
+      alumna: string | null;
+      cantidad: number;
+      lotes: number;
+      motivo: string | null;
+      autor: string | null;
+    }[]).map((f) => ({
+      revocadoAt: f.revocado_at,
+      perfilId: f.perfil_id,
+      alumna: f.alumna,
+      cantidad: f.cantidad,
+      lotes: f.lotes,
+      motivo: f.motivo,
+      autor: f.autor,
+    })),
+    error: comoTexto(error),
+  };
+}
+
 /**
  * Cuántas clases vigentes tiene cada persona, para la tabla de Personas: es lo
  * que se mira antes de regalar. Una sola consulta para toda la tabla, no una
@@ -634,5 +683,88 @@ export async function getMisRegalos(perfilId: string): Promise<Lectura<LoteDeReg
       regaladoAt: f.created_at,
     })),
     error: comoTexto(error),
+  };
+}
+
+
+export type LoteDeAmiga = {
+  id: string;
+  cantidad: number;
+  disponibles: number;
+  vence: string;
+  recibidoAt: string;
+  planNombre: string | null;
+  /** Solo el nombre de pila de quien compró, igual que en el correo. */
+  compradora: string | null;
+};
+
+/**
+ * PRD-0026 §12.1: las clases que le dejó una amiga con el pack de amigas.
+ *
+ * Son lotes **suyos** con `compra_id` de una compra **de otra persona**. No
+ * aparecían en ninguna parte: no son regalo (`compra_id` no es null) y la
+ * compra no es de ella, así que tampoco caían en "Tus compras". Sumaban en el
+ * saldo sin explicación, y es lo primero que ve una amiga que entra a XO.
+ *
+ * Los lotes se leen con su sesión. La compra se lee con la service role porque
+ * es de otra persona y RLS no se la muestra, **filtrada por las dos llaves**:
+ * que sea uno de sus lotes y que ella sea la invitada de esa compra. De la
+ * compradora sale solo el nombre de pila, que es lo mismo que ya le dijo el
+ * correo; nunca su correo ni nada más.
+ */
+export async function getMisClasesDeAmiga(perfilId: string): Promise<Lectura<LoteDeAmiga[]>> {
+  const supabase = await clienteServidor();
+  const { data: lotes, error } = await supabase
+    .from("creditos")
+    .select("id, compra_id, cantidad_inicial, cantidad_disponible, fecha_vencimiento, created_at")
+    .eq("perfil_id", perfilId)
+    .not("compra_id", "is", null)
+    .order("created_at", { ascending: false });
+  if (error) return { datos: [], error: comoTexto(error) };
+
+  const filas = (lotes ?? []) as {
+    id: string;
+    compra_id: string;
+    cantidad_inicial: number;
+    cantidad_disponible: number;
+    fecha_vencimiento: string;
+    created_at: string;
+  }[];
+  if (filas.length === 0) return { datos: [], error: null };
+
+  const { data: compras, error: errorCompras } = await clienteAdmin()
+    .from("compras")
+    .select("id, planes ( nombre ), perfiles!compras_perfil_id_fkey ( nombre )")
+    .in("id", [...new Set(filas.map((f) => f.compra_id))])
+    .eq("perfil_invitada_id", perfilId)
+    .neq("perfil_id", perfilId);
+  if (errorCompras) return { datos: [], error: comoTexto(errorCompras) };
+
+  const porId = new Map(
+    ((compras ?? []) as unknown as {
+      id: string;
+      planes: { nombre: string } | null;
+      perfiles: { nombre: string | null } | null;
+    }[]).map((c) => [c.id, c]),
+  );
+
+  return {
+    datos: filas.flatMap((f) => {
+      const compra = porId.get(f.compra_id);
+      // Un lote de una compra suya es de "Tus compras", no de acá.
+      if (!compra) return [];
+      return [
+        {
+          id: f.id,
+          cantidad: f.cantidad_inicial,
+          disponibles: f.cantidad_disponible,
+          vence: f.fecha_vencimiento,
+          recibidoAt: f.created_at,
+          planNombre: compra.planes?.nombre ?? null,
+          compradora: compra.perfiles?.nombre?.trim().split(/\s+/)[0] || null,
+        },
+      ];
+    }),
+    error: null,
   };
 }
