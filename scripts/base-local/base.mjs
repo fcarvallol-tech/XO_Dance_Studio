@@ -31,7 +31,7 @@ grant execute on function auth.uid(), auth.jwt(), auth.role() to anon, authentic
 `;
 
 // Migraciones de datos puntuales: buscan filas reales que una base vacía no tiene.
-const SALTAR = ["20261103210000_clase_pau_3_nov_no_dictada.sql"];
+const SALTAR = ["20261103210000_clase_pau_3_nov_no_dictada.sql", "20261111120000_recuperativa_pau_27_11.sql"];
 
 export async function base({ hasta, extra = [] } = {}) {
   const db = new PGlite();

@@ -1,13 +1,14 @@
 -- La recuperativa de la Reggaeton Femme de Pau del martes 03/11/2026: viernes
 -- 27/11/2026, de 20:00 a 21:00, en Los Leones (Felipe, 11/11/2026).
 --
--- ⚠️ VIVE EN supabase/pendientes/ A PROPÓSITO. Felipe quiere aplicar primero
--- las cuatro de la liquidación (20261105140000, 20261106130000, 20261106140000
--- y 20261110130000), revisar la pantalla en producción y clasificar las clases
--- sin causa, y **recién después** crear esta clase: si algo sale mal, se sabe
--- cuál de las dos cosas fue. `db push` aplica todo lo pendiente, así que esta
--- se mueve a supabase/migrations/ solo cuando las cuatro estén aplicadas, y se
--- aplica con `supabase db push`, **con aprobación de Felipe por su nombre**.
+-- Se escribió el 11/11 en supabase/pendientes/ y pasó a migrations/ ese mismo
+-- día, **después** de que las cuatro de la liquidación (20261105140000,
+-- 20261106130000, 20261106140000 y 20261110130000) quedaran aplicadas en
+-- producción y Felipe clasificara las causas: la del 03/11 quedó como
+-- "asistencia_insuficiente", y no queda ninguna clase de noviembre sin causa.
+-- Felipe quiso separarlas para saber cuál de las dos cosas fallaba si algo
+-- salía mal. Se aplica con `supabase db push`, **con aprobación de Felipe por
+-- su nombre**.
 --
 -- 🔴 DEPENDE DE 20261105140000 (`clases.recupera_clase_id`, el índice de una
 -- recuperación por clase y `mes_pagado()`) y de 20261106140000 (una clase de
@@ -36,8 +37,8 @@
 --   - el viernes 27/11 no hay ninguna clase en Los Leones (solo dos en
 --     Studio 98, a las 17:00 y a las 20:30), y Pau no tiene clases ese día;
 --   - la clase del 03/11 está `cancelada`, motivo "Cancelada", con sus 2
---     reservas devueltas (20261103210000), y no tiene causa: la causa la marca
---     Felipe desde la pantalla después de aplicar las cuatro. La causa no es
+--     reservas devueltas (20261103210000). La causa la marcó Felipe desde la
+--     pantalla, ya en producción: "asistencia_insuficiente". La causa no es
 --     condición para el enlace, pero sí para que la liquidación pague bien la
 --     original.
 -- Esta migración lo vuelve a comprobar al correr, porque entre el 11/11 y el

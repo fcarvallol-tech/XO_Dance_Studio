@@ -1,11 +1,11 @@
-// La recuperativa de Pau del 27/11 (supabase/pendientes/20261111120000), contra
+// La recuperativa de Pau del 27/11 (supabase/migrations/20261111120000), contra
 // una base local con todas las migraciones. Nada remoto.
 //   node scripts/base-local/escenario-recuperativa-27-11.mjs
 import { readFileSync } from "node:fs";
 import { base } from "./base.mjs";
 import { paso, resumen, assert, uno, filas, falla } from "./util.mjs";
 
-const MIG = readFileSync(new URL("../../supabase/pendientes/20261111120000_recuperativa_pau_27_11.sql", import.meta.url), "utf8");
+const MIG = readFileSync(new URL("../../supabase/migrations/20261111120000_recuperativa_pau_27_11.sql", import.meta.url), "utf8");
 const db = await base();
 
 // La clase del 03/11 como está en producción: de parrilla, cancelada, sin causa.
