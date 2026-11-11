@@ -1,0 +1,21 @@
+<!--
+  VERSIÓN VIVA el 11/11/2026 — Confirm signup de PRODUCCIÓN.
+  Asunto: Confirm your email address
+
+  Leída del proyecto con la API de administración de Supabase
+  (GET /v1/projects/<ref>/config/auth, campo mailer_templates_confirmation_content), copiada tal cual.
+  Felipe la transcribió del panel el mismo día y coincide letra por letra.
+  Es el camino de vuelta: si con la nueva alguien no puede entrar, se pega
+  esta de nuevo, con su asunto.
+-->
+<h2>Confirma tu correo</h2>
+
+<p>Toca el botón para confirmar tu correo y entrar a XO Dance Studio. El enlace sirve una sola vez y vence pronto.</p>
+
+<p>
+  <a href="{{ .SiteURL }}/auth/confirmar?token_hash={{ .TokenHash }}&type=signup">
+    Confirmar y entrar
+  </a>
+</p>
+
+<p>Si no pediste este correo, ignóralo.</p>
