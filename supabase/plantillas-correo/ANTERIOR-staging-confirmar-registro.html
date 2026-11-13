@@ -1,0 +1,14 @@
+<!--
+  VERSIÓN VIVA el 11/11/2026 — Confirm signup de STAGING (la de fábrica de Supabase).
+  Asunto: Confirm your email address
+
+  Leída del proyecto con la API de administración de Supabase
+  (GET /v1/projects/<ref>/config/auth, campo mailer_templates_confirmation_content), copiada tal cual.
+  Felipe la transcribió del panel el mismo día y coincide letra por letra.
+  Es el camino de vuelta: si con la nueva alguien no puede entrar, se pega
+  esta de nuevo, con su asunto.
+-->
+<h2>Confirm your email address</h2>
+
+<p>Follow the link below to confirm this email address and finish signing up.</p>
+<p><a href="{{ .ConfirmationURL }}">Confirm email address</a></p>
