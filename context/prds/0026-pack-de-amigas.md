@@ -310,3 +310,25 @@ que buscar la clase de nuevo. No es solo el pack de amigas: es cualquier reserva
   responde "Email template modification is not available for free tier projects using the default
   email provider". La prueba del enlace real espera a que Felipe encienda el SMTP de staging.
 
+### 12.3 Enlace que no sirve con la sesión de otra persona abierta (13/11/2026), rama `enlace-vencido-con-sesion`
+
+**El defecto, comprobado en staging con una sesión de profesora viva:** un enlace vencido o ya
+usado iba `/auth/confirmar` → `/entrar?error=enlace` → el inicio de **esa** sesión, sin ningún
+mensaje. Felipe abrió enlaces de owner y admin y cayó como profesora. Una alumna en un aparato
+compartido no se entera de que su enlace venció. Está vivo en producción hasta que salga esta rama.
+
+**La corrección:**
+- `/auth/confirmar` manda el error **con** la página pedida (`/entrar?error=…&volver=…`).
+- `/entrar` con un error conocido **no redirige** aunque haya sesión. Muestra el error, de quién es la
+  sesión abierta, "Salir de esta cuenta", "Seguir como…" y el formulario para pedir otro enlace, que
+  vuelve a la página pedida.
+- "Salir de esta cuenta" vuelve a `/entrar` con la página pedida, no a la portada:
+  `/auth/salir` acepta un `volver` interno.
+
+**Decisión: el aviso muestra solo el nombre de pila** (Felipe, 13/11/2026). `/entrar` es ruta pública y
+esto es un mensaje de error, y CLAUDE.md prohíbe ahí el nombre de una alumna. Quien ve la pantalla ya
+tiene esa sesión, así que no se filtra nada nuevo, pero el nombre completo y el correo no hacen falta
+para reconocer la cuenta. Sin nombre cargado dice "otra cuenta". **No se muestra el correo.**
+
+Verificado contra staging con `scripts/verificar-enlace-vencido-navegador.mjs`, sin mandar correos.
+
