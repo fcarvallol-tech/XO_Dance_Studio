@@ -45,8 +45,16 @@ export default async function Entrar({ searchParams }: Props) {
   // Quien ya tiene sesión no ve la puerta. Si venía pidiendo una página —el
   // botón de una clase especial, por ejemplo— se va a **esa**: mandarla a su
   // inicio la obligaría a buscar de nuevo lo que ya había elegido.
+  //
+  // **Salvo que venga con un error.** Un enlace vencido abierto en un navegador
+  // con la sesión de otra persona dejaba esa sesión y mandaba a su inicio, sin
+  // decir nada: Felipe abrió dos enlaces de owner y admin y cayó como profesora
+  // (13/11/2026). Con error, se dice que el enlace no sirvió y de quién es la
+  // sesión que quedó abierta.
   const perfil = await perfilActual();
-  if (perfil) redirect(pedido ?? (await inicioPara(perfil)));
+  const mensaje = error ? ERRORES[error] ?? null : null;
+  if (perfil && !mensaje) redirect(pedido ?? (await inicioPara(perfil)));
+  const inicioDeLaSesion = perfil ? await inicioPara(perfil) : null;
 
   // Sin una página pedida, el enlace vuelve **acá**: con la sesión ya puesta,
   // esta misma página decide el inicio según el rol, y para admin eso depende
@@ -76,13 +84,40 @@ export default async function Entrar({ searchParams }: Props) {
           sola al entrar.
         </p>
 
-        {error && ERRORES[error] ? (
+        {mensaje ? (
           <p
             role="alert"
+            data-error-de-enlace={error}
             className="mt-8 border-l-2 border-xo-rosa pl-4 text-sm leading-relaxed text-xo-rosa"
           >
-            {ERRORES[error]}
+            {mensaje}
           </p>
+        ) : null}
+
+        {perfil && inicioDeLaSesion ? (
+          <div data-sesion-abierta className="mt-6 text-sm leading-relaxed text-xo-blanco/70">
+            <p>
+              En este navegador sigue abierta la sesión de{" "}
+              <strong className="text-xo-blanco">{perfil.nombre ?? perfil.email ?? "otra cuenta"}</strong>. Si el
+              enlace era para otra cuenta, sal primero y pide uno nuevo.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-4">
+              <form action="/auth/salir" method="post">
+                <button
+                  type="submit"
+                  className="xo-eyebrow rounded-full border border-xo-blanco/30 px-4 py-2 text-xo-blanco transition-colors hover:border-xo-rosa"
+                >
+                  Salir de esta cuenta
+                </button>
+              </form>
+              <Link
+                href={inicioDeLaSesion}
+                className="xo-eyebrow text-xo-blanco/70 underline-offset-4 hover:text-xo-rosa hover:underline"
+              >
+                Seguir como {perfil.nombre ?? "esta cuenta"}
+              </Link>
+            </div>
+          </div>
         ) : null}
 
         <div className="mt-10">

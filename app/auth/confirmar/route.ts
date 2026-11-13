@@ -34,13 +34,22 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   // Solo rutas internas (`volverInterno`). Sin una pedida, a `/entrar`, que
   // con la sesión ya puesta manda a cada rol a su inicio.
-  const volver = volverInterno(url.searchParams.get("volver")) ?? "/entrar";
+  const pedido = volverInterno(url.searchParams.get("volver"));
+  const volver = pedido ?? "/entrar";
+  // Cuando el enlace falla, `/entrar` recibe el error **y** la página pedida:
+  // el enlace nuevo tiene que volver a la misma clase, no al inicio.
+  const fallo = (codigo: string) => {
+    const destino = new URL("/entrar", url.origin);
+    destino.searchParams.set("error", codigo);
+    if (pedido) destino.searchParams.set("volver", pedido);
+    return NextResponse.redirect(destino);
+  };
 
   // Supabase puede devolver su propio error en la query.
   const errorSupabase = url.searchParams.get("error_description") ?? url.searchParams.get("error");
   if (errorSupabase) {
     console.error("Supabase rechazó el enlace:", errorSupabase);
-    return NextResponse.redirect(new URL("/entrar?error=enlace", url.origin));
+    return fallo("enlace");
   }
 
   const tokenHash = url.searchParams.get("token_hash");
@@ -55,7 +64,7 @@ export async function GET(request: Request) {
     if (error) {
       // Acá sí es cierto que el enlace no sirve: vencen y son de un solo uso.
       console.error("Magic link inválido o ya usado:", error.message);
-      return NextResponse.redirect(new URL("/entrar?error=enlace", url.origin));
+      return fallo("enlace");
     }
     return NextResponse.redirect(new URL(volver, url.origin));
   }
@@ -67,7 +76,7 @@ export async function GET(request: Request) {
       // Lo más probable acá no es que el enlace esté malo, sino que se abrió en
       // otro navegador: el code_verifier de PKCE vive donde se pidió.
       console.error("No se pudo canjear el código del magic link:", error.message);
-      return NextResponse.redirect(new URL("/entrar?error=otro-navegador", url.origin));
+      return fallo("otro-navegador");
     }
     return NextResponse.redirect(new URL(volver, url.origin));
   }
@@ -81,5 +90,5 @@ export async function GET(request: Request) {
       "#access_token=…, el template del correo está apuntando a /auth/v1/verify " +
       "en vez de a esta ruta. Ver PRD-0004 §13.",
   );
-  return NextResponse.redirect(new URL("/entrar?error=configuracion", url.origin));
+  return fallo("configuracion");
 }
