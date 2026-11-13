@@ -27,7 +27,9 @@ console.log("\n1. Sesión de Pau viva, enlace de owner ya usado");
   caso("con el error y el volver de la página pedida", `${u.searchParams.get("error")} ${u.searchParams.get("volver")}`, "enlace /owner/asistencias");
   const t = await texto(p);
   caso("dice que el enlace no sirve", t.includes("Ese enlace ya no sirve"), true);
-  caso("dice de quién es la sesión abierta", /pau/i.test(await p.locator("[data-sesion-abierta]").innerText()), true);
+  const aviso = await p.locator("[data-sesion-abierta]").innerText();
+  caso("dice de quién es la sesión abierta, con el nombre de pila", aviso.includes("sesión de Profe."), true);
+  caso("sin el nombre completo ni el correo", /Profe pau|@/i.test(aviso), false);
   caso("ofrece salir y pedir otro", (await p.getByRole("button", { name: "Salir de esta cuenta" }).count()) === 1
     && (await p.getByRole("button", { name: "Mandarme un enlace" }).count()) === 1, true);
   await p.screenshot({ path: `${C}/enlace-vencido-con-sesion-390.png`, fullPage: true });
@@ -35,13 +37,22 @@ console.log("\n1. Sesión de Pau viva, enlace de owner ya usado");
   caso("'Seguir como…' lleva al inicio de la profesora", new URL(p.url()).pathname.startsWith("/profesora"), true);
   await p.goto(`${SITIO}/entrar`, { waitUntil: "networkidle" });
   caso("/entrar sin error, con sesión, sigue redirigiendo", new URL(p.url()).pathname.startsWith("/profesora"), true);
-  console.log("\n2. Misma sesión de Pau, enlace de owner válido");
+  console.log("\n2. Salir de esta cuenta");
+  await p.goto(e, { waitUntil: "networkidle" });
+  await Promise.all([p.waitForURL((u) => u.pathname === "/entrar" && !u.searchParams.get("error")),
+    p.getByRole("button", { name: "Salir de esta cuenta" }).click()]);
+  await p.waitForLoadState("networkidle");
+  const s = new URL(p.url());
+  caso("vuelve a /entrar con la página pedida guardada", `${s.pathname} ${s.searchParams.get("volver")}`, "/entrar /owner/asistencias");
+  caso("ya sin sesión: sin aviso ni error", await p.locator("[data-sesion-abierta], [data-error-de-enlace]").count(), 0);
+
+  console.log("\n3. Sin sesión, enlace de owner válido, desde esa misma pantalla");
   await p.goto(await enlace("owner@ejemplo.invalid", "/owner/asistencias"), { waitUntil: "networkidle" });
   caso("entra como owner donde pidió", new URL(p.url()).pathname, "/owner/asistencias");
   await contexto.close();
 }
 
-console.log("\n3. Sin sesión, enlace ya usado");
+console.log("\n4. Sin sesión, enlace ya usado");
 {
   const e = await usado("admin@ejemplo.invalid", "/admin");
   const c = await navegador.newContext({ viewport: { width: 390, height: 900 } }); const p = await c.newPage();

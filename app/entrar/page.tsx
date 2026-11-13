@@ -55,6 +55,12 @@ export default async function Entrar({ searchParams }: Props) {
   const mensaje = error ? ERRORES[error] ?? null : null;
   if (perfil && !mensaje) redirect(pedido ?? (await inicioPara(perfil)));
   const inicioDeLaSesion = perfil ? await inicioPara(perfil) : null;
+  // **Solo el nombre de pila**, nunca el completo ni el correo (Felipe,
+  // 13/11/2026; PRD-0026 §12.3): /entrar es ruta pública y esto es un mensaje
+  // de error, y CLAUDE.md prohíbe ahí el nombre de una alumna. Quien lo ve ya
+  // tiene esa sesión, así que no filtra nada nuevo, pero el completo no hace
+  // falta para reconocer la cuenta.
+  const pila = perfil?.nombre?.trim().split(/\s+/)[0] || null;
 
   // Sin una página pedida, el enlace vuelve **acá**: con la sesión ya puesta,
   // esta misma página decide el inicio según el rol, y para admin eso depende
@@ -98,11 +104,13 @@ export default async function Entrar({ searchParams }: Props) {
           <div data-sesion-abierta className="mt-6 text-sm leading-relaxed text-xo-blanco/70">
             <p>
               En este navegador sigue abierta la sesión de{" "}
-              <strong className="text-xo-blanco">{perfil.nombre ?? perfil.email ?? "otra cuenta"}</strong>. Si el
+              <strong className="text-xo-blanco">{pila ?? "otra cuenta"}</strong>. Si el
               enlace era para otra cuenta, sal primero y pide uno nuevo.
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-4">
               <form action="/auth/salir" method="post">
+                {/* Al salir vuelve acá, con la página que se había pedido. */}
+                <input type="hidden" name="volver" value={`/entrar${pedido ? `?volver=${encodeURIComponent(pedido)}` : ""}`} />
                 <button
                   type="submit"
                   className="xo-eyebrow rounded-full border border-xo-blanco/30 px-4 py-2 text-xo-blanco transition-colors hover:border-xo-rosa"
@@ -114,7 +122,7 @@ export default async function Entrar({ searchParams }: Props) {
                 href={inicioDeLaSesion}
                 className="xo-eyebrow text-xo-blanco/70 underline-offset-4 hover:text-xo-rosa hover:underline"
               >
-                Seguir como {perfil.nombre ?? "esta cuenta"}
+                {pila ? `Seguir como ${pila}` : "Seguir con esta cuenta"}
               </Link>
             </div>
           </div>
